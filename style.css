@@ -1,132 +1,78 @@
-/* Базовые сбросы */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    background: white;
-    font-family: 'Playfair Display', serif;
-    overflow-x: hidden;
-}
-
-/* --- NAVBAR --- */
-.navbar {
-    background: black;
-    height: 80px;
-    display: flex;
-    width: 100%;
-    padding: 0 40px;
-    position: fixed; /* Чтобы меню всегда было сверху */
-    top: 0;
-    z-index: 1000;
-}
-
-/* Три равные колонки для идеального центра */
-.nav-section {
-    flex: 1; 
-    display: flex;
-    align-items: center;
-}
-
-.nav-section.left { justify-content: flex-end; }
-.nav-section.center { justify-content: center; }
-.nav-section.right { justify-content: flex-start; }
-
-/* Группы ссылок и отступы */
-.group {
-    display: flex;
-    gap: 50px; /* Расстояние между словами */
-    position: relative;
-}
-
-.logo-nav {
-    height: 30px;
-    /* margin создает одинаковый зазор до Languages и Education */
-    margin: 0 50px; 
-}
-
-/* Ссылки */
+/* Базовые настройки навигации */
 .nav-item {
-    color: white;
+    color: white !important;
     text-decoration: none;
-    font-size: 18px;
+    font-family: 'Unbounded', sans-serif;
+    font-size: 14px;
+    font-weight: 400; /* Принудительно ставим нормальный вес */
+    letter-spacing: 0.5px;
     position: relative;
-    padding-bottom: 6px;
-    white-space: nowrap;
+    height: 30px;
+    display: flex;
+    align-items: center;
 }
 
-/* Шрифты */
-.plans {
-    font-family: 'Redacted Script', cursive;
-    font-size: 22px;
+/* Контейнер языков */
+.languages {
+    min-width: 120px;
+    justify-content: center;
 }
 
-/* --- ПОДЧЕРКИВАНИЯ (Логика анимаций) --- */
+/* Основной слой (RU, DE, UA) - всегда Unbounded */
+.main-lang {
+    position: relative;
+    font-family: 'Unbounded', sans-serif !important;
+}
 
-/* Общий шаблон для линий */
-.languages::after,
-.education::after,
-.group::before {
-    content: "";
+/* Японский слой - только Noto Sans JP */
+.jp-lang {
     position: absolute;
-    bottom: 0;
-    height: 1px;
-    background: white;
-    transform: scaleX(0);
-    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Noto Sans JP', sans-serif !important;
+    font-weight: 900;
+    opacity: 0; /* Скрыт по умолчанию */
 }
 
-/* 1. Одиночные линии (Languages и Education) */
-.languages::after, .education::after { width: 100%; left: 0; }
-.languages::after { transform-origin: right; }
-.education::after { transform-origin: left; }
-
-.languages:hover::after, 
-.education:hover::after { transform: scaleX(1); }
-
-/* 2. Длинные линии (На всю группу) */
-.group::before { width: 100%; left: 0; }
-.group-left::before { transform-origin: right; }
-.group-right::before { transform-origin: left; }
-
-/* Активация длинных линий */
-.group-left:has(.contact:hover)::before { transform: scaleX(1); }
-.group-right:has(.plans:hover)::before { transform: scaleX(1); }
-
-/* Защита: скрываем одиночную линию, когда горит длинная */
-.group-left:has(.contact:hover) .languages::after { opacity: 0; }
-.group-right:has(.plans:hover) .education::after { opacity: 0; }
-
-/* --- HERO СЕКЦИЯ --- */
-.hero {
-    height: 70vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    gap: 30px;
-    padding-top: 80px; /* Компенсация высоты навбара */
-}
-.Contactme {
-    height: 70vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    gap: 30px;
-    padding-top: 80px; /* Компенсация высоты навбара */
-    background-color: black;
-}
-.hero-logo {
-    width: 500px;
-    height: auto;
+/* Анимация при наведении */
+.languages:hover .main-lang {
+    color: transparent;
 }
 
-.portfolio-title {
-    font-family: 'Rock 3D', cursive;
-    font-size: 64px;
-    color: black;
-    font-weight: 400;
+.languages:hover .main-lang::before {
+    content: "Languages";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    animation: cycleLatin 1.2s infinite steps(1);
+}
+
+.languages:hover .jp-lang {
+    animation: cycleJP 1.2s infinite steps(1);
+}
+
+/* Цикл для обычных шрифтов */
+@keyframes cycleLatin {
+    0%   { content: "Языки"; opacity: 1; }
+    25%  { content: ""; opacity: 0; } /* Дыра для японского */
+    50%  { content: "Sprachen"; opacity: 1; }
+    75%  { content: "Мови"; opacity: 1; }
+    100% { content: "Языки"; opacity: 1; }
+}
+
+/* Цикл только для японского */
+@keyframes cycleJP {
+    0%   { opacity: 0; }
+    25%  { opacity: 1; } /* Включается в "дыре" основной анимации */
+    50%  { opacity: 0; }
+    75%  { opacity: 0; }
+    100% { opacity: 0; }
+}
+
+/* Выравнивание Education (на основе твоих правок) */
+.education {
+    padding-top: 4px; /* Опускаем, чтобы стоял вровень с Contact Me */
 }
