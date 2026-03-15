@@ -1,144 +1,225 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
 }
 
-body {
-    background: white;
-    font-family: 'Playfair Display SC', serif;
-    overflow-x: hidden;
+body{
+background:white;
+font-family:'Playfair Display SC',serif;
+overflow-x:hidden;
 }
 
 /* NAVBAR */
-.navbar {
-    background: black;
-    height: 80px;
-    display: flex;
-    width: 100%;
-    padding: 0 60px;
-    position: fixed;
-    top: 0;
-    z-index: 1000;
-    transition: background 0.4s ease;
+
+.navbar{
+background:black;
+height:80px;
+display:flex;
+width:100%;
+padding:0 60px;
+position:fixed;
+top:0;
+z-index:1000;
+transition:0.3s;
 }
 
-.nav-section { flex: 1; display: flex; align-items: center; }
-.nav-section.left { justify-content: flex-end; padding-right: 50px; }
-.nav-section.center { justify-content: center; flex: 0 0 auto; position: relative; width: 40px;}
-.nav-section.right { justify-content: flex-start; padding-left: 50px; }
-
-.group { display: flex; gap: 50px; position: relative; align-items: center; }
-
-/* ЛОГОТИПЫ ВЕРНУЛ */
-.logo-nav {
-    height: 30px;
-    display: block;
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    transition: opacity 0.4s ease;
-}
-.logo-black { opacity: 0; }
-
-/* ТИПОГРАФИКА */
-.nav-item {
-    color: white !important;
-    text-decoration: none;
-    font-family: 'Unbounded', sans-serif;
-    font-size: 14px;
-    font-weight: 400;
-    letter-spacing: 0.5px;
-    position: relative;
-    white-space: nowrap;
-    height: 30px;
-    display: flex;
-    align-items: center;
+.nav-section{
+flex:1;
+display:flex;
+align-items:center;
 }
 
-.education { padding-top: 4.5px; } /* Тот самый фикс высоты */
+.nav-section.left{justify-content:flex-end;padding-right:50px;}
+.nav-section.center{justify-content:center;flex:0 0 auto;}
+.nav-section.right{justify-content:flex-start;padding-left:50px;}
 
-.plans {
-    font-family: 'Redacted Script', cursive !important;
-    font-size: 24px;
-    transform: translateY(-2px);
+.group{
+display:flex;
+gap:50px;
+position:relative;
+align-items:center;
 }
 
-/* АНИМАЦИЯ ЯЗЫКОВ (ДВУХСЛОЙНАЯ) */
-.languages { min-width: 125px; justify-content: center; }
-.main-lang { position: relative; font-family: 'Unbounded', sans-serif !important; }
-.jp-lang {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    font-family: 'Noto Sans JP', sans-serif !important;
-    font-weight: 900;
-    opacity: 0;
+.logo-nav{
+height:30px;
+display:block;
 }
 
-.languages:hover .main-lang { color: transparent; }
-.languages:hover .main-lang::before {
-    content: "Languages";
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    color: white;
-    animation: cycleLatin 1.2s infinite steps(1);
-}
-.languages:hover .jp-lang { animation: cycleJP 1.2s infinite steps(1); }
+/* TYPOGRAPHY */
 
-@keyframes cycleLatin {
-    0%   { content: "Языки"; opacity: 1; }
-    25%  { content: ""; opacity: 0; }
-    50%  { content: "Sprachen"; opacity: 1; }
-    75%  { content: "Мови"; opacity: 1; }
-    100% { content: "Языки"; opacity: 1; }
+.nav-item{
+color:white!important;
+text-decoration:none;
+font-family:'Unbounded',sans-serif;
+font-size:14px;
+letter-spacing:0.5px;
+position:relative;
+white-space:nowrap;
+height:30px;
+display:flex;
+align-items:center;
 }
 
-@keyframes cycleJP {
-    0%   { opacity: 0; }
-    25%  { opacity: 1; }
-    50%  { opacity: 0; }
-    75%  { opacity: 0; }
-    100% { opacity: 0; }
+.education{
+padding-top:4px;
 }
 
-/* ЛИНИИ */
-.languages::after, .education::after, .group::before {
-    content: "";
-    position: absolute;
-    bottom: 0;
-    height: 1.5px;
-    background: #ffffff !important;
-    transform: scaleX(0);
-    transition: transform 0.4s ease, background 0.4s ease;
+.plans{
+font-family:'Redacted Script',cursive!important;
+font-size:24px;
+transform:translateY(-2px);
 }
-.languages::after, .education::after { width: 100%; left: 0; }
-.languages:hover::after, .education:hover::after { transform: scaleX(1); }
-.group::before { width: 100%; left: 0; }
-.group-left:has(.contact:hover)::before { transform: scaleX(1); }
-.group-right:has(.plans:hover)::before { transform: scaleX(1); }
-.group-left:has(.contact:hover) .languages::after { opacity: 0; }
-.group-right:has(.plans:hover) .education::after { opacity: 0; }
 
-/* ИНВЕРСИЯ */
-body.inverted .navbar { background: white; }
-body.inverted .navbar .nav-item,
-body.inverted .navbar .group::before,
-body.inverted .navbar .languages::after,
-body.inverted .navbar .education::after { filter: invert(1); }
-body.inverted .logo-white { opacity: 0; }
-body.inverted .logo-black { opacity: 1; }
+/* LANGUAGES */
 
-/* СЕКЦИИ */
-.hero { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 30px; }
-.сontactme { height: 100vh; background-color: black; }
-.hero-logo { width: 500px; height: auto; }
-.portfolio-title { font-family: 'Playfair Display SC', serif; font-size: 40px; font-weight: 700; text-transform: uppercase; letter-spacing: 4px; color: black;}
+.languages{
+min-width:125px;
+justify-content:center;
+}
 
-/* ЧАСТИЦЫ */
-.question-particle { position: absolute; color: white; font-family: 'Unbounded', sans-serif; font-size: 14px; pointer-events: none; z-index: 9999; animation: flyOut 1s ease-out forwards; }
-@keyframes flyOut { 0% { opacity: 1; transform: translate(0, 0); } 100% { opacity: 0; transform: translate(var(--x), var(--y)) scale(1.5); } }
+.main-lang{
+position:relative;
+}
+
+.jp-lang{
+position:absolute;
+left:50%;
+top:50%;
+transform:translate(-50%,-50%);
+font-family:'Noto Sans JP';
+font-weight:900;
+opacity:0;
+}
+
+.languages:hover .main-lang{color:transparent;}
+
+.languages:hover .main-lang::before{
+content:"Languages";
+position:absolute;
+left:50%;
+top:50%;
+transform:translate(-50%,-50%);
+color:white;
+animation:cycleLatin 1.2s infinite steps(1);
+}
+
+.languages:hover .jp-lang{
+animation:cycleJP 1.2s infinite steps(1);
+}
+
+@keyframes cycleLatin{
+0%{content:"Языки";opacity:1;}
+25%{content:"";opacity:0;}
+50%{content:"Sprachen";opacity:1;}
+75%{content:"Мови";opacity:1;}
+100%{content:"Языки";opacity:1;}
+}
+
+@keyframes cycleJP{
+0%{opacity:0;}
+25%{opacity:1;}
+50%{opacity:0;}
+75%{opacity:0;}
+100%{opacity:0;}
+}
+
+/* UNDERLINES */
+
+.languages::after,
+.education::after,
+.group::before{
+
+content:"";
+position:absolute;
+bottom:0;
+height:1.5px;
+background:white;
+transform:scaleX(0);
+transition:transform .4s cubic-bezier(.25,1,.5,1);
+}
+
+.languages::after,.education::after{width:100%;left:0;}
+
+.languages::after{transform-origin:right;}
+.education::after{transform-origin:left;}
+
+.languages:hover::after,
+.education:hover::after{
+transform:scaleX(1);
+}
+
+.group::before{width:100%;left:0;}
+
+.group-left::before{transform-origin:right;}
+.group-right::before{transform-origin:left;}
+
+.group-left:has(.contact:hover)::before{transform:scaleX(1);}
+.group-right:has(.plans:hover)::before{transform:scaleX(1);}
+
+.group-left:has(.contact:hover) .languages::after{opacity:0;}
+.group-right:has(.plans:hover) .education::after{opacity:0;}
+
+/* PARTICLES */
+
+.question-particle{
+position:absolute;
+color:white;
+font-family:'Unbounded';
+font-size:14px;
+pointer-events:none;
+z-index:9999;
+animation:flyOut 1s ease-out forwards;
+}
+
+@keyframes flyOut{
+0%{opacity:1;transform:translate(0,0) scale(1);}
+100%{opacity:0;transform:translate(var(--x),var(--y)) scale(1.5) rotate(45deg);}
+}
+
+/* SECTIONS */
+
+.hero{
+height:100vh;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+gap:30px;
+}
+
+.contactme{
+height:100vh;
+background:black;
+}
+
+.hero-logo{
+width:500px;
+}
+
+.portfolio-title{
+font-size:40px;
+color:black;
+letter-spacing:4px;
+text-transform:uppercase;
+}
+
+/* INVERT NAVBAR */
+
+.navbar.inverted{
+background:white;
+}
+
+.navbar.inverted .nav-item{
+color:black!important;
+}
+
+.navbar.inverted .languages::after,
+.navbar.inverted .education::after,
+.navbar.inverted .group::before{
+background:black;
+}
+
+.navbar.inverted .languages:hover .main-lang::before{
+color:black;
+}
