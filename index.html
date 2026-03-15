@@ -1,120 +1,51 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BEDAREV.COM</title>
-    <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #000;
-            color: #fff;
-            font-family: 'Arial Black', sans-serif;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-            text-align: center;
-            user-select: none;
-        }
 
-        #main-text {
-            font-size: 8vw;
-            line-height: 0.9;
-            text-transform: uppercase;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-        #status {
-            font-size: 4vw;
-            color: #ff0000;
-            margin-top: 20px;
-        }
+<title>Portfolio</title>
 
-        #phone {
-            font-size: 2vw;
-            margin-top: 30px;
-            letter-spacing: 5px;
-            opacity: 0.7;
-        }
+<link rel="icon" href="logo-small.png">
 
-        /* Скрытая панель пароля */
-        #password-zone {
-            display: none;
-            flex-direction: column;
-        }
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&family=Redacted+Script&family=Rock+3D&display=swap" rel="stylesheet">
 
-        input {
-            background: transparent;
-            border: 2px solid #fff;
-            color: #fff;
-            font-size: 2rem;
-            padding: 10px;
-            text-align: center;
-            outline: none;
-        }
-    </style>
+<link rel="stylesheet" href="style.css">
+
 </head>
+
 <body>
 
-    <div id="lock-screen">
-        <div id="main-text">BEDAREV.COM</div>
-        <div id="status">ЗАНЯТО ХАХАХАХА</div>
-        <div id="phone">+353 87 372 0687</div> </div>
+<nav class="navbar">
 
-    <div id="password-zone">
-        <p>ВВЕДИТЕ ПАРОЛЬ</p>
-        <input type="password" id="passInput" autofocus>
-    </div>
+<div class="nav-left">
 
-    <script>
-        // Секретное слово
-        const secretCode = 'bedarev';
-        let inputSequence = '';
+<a class="nav-item contact">Contact Me</a>
+<a class="nav-item languages">Languages</a>
 
-        // Мультиязычность
-        const userLang = navigator.language || navigator.userLanguage;
-        if (!userLang.includes('ru')) {
-            document.getElementById('status').innerText = 'OCCUPIED HAHAHAHA';
-        }
+</div>
 
-        // Слушаем нажатия клавиш
-        document.addEventListener('keydown', (e) => {
-            // Добавляем нажатую букву в строку (в нижнем регистре)
-            inputSequence += e.key.toLowerCase();
+<div class="nav-center">
+<img src="logo-small.png">
+</div>
 
-            // Ограничиваем длину строки, чтобы не жрала память
-            if (inputSequence.length > secretCode.length) {
-                inputSequence = inputSequence.substring(inputSequence.length - secretCode.length);
-            }
+<div class="nav-right">
 
-            // Проверяем совпадение
-            if (inputSequence === secretCode) {
-                activateAdminMode();
-            }
-        });
+<a class="nav-item education">Education</a>
+<a class="nav-item plans">Plans</a>
 
-        function activateAdminMode() {
-            document.getElementById('lock-screen').style.display = 'none';
-            document.getElementById('password-zone').style.display = 'flex';
-            document.getElementById('passInput').focus();
-        }
+</div>
 
-        // Проверка пароля (для примера)
-        document.getElementById('passInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                if (e.target.value === 'Zakhar') { // Твой будущий пароль
-                    alert('ТЫ ОБ ЭТОМ ПОЖАЛЕЕШЬ!');
-                    // window.location.href = 'private.html';
-                } else {
-                    alert('Неверно!');
-                    location.reload(); // Перезагрузка при ошибке
-                }
-            }
-        });
-    </script>
+</nav>
+
+<section class="hero">
+
+<img src="logo-large.png" class="hero-logo">
+
+<h1 class="portfolio">Portfolio</h1>
+
+</section>
+
 </body>
 </html>

@@ -1,0 +1,108 @@
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+body{
+font-family:'Playfair Display', serif;
+background:white;
+}
+
+/* NAVBAR */
+
+.navbar{
+background:black;
+display:grid;
+grid-template-columns:1fr auto 1fr;
+align-items:center;
+padding:22px 120px;
+}
+
+.nav-left,
+.nav-right{
+display:flex;
+gap:40px;
+}
+
+.nav-right{
+justify-content:flex-end;
+}
+
+.nav-center img{
+height:30px;
+}
+
+/* LINKS */
+
+.nav-item{
+color:white;
+text-decoration:none;
+font-size:18px;
+position:relative;
+padding-bottom:6px;
+}
+
+/* underline */
+
+.nav-item::after{
+content:"";
+position:absolute;
+left:0;
+bottom:0;
+width:100%;
+height:1px;
+background:white;
+
+transform:scaleX(0);
+transition:transform .35s ease;
+}
+
+/* directions */
+
+.languages::after{
+transform-origin:right;
+}
+
+.education::after{
+transform-origin:left;
+}
+
+.contact::after{
+transform-origin:right;
+}
+
+.plans::after{
+transform-origin:left;
+}
+
+.nav-item:hover::after{
+transform:scaleX(1);
+}
+
+/* plans font */
+
+.plans{
+font-family:'Redacted Script';
+font-size:22px;
+}
+
+/* HERO */
+
+.hero{
+height:100vh;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+gap:30px;
+}
+
+.hero-logo{
+width:300px;
+}
+
+.portfolio{
+font-family:'Rock 3D';
+font-size:48px;
+}
