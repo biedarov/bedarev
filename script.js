@@ -1,10 +1,10 @@
-const plansLink = document.getElementById('plans-link');
-let isHovering = false;
+const plansLink=document.getElementById('plans-link');
+let isHovering=false;
 
-plansLink.addEventListener('mouseenter', () => isHovering = true);
-plansLink.addEventListener('mouseleave', () => isHovering = false);
+plansLink.addEventListener('mouseenter',()=>isHovering=true);
+plansLink.addEventListener('mouseleave',()=>isHovering=false);
 
-plansLink.addEventListener('mousemove', (e) => {
+plansLink.addEventListener('mousemove',(e)=>{
 
 if(!isHovering) return;
 
@@ -12,6 +12,10 @@ const particle=document.createElement('span');
 
 particle.innerText='?';
 particle.className='question-particle';
+
+if(document.querySelector('.navbar').classList.contains('inverted')){
+particle.classList.add('inverted');
+}
 
 particle.style.left=e.pageX+'px';
 particle.style.top=e.pageY+'px';
@@ -27,6 +31,7 @@ document.body.appendChild(particle);
 setTimeout(()=>particle.remove(),1000);
 
 });
+
 
 /* NAVBAR INVERSION */
 
