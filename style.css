@@ -46,7 +46,7 @@ height:30px;
 display:block;
 }
 
-/* TYPOGRAPHY */
+/* TEXT */
 
 .nav-item{
 color:white!important;
@@ -164,12 +164,16 @@ transform:scaleX(1);
 
 .question-particle{
 position:absolute;
-color:white;
 font-family:'Unbounded';
 font-size:14px;
 pointer-events:none;
 z-index:9999;
 animation:flyOut 1s ease-out forwards;
+color:white;
+}
+
+.question-particle.inverted{
+color:black;
 }
 
 @keyframes flyOut{
@@ -191,10 +195,18 @@ gap:30px;
 .contactme{
 height:100vh;
 background:black;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+gap:30px;
 }
 
 .hero-logo{
 width:500px;
+}
+.SOON{
+width:300px;
 }
 
 .portfolio-title{
@@ -222,4 +234,54 @@ background:black;
 
 .navbar.inverted .languages:hover .main-lang::before{
 color:black;
+}
+
+/* MOBILE */
+
+@media (max-width: 768px) {
+
+.navbar{
+height:70px;
+padding:0 20px;
+}
+
+.group{
+gap:18px;
+}
+
+.nav-item{
+font-size:11px;
+}
+
+.plans{
+font-size:18px;
+transform:translateY(-1px);
+}
+
+.logo-nav{
+height:24px;
+}
+
+.hero-logo{
+width:280px;
+}
+
+.portfolio-title{
+font-size:26px;
+letter-spacing:2px;
+text-align:center;
+}
+
+.nav-section.left{
+padding-right:15px;
+}
+
+.nav-section.right{
+padding-left:15px;
+}
+
+.languages{
+min-width:90px;
+}
+
 }
