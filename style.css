@@ -1,108 +1,132 @@
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
+/* Базовые сбросы */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-body{
-font-family:'Playfair Display', serif;
-background:white;
+body {
+    background: white;
+    font-family: 'Playfair Display', serif;
+    overflow-x: hidden;
 }
 
-/* NAVBAR */
-
-.navbar{
-background:black;
-display:grid;
-grid-template-columns:1fr auto 1fr;
-align-items:center;
-padding:22px 120px;
+/* --- NAVBAR --- */
+.navbar {
+    background: black;
+    height: 80px;
+    display: flex;
+    width: 100%;
+    padding: 0 40px;
+    position: fixed; /* Чтобы меню всегда было сверху */
+    top: 0;
+    z-index: 1000;
 }
 
-.nav-left,
-.nav-right{
-display:flex;
-gap:40px;
+/* Три равные колонки для идеального центра */
+.nav-section {
+    flex: 1; 
+    display: flex;
+    align-items: center;
 }
 
-.nav-right{
-justify-content:flex-end;
+.nav-section.left { justify-content: flex-end; }
+.nav-section.center { justify-content: center; }
+.nav-section.right { justify-content: flex-start; }
+
+/* Группы ссылок и отступы */
+.group {
+    display: flex;
+    gap: 50px; /* Расстояние между словами */
+    position: relative;
 }
 
-.nav-center img{
-height:30px;
+.logo-nav {
+    height: 30px;
+    /* margin создает одинаковый зазор до Languages и Education */
+    margin: 0 50px; 
 }
 
-/* LINKS */
-
-.nav-item{
-color:white;
-text-decoration:none;
-font-size:18px;
-position:relative;
-padding-bottom:6px;
+/* Ссылки */
+.nav-item {
+    color: white;
+    text-decoration: none;
+    font-size: 18px;
+    position: relative;
+    padding-bottom: 6px;
+    white-space: nowrap;
 }
 
-/* underline */
-
-.nav-item::after{
-content:"";
-position:absolute;
-left:0;
-bottom:0;
-width:100%;
-height:1px;
-background:white;
-
-transform:scaleX(0);
-transition:transform .35s ease;
+/* Шрифты */
+.plans {
+    font-family: 'Redacted Script', cursive;
+    font-size: 22px;
 }
 
-/* directions */
+/* --- ПОДЧЕРКИВАНИЯ (Логика анимаций) --- */
 
-.languages::after{
-transform-origin:right;
+/* Общий шаблон для линий */
+.languages::after,
+.education::after,
+.group::before {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    height: 1px;
+    background: white;
+    transform: scaleX(0);
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-.education::after{
-transform-origin:left;
+/* 1. Одиночные линии (Languages и Education) */
+.languages::after, .education::after { width: 100%; left: 0; }
+.languages::after { transform-origin: right; }
+.education::after { transform-origin: left; }
+
+.languages:hover::after, 
+.education:hover::after { transform: scaleX(1); }
+
+/* 2. Длинные линии (На всю группу) */
+.group::before { width: 100%; left: 0; }
+.group-left::before { transform-origin: right; }
+.group-right::before { transform-origin: left; }
+
+/* Активация длинных линий */
+.group-left:has(.contact:hover)::before { transform: scaleX(1); }
+.group-right:has(.plans:hover)::before { transform: scaleX(1); }
+
+/* Защита: скрываем одиночную линию, когда горит длинная */
+.group-left:has(.contact:hover) .languages::after { opacity: 0; }
+.group-right:has(.plans:hover) .education::after { opacity: 0; }
+
+/* --- HERO СЕКЦИЯ --- */
+.hero {
+    height: 70vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 30px;
+    padding-top: 80px; /* Компенсация высоты навбара */
+}
+.Contactme {
+    height: 70vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 30px;
+    padding-top: 80px; /* Компенсация высоты навбара */
+    background-color: black;
+}
+.hero-logo {
+    width: 500px;
+    height: auto;
 }
 
-.contact::after{
-transform-origin:right;
-}
-
-.plans::after{
-transform-origin:left;
-}
-
-.nav-item:hover::after{
-transform:scaleX(1);
-}
-
-/* plans font */
-
-.plans{
-font-family:'Redacted Script';
-font-size:22px;
-}
-
-/* HERO */
-
-.hero{
-height:100vh;
-display:flex;
-flex-direction:column;
-justify-content:center;
-align-items:center;
-gap:30px;
-}
-
-.hero-logo{
-width:300px;
-}
-
-.portfolio{
-font-family:'Rock 3D';
-font-size:48px;
+.portfolio-title {
+    font-family: 'Rock 3D', cursive;
+    font-size: 64px;
+    color: black;
+    font-weight: 400;
 }
