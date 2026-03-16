@@ -1,130 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Myron Bedarev – Developer</title>
+    <meta name="description" content="Portfolio of Myron Bedarev (Miron Bedarev, Biedarov). Developer projects, portfolio and contact.">
+    <meta name="keywords" content="Myron Bedarev, Miron Bedarev, Biedarov, Bedarev, developer, portfolio">
+    <meta name="author" content="Myron Bedarev">
+    <link rel="icon" type="image/png" href="/logo-small.png">
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Myron Bedarev – Developer</title>
-
-<meta name="description" content="Portfolio of Myron Bedarev (Miron Bedarev, Biedarov). Developer projects, portfolio and contact.">
-
-<meta name="keywords" content="Myron Bedarev, Miron Bedarev, Biedarov, Bedarev, developer, portfolio">
-
-<meta name="author" content="Myron Bedarev">
-
-<link rel="icon" type="image/png" href="/logo-small.png">
-
-<!-- Google preview -->
-<meta property="og:title" content="Myron Bedarev – Developer">
-<meta property="og:description" content="Portfolio and projects of developer Myron Bedarev">
-<meta property="og:url" content="https://bedarev.com">
-<meta property="og:type" content="website">
-
-<!-- Schema for Google -->
-<script type="application/ld+json">
-{
- "@context": "https://schema.org",
- "@type": "Person",
- "name": "Myron Bedarev",
- "alternateName": [
-   "Miron Bedarev",
-   "Biedarov",
-   "Bedarev"
- ],
- "url": "https://bedarev.com"
-}
-</script>
-
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@900&family=Unbounded:wght@400&family=Playfair+Display+SC:wght@400;700&family=Redacted+Script&display=swap" rel="stylesheet">
-
-<link rel="stylesheet" href="style.css">
-
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@900&family=Unbounded:wght@400&family=Playfair+Display+SC:wght@400;700&family=Redacted+Script&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
 <nav class="navbar">
+    <div class="nav-section left">
+        <div class="group group-left">
+            <a href="#contact" class="nav-item contact">Contact Me</a>
+            <a href="#languages" class="nav-item languages">
+                <span class="main-lang">Languages</span>
+                <span class="jp-lang">言語</span>
+            </a>
+        </div>
+    </div>
 
-<div class="nav-section left">
-<div class="group group-left">
+    <div class="nav-section center">
+        <div class="logo-wrapper">
+            <a href="#hero" class="logo-link">
+                <img src="logo-small.png" alt="logo" class="logo-nav">
+            </a>
+            <div class="lang-dropdown">
+                <div class="dropdown-item" data-lang="en">English</div>
+                <div class="dropdown-item" data-lang="ru">Русский</div>
+                <div class="dropdown-item" data-lang="jp">日本語</div>
+            </div>
+        </div>
+    </div>
 
-<a href="#contact" class="nav-item contact">Contact Me</a>
+    <div class="nav-section right">
+        <div class="group group-right">
+            <a href="#education" class="nav-item education">Education</a>
+            <a href="#plans" class="nav-item plans">Plans</a>
+        </div>
+    </div>
 
-<a href="#languages" class="nav-item languages">
-
-<span class="main-lang">Languages</span>
-<span class="jp-lang">言語</span>
-
-</a>
-
-</div>
-</div>
-
-<div class="nav-section center">
-
-<a href="#hero" class="logo-link">
-<img src="logo-small.png" alt="logo" class="logo-nav">
-</a>
-
-</div>
-
-<div class="nav-section right">
-<div class="group group-right">
-
-<a href="#education" class="nav-item education">Education</a>
-
-<a href="#plans" class="nav-item plans" id="plans-link">Plans</a>
-
-</div>
-</div>
-
+    <div class="burger-menu" id="burger-menu">
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
 </nav>
 
-
-<!-- HERO -->
+<div class="mobile-overlay" id="mobile-overlay">
+    <div class="mobile-links-wrapper">
+        <a href="#hero" class="mobile-menu-logo-link">
+            <img src="logo-small.png" alt="logo" class="mobile-menu-logo">
+        </a>
+        <a href="#contact" class="mobile-nav-item">Contact Me</a>
+        <a href="#languages" class="mobile-nav-item">Languages</a>
+        <a href="#education" class="mobile-nav-item">Education</a>
+        <a href="#plans" class="mobile-nav-item mobile-plans">Plans</a>
+    </div>
+</div>
 
 <section id="hero" class="hero">
-
-<img src="logo-large.png" class="hero-logo">
-
-<h1 class="portfolio-title">Portfolio</h1>
-
+    <img src="logo-large.png" class="hero-logo">
+    <h1 class="portfolio-title" id="portfolio-title">Portfolio</h1>
 </section>
-
-
-<!-- CONTACT -->
 
 <section id="contact" class="contactme-section">
-
-<img src="SOON.png" class="SOON">
-
+    <img src="SOON.png" class="SOON">
 </section>
 
-
-<!-- LANGUAGES -->
-
-<section id="languages" class="languages-section">
-
-</section>
-
-
-<!-- EDUCATION -->
-
-<section id="education" class="education-section">
-
-</section>
-
-
-<!-- PLANS -->
-
-<section id="plans" class="plans-section">
-
-</section>
-
+<section id="languages" class="languages-section"></section>
+<section id="education" class="education-section"></section>
+<section id="plans" class="plans-section"></section>
 
 <script src="script.js"></script>
-
 </body>
 </html>
