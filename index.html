@@ -47,6 +47,30 @@
         <span></span>
         <span></span>
     </div>
+
+</nav>
+
+<nav class="sidenav" aria-label="Section navigation">
+    <a class="sidenav-item active" href="#hero" data-sidenav="hero" aria-label="Go to Portfolio">
+        <span class="sidenav-mark" aria-hidden="true"></span>
+        <span class="sidenav-label">Portfolio</span>
+    </a>
+    <a class="sidenav-item" href="#contact" data-sidenav="contact" aria-label="Go to Contact">
+        <span class="sidenav-mark" aria-hidden="true"></span>
+        <span class="sidenav-label">Contact</span>
+    </a>
+    <a class="sidenav-item" href="#languages" data-sidenav="languages" aria-label="Go to Languages">
+        <span class="sidenav-mark" aria-hidden="true"></span>
+        <span class="sidenav-label">Languages</span>
+    </a>
+    <a class="sidenav-item" href="#education" data-sidenav="education" aria-label="Go to Education">
+        <span class="sidenav-mark" aria-hidden="true"></span>
+        <span class="sidenav-label">Education</span>
+    </a>
+    <a class="sidenav-item" href="#plans" data-sidenav="plans" aria-label="Go to Plans">
+        <span class="sidenav-mark" aria-hidden="true"></span>
+        <span class="sidenav-label">Plans</span>
+    </a>
 </nav>
 
 <div class="mobile-overlay" id="mobile-overlay">
@@ -63,16 +87,389 @@
 
 <section id="hero" class="hero">
     <img src="logo-large.png" class="hero-logo">
-    <h1 class="portfolio-title" id="portfolio-title">Portfolio</h1>
+    <h1 class="portfolio-title portfolio-toggle" id="portfolio-title" role="button" tabindex="0" aria-controls="about-panel" aria-expanded="false">
+        <span class="portfolio-bracket" aria-hidden="true">&gt;</span>
+        <span class="portfolio-text" id="portfolio-text">Portfolio</span>
+        <span class="portfolio-bracket" aria-hidden="true">&lt;</span>
+    </h1>
+
+    <div class="about-panel" id="about-panel" aria-hidden="true" tabindex="-1">
+        <div class="about-title">About Me</div>
+        <div class="about-body">
+            My name is Myron Bedarev, a 16-year-old student currently based at Newtown School in Waterford, Ireland. Of Russian and Ukrainian descent, I have grown up navigating four languages—Russian, Ukrainian, English, and German—which has given me a unique global perspective and a natural ability to adapt to diverse environments. My academic focus is currently driven by a clear ambition: to study Management Science and Information Systems Studies (MSISS) at Trinity College Dublin. I am fascinated by the intersection of data, technology, and strategic decision-making, and I aim to leverage my multicultural background and analytical mindset to solve complex challenges in the world of modern business and systems.
+        </div>
+        <div class="about-foot" aria-hidden="true">Scroll to the end to return</div>
+    </div>
 </section>
 
 <section id="contact" class="contactme-section">
-    <img src="SOON.png" class="SOON">
+    <div class="contact-bg" aria-hidden="true">
+        <div class="contact-marquee">
+            CONTACT — CONTACT — CONTACT — CONTACT — CONTACT — CONTACT — CONTACT — CONTACT —
+        </div>
+        <div class="contact-gridlines"></div>
+    </div>
+
+    <div class="contact-shell" aria-label="Contact section">
+        <div class="contact-top">
+            <h2 class="contact-title">Contact</h2>
+            <div class="contact-top-meta">
+                <div class="contact-chip">No forms</div>
+                <div class="contact-chip">Direct links</div>
+                <div class="contact-chip">Copy available</div>
+            </div>
+        </div>
+
+        <div class="contact-panels" role="group" aria-label="Contact details">
+            <div class="contact-panel" data-panel="left">
+                <div class="contact-panel-head">
+                    <div class="contact-panel-kicker">Channel</div>
+                    <div class="contact-panel-title">Email</div>
+                </div>
+
+                <div class="contact-item">
+                    <div class="contact-item-label">Primary</div>
+                    <div class="contact-item-main">
+                        <a class="contact-link" href="mailto:me@bedarev.com">me@bedarev.com</a>
+                        <button class="contact-copy" type="button" data-copy="me@bedarev.com" aria-label="Copy email me@bedarev.com">Copy</button>
+                    </div>
+                </div>
+
+                <div class="contact-item">
+                    <div class="contact-item-label">Secondary</div>
+                    <div class="contact-item-main">
+                        <a class="contact-link" href="mailto:myron@bedarev.com">myron@bedarev.com</a>
+                        <button class="contact-copy" type="button" data-copy="myron@bedarev.com" aria-label="Copy email myron@bedarev.com">Copy</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="contact-panel-divider" aria-hidden="true"></div>
+
+            <div class="contact-panel" data-panel="right">
+                <div class="contact-panel-head">
+                    <div class="contact-panel-kicker">Channel</div>
+                    <div class="contact-panel-title">Phone</div>
+                </div>
+
+                <div class="contact-item">
+                    <div class="contact-item-label">Call</div>
+                    <div class="contact-item-main">
+                        <a class="contact-link" href="tel:+353873720687">+353 87 372 0687</a>
+                        <button class="contact-copy" type="button" data-copy="+353 87 372 0687" aria-label="Copy phone number +353 87 372 0687">Copy</button>
+                    </div>
+                </div>
+
+                <div class="contact-item">
+                    <div class="contact-item-label">SMS</div>
+                    <div class="contact-item-main">
+                        <a class="contact-link" href="sms:+353873720687">+353 87 372 0687</a>
+                        <button class="contact-copy" type="button" data-copy="+353 87 372 0687" aria-label="Copy phone number +353 87 372 0687">Copy</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="contact-bottom">
+            <div class="contact-bottom-left">Click links to open. Use Copy to grab text.</div>
+            <div class="contact-bottom-right">MAILTO / TEL / SMS</div>
+        </div>
+
+        <div class="contact-toast" role="status" aria-live="polite" aria-atomic="true"></div>
+    </div>
 </section>
 
-<section id="languages" class="languages-section"></section>
-<section id="education" class="education-section"></section>
-<section id="plans" class="plans-section"></section>
+<section id="languages" class="languages-section">
+    <div class="lang-bg" aria-hidden="true">
+        <div class="lang-grid"></div>
+        <div class="lang-axis"></div>
+    </div>
+
+    <div class="lang-shell" aria-label="Languages section">
+        <div class="lang-top">
+            <h2 class="lang-title">Languages</h2>
+            <div class="lang-top-meta">
+                <div class="lang-chip">Click to focus</div>
+                <div class="lang-chip">Hold to reveal “future”</div>
+                <div class="lang-chip">CEFR scale</div>
+            </div>
+        </div>
+
+        <div class="lang-layout" role="group" aria-label="Language selector and details">
+            <nav class="lang-nav" aria-label="Language list">
+                <button class="lang-btn active" type="button" data-lang="ru" aria-pressed="true">
+                    <span class="lang-btn-name">Русский</span>
+                    <span class="lang-btn-meta">Native</span>
+                </button>
+                <button class="lang-btn" type="button" data-lang="en" aria-pressed="false">
+                    <span class="lang-btn-name">English</span>
+                    <span class="lang-btn-meta">B2+</span>
+                </button>
+                <button class="lang-btn" type="button" data-lang="uk" aria-pressed="false">
+                    <span class="lang-btn-name">Українська</span>
+                    <span class="lang-btn-meta">C2</span>
+                </button>
+                <button class="lang-btn" type="button" data-lang="de" aria-pressed="false">
+                    <span class="lang-btn-name">Deutsch</span>
+                    <span class="lang-btn-meta">B1</span>
+                </button>
+
+                <button class="lang-btn secret" type="button" data-lang="jp" aria-pressed="false" aria-label="Japanese (classified, future)">
+                    <span class="lang-btn-name">日本語</span>
+                    <span class="lang-btn-meta">CLASSIFIED</span>
+                </button>
+
+                <div class="lang-nav-footer" aria-hidden="true">
+                    <div class="lang-nav-footer-row">
+                        <span>Scale</span><span>A1 · A2 · B1 · B2 · C1 · C2</span>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="lang-divider" aria-hidden="true"></div>
+
+            <div class="lang-details">
+                <article class="lang-card active" id="lang-ru" data-lang-card="ru" aria-label="Russian details">
+                    <div class="lang-card-head">
+                        <div class="lang-kicker">Language</div>
+                        <div class="lang-stamp" aria-hidden="true">VERIFIED</div>
+                    </div>
+                    <div class="lang-name">Русский</div>
+                    <div class="lang-level">Native</div>
+                    <div class="lang-meter" style="--lvl:6" aria-label="Proficiency meter">
+                        <span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+                    </div>
+                    <div class="lang-notes">
+                        <div class="lang-note-row"><span>Mode</span><span>Full professional</span></div>
+                        <div class="lang-note-row"><span>Use</span><span>Docs · Writing · Negotiation</span></div>
+                    </div>
+                </article>
+
+                <article class="lang-card" id="lang-en" data-lang-card="en" aria-label="English details">
+                    <div class="lang-card-head">
+                        <div class="lang-kicker">Language</div>
+                        <div class="lang-stamp" aria-hidden="true">OPERATIONAL</div>
+                    </div>
+                    <div class="lang-name">English</div>
+                    <div class="lang-level">B2+</div>
+                    <div class="lang-meter" style="--lvl:4.4" aria-label="Proficiency meter">
+                        <span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+                    </div>
+                    <div class="lang-notes">
+                        <div class="lang-note-row"><span>Mode</span><span>Work-ready</span></div>
+                        <div class="lang-note-row"><span>Use</span><span>Tech talks · Documentation</span></div>
+                    </div>
+                </article>
+
+                <article class="lang-card" id="lang-uk" data-lang-card="uk" aria-label="Ukrainian details">
+                    <div class="lang-card-head">
+                        <div class="lang-kicker">Language</div>
+                        <div class="lang-stamp" aria-hidden="true">VERIFIED</div>
+                    </div>
+                    <div class="lang-name">Українська</div>
+                    <div class="lang-level">C2</div>
+                    <div class="lang-meter" style="--lvl:6" aria-label="Proficiency meter">
+                        <span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+                    </div>
+                    <div class="lang-notes">
+                        <div class="lang-note-row"><span>Mode</span><span>Native-level</span></div>
+                        <div class="lang-note-row"><span>Use</span><span>Writing · Formal communication</span></div>
+                    </div>
+                </article>
+
+                <article class="lang-card" id="lang-de" data-lang-card="de" aria-label="German details">
+                    <div class="lang-card-head">
+                        <div class="lang-kicker">Language</div>
+                        <div class="lang-stamp" aria-hidden="true">FOUNDATION</div>
+                    </div>
+                    <div class="lang-name">Deutsch</div>
+                    <div class="lang-level">B1</div>
+                    <div class="lang-meter" style="--lvl:3" aria-label="Proficiency meter">
+                        <span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+                    </div>
+                    <div class="lang-notes">
+                        <div class="lang-note-row"><span>Mode</span><span>Conversational</span></div>
+                        <div class="lang-note-row"><span>Use</span><span>Reading · Everyday topics</span></div>
+                    </div>
+                </article>
+
+                <article class="lang-card secret" id="lang-jp" data-lang-card="jp" aria-label="Japanese details (classified)">
+                    <div class="lang-card-head">
+                        <div class="lang-kicker">Language</div>
+                        <div class="lang-stamp">CLASSIFIED</div>
+                    </div>
+                    <div class="lang-name">日本語</div>
+                    <div class="lang-level blur">Future slot</div>
+                    <div class="lang-meter blur" style="--lvl:1" aria-label="Proficiency meter">
+                        <span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+                    </div>
+                    <div class="lang-notes">
+                        <div class="lang-note-row"><span>Status</span><span class="blur">Planned</span></div>
+                        <div class="lang-note-row"><span>Trigger</span><span class="blur">When time permits</span></div>
+                    </div>
+                    <div class="lang-reveal-hint">HOLD / HOVER TO REVEAL</div>
+                </article>
+            </div>
+        </div>
+
+        <div class="lang-bottom">
+            <div class="lang-bottom-left">Fast scan. Clear levels. No fluff.</div>
+            <div class="lang-bottom-right">RU · EN · UK · DE · JP</div>
+        </div>
+    </div>
+</section>
+<section id="education" class="education-section">
+    <div class="edu-bg" aria-hidden="true">
+        <div class="edu-gridlines"></div>
+        <div class="edu-arches"></div>
+    </div>
+
+    <div class="edu-shell" aria-label="Education section">
+        <div class="edu-header">
+            <h2 class="edu-title">Education</h2>
+            <div class="edu-badges" aria-hidden="true">
+                <span class="edu-badge">Current</span>
+                <span class="edu-badge">Year 5</span>
+                <span class="edu-badge">Waterford</span>
+            </div>
+        </div>
+
+        <section class="edu-stage" aria-label="Education focus selector">
+            <div class="edu-paper" aria-hidden="true"></div>
+
+            <div class="edu-center" aria-label="Current education">
+                <div class="edu-center-kicker">Newtown School · Waterford</div>
+                <div class="edu-center-title">Year 5</div>
+                <div class="edu-center-sub">Academic focus</div>
+
+                <div class="edu-center-seal" aria-hidden="true">
+                    <div class="edu-center-seal-inner">NSW</div>
+                </div>
+
+                <div class="edu-center-desc" id="edu-desc">
+                    Higher Math — proof, rigor, structure.
+                </div>
+            </div>
+
+            <div class="edu-orbit" role="tablist" aria-label="Focus subjects">
+                <button class="edu-orb active" type="button" role="tab" aria-selected="true" data-edu="higher" data-desc="Higher Math — proof, rigor, structure.">
+                    <span class="edu-orb-ring" aria-hidden="true"></span>
+                    <span class="edu-orb-name">Higher Math</span>
+                </button>
+                <button class="edu-orb" type="button" role="tab" aria-selected="false" data-edu="applied" data-desc="Applied Math — models, estimation, reality.">
+                    <span class="edu-orb-ring" aria-hidden="true"></span>
+                    <span class="edu-orb-name">Applied Math</span>
+                </button>
+                <button class="edu-orb" type="button" role="tab" aria-selected="false" data-edu="physics" data-desc="Physics — mechanics, systems, intuition.">
+                    <span class="edu-orb-ring" aria-hidden="true"></span>
+                    <span class="edu-orb-name">Physics</span>
+                </button>
+            </div>
+
+            <div class="edu-footnote" aria-hidden="true">
+                <span>FOCUS</span><span>—</span><span>SELECT</span><span>—</span><span>READ</span>
+            </div>
+        </section>
+
+        <div class="edu-footer">
+            <div class="edu-footer-left">CLASSICAL · STRICT · NO DECORATION</div>
+            <div class="edu-footer-right">2025–2026</div>
+        </div>
+    </div>
+</section>
+<section id="plans" class="plans-section">
+    <div class="plans-bg" aria-hidden="true">
+        <div class="plans-grid"></div>
+        <div class="plans-vignette"></div>
+        <div class="plans-scanline"></div>
+    </div>
+
+    <div class="plans-shell" aria-label="Plans section">
+        <div class="plans-topmark" aria-hidden="true">
+            <span class="plans-scribble">≈≈≈≈</span>
+            <span class="plans-topmark-label">MISSION DIRECTIVE</span>
+        </div>
+
+        <div class="plans-rule" aria-hidden="true"></div>
+
+        <article class="dossier" id="dossier" aria-label="Secret plan dossier">
+            <div class="dossier-corner top-left" aria-hidden="true"></div>
+            <div class="dossier-corner top-right" aria-hidden="true"></div>
+            <div class="dossier-corner bottom-left" aria-hidden="true"></div>
+            <div class="dossier-corner bottom-right" aria-hidden="true"></div>
+
+            <div class="dossier-header">
+                <div class="dossier-meta">
+                    <div class="meta-block">
+                        <div class="meta-kicker">Document classification</div>
+                        <div class="meta-value">LEVEL 5 · EYES ONLY</div>
+                    </div>
+                    <div class="meta-block meta-block-right">
+                        <div class="meta-kicker">Case</div>
+                        <div class="meta-value">BEDAREV / IRL / EDU</div>
+                    </div>
+                </div>
+
+                <div class="stamp" aria-hidden="true">
+                    <div class="stamp-text">TOP SECRET</div>
+                </div>
+            </div>
+
+            <div class="dossier-divider" aria-hidden="true"></div>
+
+            <div class="dossier-body">
+                <div class="section-kicker">Primary objective</div>
+                <h3 class="objective-title">MSISS @ TRINITY</h3>
+                <div class="objective-subtitle">College Dublin</div>
+
+                <div class="dossier-divider thin" aria-hidden="true"></div>
+
+                <div class="section-kicker">Mission progress</div>
+                <div class="progress">
+                    <div class="progress-labels">
+                        <span>START</span>
+                        <span class="progress-mid">NOW</span>
+                        <span>TARGET</span>
+                    </div>
+                    <div class="progress-track" role="progressbar" aria-label="Mission progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="43">
+                        <div class="progress-fill" style="--p:43%"></div>
+                        <div class="progress-tick now" aria-hidden="true"></div>
+                    </div>
+                </div>
+
+                <div class="dossier-divider thin" aria-hidden="true"></div>
+
+                <div class="section-kicker">Additional intel</div>
+                <div class="intel" data-reveal="hover" aria-label="Sensitive information (blurred). Hover or hold to reveal.">
+                    <div class="intel-row">
+                        <div class="intel-label">Timeline</div>
+                        <div class="intel-value blur">2026 intake · preparation & documents</div>
+                    </div>
+                    <div class="intel-row">
+                        <div class="intel-label">Focus</div>
+                        <div class="intel-value blur">Security · Systems · Research mindset</div>
+                    </div>
+                    <div class="intel-row">
+                        <div class="intel-label">Constraint</div>
+                        <div class="intel-value blur">No noise. Only proof-of-work.</div>
+                    </div>
+                    <div class="intel-hint">HOLD / HOVER TO REVEAL</div>
+                </div>
+            </div>
+
+            <div class="dossier-footer">
+                <div class="footer-left">ACCESS LOG: <span class="mono" id="access-count">0001</span></div>
+                <div class="footer-right">DO NOT DISTRIBUTE</div>
+            </div>
+        </article>
+    </div>
+</section>
+
+<div id="aesthetic-cursor" aria-hidden="true">
+    <div class="ac-ring"></div>
+    <div class="ac-cross"></div>
+    <div class="ac-label">VIEW</div>
+</div>
 
 <script src="script.js"></script>
 </body>
