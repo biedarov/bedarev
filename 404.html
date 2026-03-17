@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>404 — Bedarev</title>
+  <meta name="description" content="404 — page not found." />
+  <link rel="icon" type="image/png" href="/logo-small.png" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@900&family=Unbounded:wght@400&family=Playfair+Display+SC:wght@400;700&family=Redacted+Script&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body.nf-body{
+      background:#f7f7f5;
+      overflow:hidden;
+    }
+    .nf{
+      min-height:100vh;
+      display:grid;
+      place-items:center;
+      position:relative;
+      isolation:isolate;
+    }
+    .nf::before{
+      content:"";
+      position:absolute;
+      inset:38px;
+      border:1px solid rgba(0,0,0,0.18);
+      outline:1px solid rgba(0,0,0,0.08);
+      outline-offset:10px;
+      z-index:0;
+      pointer-events:none;
+    }
+    .nf::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      z-index:0;
+      pointer-events:none;
+      opacity:0.55;
+      background:
+        linear-gradient(to right, rgba(0,0,0,0.10), rgba(0,0,0,0.10)) 50% 0/1px 100% no-repeat,
+        linear-gradient(to bottom, rgba(0,0,0,0.08), rgba(0,0,0,0.08)) 0 50%/100% 1px no-repeat,
+        repeating-linear-gradient(45deg, rgba(0,0,0,0.016) 0 1px, transparent 1px 10px),
+        repeating-linear-gradient(-45deg, rgba(0,0,0,0.012) 0 1px, transparent 1px 12px);
+      mask-image:radial-gradient(circle at 50% 50%, black 0%, black 55%, transparent 86%);
+      animation:nfDrift 14s ease-in-out infinite;
+    }
+    @keyframes nfDrift{
+      0%,100%{ opacity:0.50; transform:translateY(0); }
+      50%{ opacity:0.62; transform:translateY(-8px); }
+    }
+
+    .nf-shell{
+      width:min(980px, calc(100vw - 120px));
+      position:relative;
+      z-index:1;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:16px;
+      text-align:center;
+    }
+    .nf-kicker{
+      font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      font-size:11px;
+      letter-spacing:2px;
+      text-transform:uppercase;
+      color:#000;
+    }
+    .nf-title{
+      font-family:'Unbounded',sans-serif;
+      font-weight:400;
+      letter-spacing:6px;
+      text-transform:uppercase;
+      font-size:clamp(56px, 9vw, 120px);
+      line-height:0.9;
+    }
+    .nf-title .shimmer{
+      --base-color: rgba(0,0,0,0.25);
+      --base-gradient-color: rgba(0,0,0,0.95);
+      --spread: clamp(18px, 2.2vw, 34px);
+      background-image:
+        linear-gradient(90deg,
+          transparent calc(50% - var(--spread)),
+          var(--base-gradient-color),
+          transparent calc(50% + var(--spread))
+        ),
+        linear-gradient(var(--base-color), var(--base-color));
+      background-repeat:no-repeat, padding-box;
+      background-size:250% 100%, auto;
+      background-position:100% 50%, 0 0;
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
+      animation:nfShimmer 1.25s linear infinite;
+    }
+    @keyframes nfShimmer{
+      0%{ background-position:100% 50%, 0 0; }
+      100%{ background-position:0% 50%, 0 0; }
+    }
+
+    .nf-rule{
+      width:min(720px, 92vw);
+      height:1px;
+      background:rgba(0,0,0,0.18);
+      position:relative;
+      margin:6px 0 2px;
+    }
+    .nf-rule::before,
+    .nf-rule::after{
+      content:"";
+      position:absolute;
+      top:50%;
+      transform:translateY(-50%);
+      width:10px;
+      height:10px;
+      border-radius:99px;
+      border:1px solid rgba(0,0,0,0.20);
+      background:rgba(0,0,0,0.04);
+    }
+    .nf-rule::before{ left:-6px; }
+    .nf-rule::after{ right:-6px; }
+
+    .nf-copy{
+      font-family:'Playfair Display SC',serif;
+      font-size:16px;
+      letter-spacing:1px;
+      text-transform:uppercase;
+      color:#000;
+      line-height:1.6;
+      max-width:72ch;
+    }
+    .nf-from{
+      margin-top:6px;
+      font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      font-size:11px;
+      letter-spacing:1.4px;
+      text-transform:uppercase;
+      color:rgba(0,0,0,0.55);
+      word-break:break-all;
+      opacity:0.9;
+    }
+
+    .nf-actions{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      justify-content:center;
+      margin-top:10px;
+    }
+    .nf-btn{
+      appearance:none;
+      border:2px solid rgba(0,0,0,0.75);
+      background:rgba(255,255,255,0.55);
+      backdrop-filter: blur(8px);
+      color:rgba(0,0,0,0.86);
+      text-decoration:none;
+      padding:12px 14px;
+      border-radius:0;
+      font-family:'Unbounded',sans-serif;
+      font-size:11px;
+      letter-spacing:2px;
+      text-transform:uppercase;
+      transition:transform .15s ease, background .15s ease, border-color .15s ease;
+    }
+    .nf-btn:hover{
+      transform:translateY(-1px);
+      border-color:rgba(0,0,0,0.45);
+      background:white;
+    }
+    .nf-btn:active{ transform:translateY(0); }
+    .nf-btn:focus-visible{
+      outline:2px solid rgba(0,0,0,0.75);
+      outline-offset:4px;
+    }
+
+    @media (max-width: 768px){
+      body.nf-body{ overflow:auto; }
+      .nf{ padding:90px 0 60px; }
+      .nf::before{ inset:22px; outline-offset:8px; }
+      .nf-shell{ width:calc(100vw - 40px); }
+      .nf-stamp{ display:none; }
+    }
+  </style>
+</head>
+<body class="nf-body">
+  <main class="nf" role="main">
+    <div class="nf-shell">
+      <div class="nf-kicker">Error / Navigation</div>
+      <div class="nf-title"><span class="shimmer">404</span></div>
+      <div class="nf-rule" aria-hidden="true"></div>
+      <div class="nf-copy">
+        This page does not exist. You reached the edge of the frame.
+      </div>
+      <div class="nf-from" id="nf-from" hidden></div>
+
+      <div class="nf-actions">
+        <a class="nf-btn" href="index.html">Home</a>
+        <a class="nf-btn" href="index.html#contact">Contact</a>
+        <a class="nf-btn" href="index.html#plans">Plans</a>
+      </div>
+    </div>
+  </main>
+
+  <div id="aesthetic-cursor" aria-hidden="true">
+    <div class="ac-ring"></div>
+    <div class="ac-cross"></div>
+    <div class="ac-label">VIEW</div>
+  </div>
+
+  <script>
+    (function () {
+      try {
+        const p = new URLSearchParams(location.search);
+        const from = p.get('from');
+        if (!from) return;
+        const el = document.getElementById('nf-from');
+        if (!el) return;
+        el.hidden = false;
+        el.textContent = 'FROM: ' + from;
+      } catch (_) {}
+    })();
+
+    // Minimal aesthetic cursor (same look as main page)
+    (function () {
+      const c = document.getElementById('aesthetic-cursor');
+      if (!c) return;
+      const label = c.querySelector('.ac-label');
+      const canUse = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+      if (!canUse) return;
+
+      let raf = null;
+      let tx = 0, ty = 0, lx = 0, ly = 0;
+      const tick = () => {
+        lx += (tx - lx) * 0.22;
+        ly += (ty - ly) * 0.22;
+        c.style.transform = `translate3d(${lx}px, ${ly}px, 0)`;
+        raf = requestAnimationFrame(tick);
+      };
+      const setLabel = (t) => { if (label) label.textContent = t; };
+
+      document.addEventListener('mousemove', (e) => {
+        tx = e.clientX; ty = e.clientY;
+        if (!c.classList.contains('active')) {
+          c.classList.add('active');
+          if (!raf) raf = requestAnimationFrame(tick);
+        }
+        const el = document.elementFromPoint(e.clientX, e.clientY);
+        const interactive = el && el.closest && el.closest('a, button, [role="button"]');
+        c.classList.toggle('is-hover', !!interactive);
+        setLabel(interactive ? 'OPEN' : 'VIEW');
+        // keep it dark-on-light for this page
+        c.classList.remove('inverted');
+      }, { passive: true });
+
+      document.addEventListener('mousedown', () => c.classList.add('is-down'));
+      document.addEventListener('mouseup', () => c.classList.remove('is-down'));
+      document.addEventListener('mouseleave', () => {
+        c.classList.remove('active', 'is-hover', 'is-down');
+        if (raf) cancelAnimationFrame(raf);
+        raf = null;
+      });
+    })();
+  </script>
+</body>
+</html>

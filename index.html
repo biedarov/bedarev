@@ -30,6 +30,8 @@
             <div class="lang-dropdown">
                 <div class="dropdown-item" data-lang="en">English</div>
                 <div class="dropdown-item" data-lang="ru">Русский</div>
+                <div class="dropdown-item" data-lang="uk">Українська</div>
+                <div class="dropdown-item" data-lang="de">Deutsch</div>
                 <div class="dropdown-item" data-lang="jp">日本語</div>
             </div>
         </div>
@@ -83,22 +85,30 @@
         <a href="#education" class="mobile-nav-item" id="m-nav-education">Education</a>
         <a href="#plans" class="mobile-nav-item mobile-plans" id="m-nav-plans">Plans</a>
     </div>
+
+    <div class="mobile-lang-bar" aria-label="Language switcher">
+        <button class="mobile-lang-pill active" type="button" data-lang="en">EN</button>
+        <button class="mobile-lang-pill" type="button" data-lang="ru">RU</button>
+        <button class="mobile-lang-pill" type="button" data-lang="uk">UK</button>
+        <button class="mobile-lang-pill" type="button" data-lang="de">DE</button>
+        <button class="mobile-lang-pill" type="button" data-lang="jp">JP</button>
+    </div>
 </div>
 
 <section id="hero" class="hero">
     <img src="logo-large.png" class="hero-logo">
     <h1 class="portfolio-title portfolio-toggle" id="portfolio-title" role="button" tabindex="0" aria-controls="about-panel" aria-expanded="false">
         <span class="portfolio-bracket" aria-hidden="true">&gt;</span>
-        <span class="portfolio-text" id="portfolio-text">Portfolio</span>
+        <span class="portfolio-text" id="portfolio-text" data-i18n="hero.portfolio">Portfolio</span>
         <span class="portfolio-bracket" aria-hidden="true">&lt;</span>
     </h1>
 
     <div class="about-panel" id="about-panel" aria-hidden="true" tabindex="-1">
-        <div class="about-title">About Me</div>
-        <div class="about-body">
+        <div class="about-title" data-i18n="about.title">About Me</div>
+        <div class="about-body" data-i18n="about.body">
             My name is Myron Bedarev, a 16-year-old student currently based at Newtown School in Waterford, Ireland. Of Russian and Ukrainian descent, I have grown up navigating four languages—Russian, Ukrainian, English, and German—which has given me a unique global perspective and a natural ability to adapt to diverse environments. My academic focus is currently driven by a clear ambition: to study Management Science and Information Systems Studies (MSISS) at Trinity College Dublin. I am fascinated by the intersection of data, technology, and strategic decision-making, and I aim to leverage my multicultural background and analytical mindset to solve complex challenges in the world of modern business and systems.
         </div>
-        <div class="about-foot" aria-hidden="true">Scroll to the end to return</div>
+        <div class="about-foot" aria-hidden="true" data-i18n="about.foot">Scroll to the end to return</div>
     </div>
 </section>
 
@@ -112,11 +122,11 @@
 
     <div class="contact-shell" aria-label="Contact section">
         <div class="contact-top">
-            <h2 class="contact-title">Contact</h2>
+            <h2 class="contact-title" data-i18n="contact.title">Contact</h2>
             <div class="contact-top-meta">
-                <div class="contact-chip">No forms</div>
-                <div class="contact-chip">Direct links</div>
-                <div class="contact-chip">Copy available</div>
+                <div class="contact-chip" data-i18n="contact.noForms">No forms</div>
+                <div class="contact-chip" data-i18n="contact.directLinks">Direct links</div>
+                <div class="contact-chip" data-i18n="contact.copy">Copy available</div>
             </div>
         </div>
 
@@ -171,7 +181,7 @@
         </div>
 
         <div class="contact-bottom">
-            <div class="contact-bottom-left">Click links to open. Use Copy to grab text.</div>
+            <div class="contact-bottom-left" data-i18n="contact.bottom">Click links to open. Use Copy to grab text.</div>
             <div class="contact-bottom-right">MAILTO / TEL / SMS</div>
         </div>
 
@@ -187,7 +197,7 @@
 
     <div class="lang-shell" aria-label="Languages section">
         <div class="lang-top">
-            <h2 class="lang-title">Languages</h2>
+            <h2 class="lang-title" data-i18n="languages.title">Languages</h2>
             <div class="lang-top-meta">
                 <div class="lang-chip">Click to focus</div>
                 <div class="lang-chip">Hold to reveal “future”</div>
@@ -325,55 +335,62 @@
     </div>
 
     <div class="edu-shell" aria-label="Education section">
-        <div class="edu-header">
-            <h2 class="edu-title">Education</h2>
-            <div class="edu-badges" aria-hidden="true">
-                <span class="edu-badge">Current</span>
-                <span class="edu-badge">Year 5</span>
-                <span class="edu-badge">Waterford</span>
+        <div class="edu-top">
+            <h2 class="edu-title" data-i18n="education.title">Education</h2>
+            <div class="edu-top-meta">
+                <div class="edu-chip">Current</div>
+                <div class="edu-chip" data-i18n="education.year">Year 5</div>
+                <div class="edu-chip">Waterford</div>
             </div>
         </div>
 
-        <section class="edu-stage" aria-label="Education focus selector">
-            <div class="edu-paper" aria-hidden="true"></div>
-
-            <div class="edu-center" aria-label="Current education">
-                <div class="edu-center-kicker">Newtown School · Waterford</div>
-                <div class="edu-center-title">Year 5</div>
-                <div class="edu-center-sub">Academic focus</div>
-
-                <div class="edu-center-seal" aria-hidden="true">
-                    <div class="edu-center-seal-inner">NSW</div>
+        <div class="edu-panels" role="group" aria-label="Education details">
+            <div class="edu-panel" data-panel="left">
+                <div class="edu-panel-head">
+                    <div class="edu-panel-kicker">Institution</div>
+                    <div class="edu-panel-title" data-i18n="education.kicker">Newtown School · Waterford</div>
                 </div>
 
-                <div class="edu-center-desc" id="edu-desc">
-                    Higher Math — proof, rigor, structure.
+                <div class="edu-panel-body">
+                    <div class="edu-seal-block" aria-hidden="true">
+                        <div class="edu-seal-circle">
+                            <div class="edu-seal-text">NSW</div>
+                        </div>
+                        <div class="edu-seal-caption">EYES ONLY</div>
+                    </div>
+
+                    <div class="edu-desc" id="edu-desc" data-i18n="education.desc">Higher Math — proof, rigor, structure.</div>
                 </div>
             </div>
 
-            <div class="edu-orbit" role="tablist" aria-label="Focus subjects">
-                <button class="edu-orb active" type="button" role="tab" aria-selected="true" data-edu="higher" data-desc="Higher Math — proof, rigor, structure.">
-                    <span class="edu-orb-ring" aria-hidden="true"></span>
-                    <span class="edu-orb-name">Higher Math</span>
-                </button>
-                <button class="edu-orb" type="button" role="tab" aria-selected="false" data-edu="applied" data-desc="Applied Math — models, estimation, reality.">
-                    <span class="edu-orb-ring" aria-hidden="true"></span>
-                    <span class="edu-orb-name">Applied Math</span>
-                </button>
-                <button class="edu-orb" type="button" role="tab" aria-selected="false" data-edu="physics" data-desc="Physics — mechanics, systems, intuition.">
-                    <span class="edu-orb-ring" aria-hidden="true"></span>
-                    <span class="edu-orb-name">Physics</span>
-                </button>
-            </div>
+            <div class="edu-panel-divider" aria-hidden="true"></div>
 
-            <div class="edu-footnote" aria-hidden="true">
-                <span>FOCUS</span><span>—</span><span>SELECT</span><span>—</span><span>READ</span>
-            </div>
-        </section>
+            <div class="edu-panel" data-panel="right">
+                <div class="edu-panel-head">
+                    <div class="edu-panel-kicker" data-i18n="education.sub">Academic focus</div>
+                    <div class="edu-panel-title">Higher / Applied / Physics</div>
+                </div>
 
-        <div class="edu-footer">
-            <div class="edu-footer-left">CLASSICAL · STRICT · NO DECORATION</div>
-            <div class="edu-footer-right">2025–2026</div>
+                <div class="edu-focus-list" role="tablist" aria-label="Focus subjects">
+                    <button class="edu-focus-btn active" type="button" role="tab" aria-selected="true" data-edu="higher" data-desc="Higher Math — proof, rigor, structure.">
+                        <span class="edu-focus-dot" aria-hidden="true"></span>
+                        <span class="edu-focus-name">Higher Math</span>
+                    </button>
+                    <button class="edu-focus-btn" type="button" role="tab" aria-selected="false" data-edu="applied" data-desc="Applied Math — models, estimation, reality.">
+                        <span class="edu-focus-dot" aria-hidden="true"></span>
+                        <span class="edu-focus-name">Applied Math</span>
+                    </button>
+                    <button class="edu-focus-btn" type="button" role="tab" aria-selected="false" data-edu="physics" data-desc="Physics — mechanics, systems, intuition.">
+                        <span class="edu-focus-dot" aria-hidden="true"></span>
+                        <span class="edu-focus-name">Physics</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="edu-bottom">
+            <div class="edu-bottom-left">STRICT · CLASSICAL</div>
+            <div class="edu-bottom-right">2025–2026</div>
         </div>
     </div>
 </section>

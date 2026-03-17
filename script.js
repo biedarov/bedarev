@@ -1,23 +1,145 @@
-// 1. Смена языка в заголовке
+// 1. Глобальный перевод (кроме navbar)
 const portfolioTitle = document.getElementById('portfolio-title');
 const portfolioText = document.getElementById('portfolio-text');
 const langItems = document.querySelectorAll('.dropdown-item');
+const mobileLangPills = document.querySelectorAll('.mobile-lang-pill');
 
-const titles = {
-    en: "Portfolio",
-    ru: "Портфолио",
-    jp: "ポートフォリオ"
+const appTranslations = {
+    en: {
+        'hero.portfolio': 'Portfolio',
+        'about.title': 'About Me',
+        'about.body': 'My name is Myron Bedarev, a 16-year-old student currently based at Newtown School in Waterford, Ireland. Of Russian and Ukrainian descent, I have grown up navigating four languages—Russian, Ukrainian, English, and German—which has given me a unique global perspective and a natural ability to adapt to diverse environments. My academic focus is currently driven by a clear ambition: to study Management Science and Information Systems Studies (MSISS) at Trinity College Dublin. I am fascinated by the intersection of data, technology, and strategic decision-making, and I aim to leverage my multicultural background and analytical mindset to solve complex challenges in the world of modern business and systems.',
+        'about.foot': 'Scroll to the end to return',
+        'contact.title': 'Contact',
+        'contact.noForms': 'No forms',
+        'contact.directLinks': 'Direct links',
+        'contact.copy': 'Copy available',
+        'contact.bottom': 'Click links to open. Use Copy to grab text.',
+        'languages.title': 'Languages',
+        'education.title': 'Education',
+        'education.kicker': 'Newtown School · Waterford',
+        'education.year': 'Year 5',
+        'education.sub': 'Academic focus',
+        'education.desc': 'Higher Math — proof, rigor, structure.'
+    },
+    ru: {
+        'hero.portfolio': 'Портфолио',
+        'about.title': 'Обо мне',
+        'about.body': 'Меня зовут Майрон Бедарев, мне 16 лет, сейчас я учусь в Newtown School в Уотерфорде, Ирландия. По происхождению я наполовину русский, наполовину украинец и вырос на четырёх языках — русском, украинском, английском и немецком. Это дало мне необычную перспективу и привычку быстро адаптироваться к разным средам. Сейчас мой академический фокус связан с одной чёткой целью: поступить на Management Science and Information Systems Studies (MSISS) в Trinity College Dublin. Меня интересует пересечение данных, технологий и управленческих решений; я хочу использовать свой мультикультурный бэкграунд и аналитическое мышление, чтобы решать сложные задачи в современном мире бизнеса и систем.',
+        'about.foot': 'Прокрути до конца, чтобы вернуть Portfolio',
+        'contact.title': 'Контакты',
+        'contact.noForms': 'Без форм',
+        'contact.directLinks': 'Прямые ссылки',
+        'contact.copy': 'Копирование доступно',
+        'contact.bottom': 'Жми по ссылкам или используй Copy, чтобы скопировать.',
+        'languages.title': 'Языки',
+        'education.title': 'Образование',
+        'education.kicker': 'Newtown School · Уотерфорд',
+        'education.year': '5 класс (Year 5)',
+        'education.sub': 'Академический фокус',
+        'education.desc': 'Higher Math — доказательства, строгость, структура.'
+    },
+    uk: {
+        'hero.portfolio': 'Портфоліо',
+        'about.title': 'Про мене',
+        'about.body': 'Мене звати Майрон Бедарєв, мені 16 років, зараз я навчаюся в Newtown School у Вотерфорді, Ірландія. Походжу з російсько‑української родини і з дитинства живу в чотирьох мовах — українській, російській, англійській та німецькій. Це дало мені глобальний погляд і вміння швидко адаптуватися до різних середовищ. Мій навчальний фокус зараз пов’язаний з чіткою метою: вступити на Management Science and Information Systems Studies (MSISS) в Trinity College Dublin. Мене цікавить перетин даних, технологій та управлінських рішень, і я хочу використати свій мультикультурний досвід та аналітичне мислення, щоб розв’язувати складні задачі сучасних систем.',
+        'about.foot': 'Прокрути до кінця, щоб повернутися до Portfolio',
+        'contact.title': 'Контакти',
+        'contact.noForms': 'Без форм',
+        'contact.directLinks': 'Прямі посилання',
+        'contact.copy': 'Копіювання доступне',
+        'contact.bottom': 'Натискай на посилання або використовуй Copy, щоб скопіювати.',
+        'languages.title': 'Мови',
+        'education.title': 'Освіта',
+        'education.kicker': 'Newtown School · Waterford',
+        'education.year': 'Year 5',
+        'education.sub': 'Академічний фокус',
+        'education.desc': 'Higher Math — доведення, строгість, структура.'
+    },
+    de: {
+        'hero.portfolio': 'Portfolio',
+        'about.title': 'Über mich',
+        'about.body': 'Ich heiße Myron Bedarev, bin 16 Jahre alt und besuche derzeit die Newtown School in Waterford, Irland. Mit russisch‑ukrainischen Wurzeln bin ich mit vier Sprachen aufgewachsen – Russisch, Ukrainisch, Englisch und Deutsch. Das gibt mir eine globale Perspektive und die Fähigkeit, mich schnell an unterschiedliche Umgebungen anzupassen. Mein aktueller akademischer Fokus ist klar: Management Science and Information Systems Studies (MSISS) am Trinity College Dublin zu studieren. Mich fasziniert die Schnittstelle von Daten, Technologie und strategischen Entscheidungen, und ich möchte meinen multikulturellen Hintergrund und meine analytische Denkweise nutzen, um komplexe Probleme in modernen Systemen zu lösen.',
+        'about.foot': 'Scrolle bis zum Ende, um zu Portfolio zurückzukehren',
+        'contact.title': 'Kontakt',
+        'contact.noForms': 'Keine Formulare',
+        'contact.directLinks': 'Direkte Links',
+        'contact.copy': 'Kopieren möglich',
+        'contact.bottom': 'Links anklicken oder Copy verwenden, um zu kopieren.',
+        'languages.title': 'Sprachen',
+        'education.title': 'Ausbildung',
+        'education.kicker': 'Newtown School · Waterford',
+        'education.year': 'Year 5',
+        'education.sub': 'Akademischer Fokus',
+        'education.desc': 'Higher Math — Beweise, Strenge, Struktur.'
+    },
+    jp: {
+        'hero.portfolio': 'ポートフォリオ',
+        'about.title': '自己紹介',
+        'about.body': '私の名前は Myron Bedarev、16 歳で、現在アイルランド・ウォーターフォードの Newtown School に在学しています。ロシアとウクライナのルーツを持ち、幼い頃からロシア語、ウクライナ語、英語、ドイツ語の四言語の中で育ってきました。その経験のおかげで、多様な環境に適応しながら物事を多方面から見る視点を身につけました。現在の明確な目標は、Trinity College Dublin の Management Science and Information Systems Studies (MSISS) に進学することです。データとテクノロジー、そして意思決定の交差点に強い興味があり、このバックグラウンドと分析的思考を生かして、現代のビジネスとシステムにおける複雑な課題に取り組みたいと考えています。',
+        'about.foot': '最後までスクロールすると Portfolio に戻れます',
+        'contact.title': '連絡先',
+        'contact.noForms': 'フォームなし',
+        'contact.directLinks': 'ダイレクトリンク',
+        'contact.copy': 'コピーが可能',
+        'contact.bottom': 'リンクをクリック、または Copy でテキストをコピーしてください。',
+        'languages.title': '言語',
+        'education.title': '学歴',
+        'education.kicker': 'Newtown School · Waterford',
+        'education.year': 'Year 5',
+        'education.sub': '学習フォーカス',
+        'education.desc': 'Higher Math — 証明・厳密さ・構造。'
+    }
 };
+
+function applyLanguage(lang) {
+    const dict = appTranslations[lang] || appTranslations.en;
+    document.documentElement.dataset.lang = lang;
+    localStorage.setItem('app-lang', lang);
+
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        const value = dict[key] || appTranslations.en[key];
+        if (!value) return;
+        if (el === portfolioText && portfolioTitle) {
+            portfolioTitle.classList.add('text-changing');
+            setTimeout(() => {
+                el.textContent = value;
+                portfolioTitle.classList.remove('text-changing');
+            }, 300);
+        } else {
+            el.textContent = value;
+        }
+    });
+
+    // sync desktop dropdown
+    langItems.forEach(item => {
+        const active = item.getAttribute('data-lang') === lang;
+        item.classList.toggle('active', active);
+    });
+    // sync mobile pills
+    mobileLangPills.forEach(btn => {
+        const active = btn.getAttribute('data-lang') === lang;
+        btn.classList.toggle('active', active);
+    });
+}
+
+const storedLang = localStorage.getItem('app-lang') || 'en';
+applyLanguage(storedLang);
 
 langItems.forEach(item => {
     item.addEventListener('click', () => {
         const lang = item.getAttribute('data-lang');
-        if (!portfolioText) return;
-        portfolioTitle.classList.add('text-changing');
-        setTimeout(() => {
-            portfolioText.textContent = titles[lang];
-            portfolioTitle.classList.remove('text-changing');
-        }, 300);
+        if (!lang) return;
+        applyLanguage(lang);
+    });
+});
+
+mobileLangPills.forEach(btn => {
+    btn.addEventListener('click', () => {
+        const lang = btn.getAttribute('data-lang');
+        if (!lang) return;
+        applyLanguage(lang);
     });
 });
 
@@ -65,7 +187,6 @@ const logo = document.querySelector('.logo-nav');
 function setMobileMenu(open) {
     burger.classList.toggle('active', open);
     overlay.classList.toggle('active', open);
-    document.body.style.overflow = open ? 'hidden' : 'auto';
 }
 
 burger.addEventListener('click', () => {
@@ -84,6 +205,20 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         window.scrollTo({ top: target.offsetTop, behavior: 'smooth' });
     });
 });
+
+// Redirect to 404 if hash target doesn't exist
+function validateHashTarget() {
+    const hash = window.location.hash;
+    if (!hash) return;
+    const id = hash.replace('#', '');
+    if (!id) return;
+    const target = document.getElementById(id);
+    if (target) return;
+    const from = encodeURIComponent(window.location.href);
+    window.location.replace(`404.html?from=${from}`);
+}
+window.addEventListener('hashchange', validateHashTarget);
+window.addEventListener('DOMContentLoaded', validateHashTarget);
 
 // 4. ИСПРАВЛЕННАЯ ИНВЕРСИЯ НАВБАРА
 const sections = document.querySelectorAll('section');
@@ -151,12 +286,24 @@ function getSectionAtCenter() {
 let sidenavRaf = null;
 function updateSidenavState() {
     sidenavRaf = null;
-    if (!sidenav) return;
     const s = getSectionAtCenter();
     if (!s) return;
     const id = s.id;
-    setSidenavActive(id);
-    setSidenavInverted(['contact', 'education'].includes(id));
+    const isDark = ['contact', 'education'].includes(id);
+
+    if (sidenav) {
+        setSidenavActive(id);
+        setSidenavInverted(isDark);
+    }
+
+    // Keep navbar inversion in sync with actual center section (fixes back-scroll bug)
+    if (isDark) {
+        navbar.classList.add('inverted');
+        logo.src = 'logo-small-black.png';
+    } else {
+        navbar.classList.remove('inverted');
+        logo.src = 'logo-small.png';
+    }
 }
 
 function scheduleSidenavUpdate() {
@@ -244,7 +391,7 @@ document.addEventListener('click', async (e) => {
 
 // 7b. Education: focus selector (Higher / Applied / Physics)
 const eduDesc = document.getElementById('edu-desc');
-const eduOrbs = document.querySelectorAll('.edu-orb[data-edu]');
+const eduOrbs = document.querySelectorAll('.edu-focus-btn[data-edu]');
 
 function setEduFocus(code) {
     eduOrbs.forEach((b) => {
