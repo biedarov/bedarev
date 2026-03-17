@@ -1,3 +1,4 @@
+// 1. Смена языка в заголовке
 const portfolioTitle = document.getElementById('portfolio-title');
 const langItems = document.querySelectorAll('.dropdown-item');
 
@@ -10,6 +11,7 @@ const titles = {
 langItems.forEach(item => {
     item.addEventListener('click', () => {
         const lang = item.getAttribute('data-lang');
+        if (!portfolioTitle) return;
         portfolioTitle.classList.add('text-changing');
         setTimeout(() => {
             portfolioTitle.textContent = titles[lang];
@@ -18,6 +20,7 @@ langItems.forEach(item => {
     });
 });
 
+// 2. Бургер-меню
 const burger = document.getElementById('burger-menu');
 const overlay = document.getElementById('mobile-overlay');
 const navbar = document.querySelector('.navbar');
@@ -29,6 +32,7 @@ burger.addEventListener('click', () => {
     document.body.style.overflow = overlay.classList.contains('active') ? 'hidden' : 'auto';
 });
 
+// 3. Плавный скролл
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
         e.preventDefault();
@@ -41,11 +45,19 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     });
 });
 
+// 4. ИСПРАВЛЕННАЯ ИНВЕРСИЯ НАВБАРА
 const sections = document.querySelectorAll('section');
+const observerOptions = {
+    // threshold 0.6 означает, что секция должна занимать 60% экрана для срабатывания
+    threshold: 0.91
+};
+
 const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
-            const isDark = ['contact', 'education'].includes(entry.target.id);
+            const id = entry.target.id;
+            const isDark = ['contact', 'education'].includes(id);
+            
             if (isDark) {
                 navbar.classList.add('inverted');
                 logo.src = 'logo-small-black.png';
@@ -55,49 +67,34 @@ const observer = new IntersectionObserver((entries) => {
             }
         }
     });
-}, { threshold: 0.5 });
+}, observerOptions);
+
 sections.forEach(s => observer.observe(s));
 
+// 5. Частицы для раздела Plans
 const plansLink = document.querySelector('.plans');
 plansLink.addEventListener('mousemove', (e) => {
-    const p = document.createElement('span');
-    p.innerText = '?';
-    p.className = 'question-particle';
-    if (navbar.classList.contains('inverted')) p.classList.add('inverted');
-    p.style.left = e.pageX + 'px';
-    p.style.top = e.pageY + 'px';
-    const x = (Math.random() - 0.5) * 100;
-    const y = (Math.random() - 0.5) * 100;
-    p.style.setProperty('--x', x + 'px');
-    p.style.setProperty('--y', y + 'px');
-    document.body.appendChild(p);
-    setTimeout(() => p.remove(), 1000);
+    createParticles(e.pageX, e.pageY);
 });
 
-// В функции, где ты создаешь частицы (например, по клику или наведению):
-const count = 8; // Уменьши это число на 20% от твоего текущего (было 10 — стало 8)
-
-for (let i = 0; i < count; i++) {
-    const particle = document.createElement('div');
-    particle.className = 'question-particle';
-    if (navbar.classList.contains('inverted')) particle.classList.add('inverted');
-    particle.textContent = '?';
-
-    // Генерируем случайное направление (сила разлета теперь до 250px вместо 100)
-    const angleRad = Math.random() * Math.PI * 2;
-    const dist = 100 + Math.random() * 150; 
-    const x = Math.cos(angleRad) * dist;
-    const y = Math.sin(angleRad) * dist;
-
-    // Вычисляем угол поворота в градусах, чтобы знак "смотрел" наружу
-    // + 90 градусов, чтобы верхушка "?" указывала направление
-    const rotation = (angleRad * 180 / Math.PI) + 90;
-
-    particle.style.setProperty('--x', `${x}px`);
-    particle.style.setProperty('--y', `${y}px`);
-    particle.style.setProperty('--angle', `${rotation}deg`);
-
-    // Добавляем на страницу и удаляем после анимации
-    document.body.appendChild(particle);
-    setTimeout(() => particle.remove(), 1200);
+function createParticles(xPos, yPos) {
+    const count = 3; // Ограничим количество за одно движение для производительности
+    for (let i = 0; i < count; i++) {
+        const p = document.createElement('span');
+        p.innerText = '?';
+        p.className = 'question-particle';
+        if (navbar.classList.contains('inverted')) p.classList.add('inverted');
+        
+        p.style.left = xPos + 'px';
+        p.style.top = yPos + 'px';
+        
+        const xDir = (Math.random() - 0.5) * 150;
+        const yDir = (Math.random() - 0.5) * 150;
+        
+        p.style.setProperty('--x', xDir + 'px');
+        p.style.setProperty('--y', yDir + 'px');
+        
+        document.body.appendChild(p);
+        setTimeout(() => p.remove(), 1000);
+    }
 }
