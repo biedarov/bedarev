@@ -3,87 +3,225 @@ const portfolioTitle = document.getElementById('portfolio-title');
 const portfolioText = document.getElementById('portfolio-text');
 const langItems = document.querySelectorAll('.dropdown-item');
 const mobileLangPills = document.querySelectorAll('.mobile-lang-pill');
+const navContact = document.getElementById('nav-contact');
+const navLanguages = document.getElementById('nav-languages');
+const navEducation = document.getElementById('nav-education');
+const mobileNavContact = document.getElementById('m-nav-contact');
+const mobileNavLanguages = document.getElementById('m-nav-languages');
+const mobileNavEducation = document.getElementById('m-nav-education');
+const sidenavLabels = {
+    hero: document.querySelector('.sidenav-item[data-sidenav="hero"] .sidenav-label'),
+    contact: document.querySelector('.sidenav-item[data-sidenav="contact"] .sidenav-label'),
+    languages: document.querySelector('.sidenav-item[data-sidenav="languages"] .sidenav-label'),
+    education: document.querySelector('.sidenav-item[data-sidenav="education"] .sidenav-label'),
+    plans: document.querySelector('.sidenav-item[data-sidenav="plans"] .sidenav-label')
+};
 
 const appTranslations = {
     en: {
+        'nav.contact': 'Contact Me',
+        'nav.languages': 'Languages',
+        'nav.education': 'Education',
+        'nav.portfolio': 'Portfolio',
+        'nav.contactShort': 'Contact',
         'hero.portfolio': 'Portfolio',
         'about.title': 'About Me',
-        'about.body': 'My name is Myron Bedarev, a 16-year-old student currently based at Newtown School in Waterford, Ireland. Of Ukrainian descent, I have grown up navigating four languages—Russian, Ukrainian, English, and German—which has given me a unique global perspective and a natural ability to adapt to diverse environments. My academic focus is currently driven by a clear ambition: to study Management Science and Information Systems Studies (MSISS) at Trinity College Dublin. I am fascinated by the intersection of data, technology, and strategic decision-making, and I aim to leverage my multicultural background and analytical mindset to solve complex challenges in the world of modern business and systems.',
+        'about.body': 'My name is Myron Bedarev, a 16-year-old student currently based at Newtown School in Waterford, Ireland. Of Ukrainian descent, I have grown up navigating four languages\u2014Russian, Ukrainian, English, and German\u2014which has given me a unique global perspective and a natural ability to adapt to diverse environments. My academic focus is currently driven by a clear ambition: to study Management Science and Information Systems Studies (MSISS) at Trinity College Dublin. I am fascinated by the intersection of data, technology, and strategic decision-making, and I aim to leverage my multicultural background and analytical mindset to solve complex challenges in the world of modern business and systems.',
         'about.foot': 'Scroll to the end to return',
         'contact.title': 'Contact',
         'contact.noForms': 'No forms',
         'contact.directLinks': 'Direct links',
         'contact.copy': 'Copy available',
         'contact.bottom': 'Click links to open. Use Copy to grab text.',
+        'contact.channel': 'Channel',
+        'contact.email': 'Email',
+        'contact.phone': 'Phone',
+        'contact.primary': 'Primary',
+        'contact.secondary': 'Secondary',
+        'contact.call': 'Call',
+        'contact.sms': 'SMS',
         'languages.title': 'Languages',
+        'lang.chipFocus': 'Click to focus',
+        'lang.chipHold': 'Hold to reveal "future"',
+        'lang.chipScale': 'CEFR scale',
+        'lang.bottom': 'Fast scan. Clear levels. No fluff.',
         'education.title': 'Education',
         'education.kicker': 'Institution',
-        'education.year': 'Year 5 — Active',
-        'education.sub': 'Academic Focus'
+        'education.year': 'Year 5 \u2014 Active',
+        'education.sub': 'Academic Focus',
+        'edu.chipYear': 'Year 5',
+        'edu.chipLevel': 'Higher Level',
+        'edu.chipInteractive': 'Interactive',
+        'edu.school': 'School',
+        'edu.subjects': 'Subjects',
+        'edu.footerLeft': 'Structured layout. Clear hierarchy. Subject-led focus.',
+        'plans.objective': 'Primary objective',
+        'plans.progress': 'Mission progress',
+        'plans.intel': 'Additional intel'
     },
     ru: {
-        'hero.portfolio': 'Портфолио',
-        'about.title': 'Обо мне',
-        'about.body': 'Меня зовут Мирон Бедарев, мне 16 лет, сейчас я учусь в Newtown School в Уотерфорде, Ирландия. По происхождению я украинец и вырос на четырёх языках — русском, украинском, английском и немецком. Это дало мне необычную перспективу и привычку быстро адаптироваться к разным средам. Сейчас мой академический фокус связан с одной чёткой целью: поступить на Management Science and Information Systems Studies (MSISS) в Trinity College Dublin. Меня интересует пересечение данных, технологий и управленческих решений; я хочу использовать свой мультикультурный бэкграунд и аналитическое мышление, чтобы решать сложные задачи в современном мире бизнеса и систем.',
-        'about.foot': 'Прокрути до конца, чтобы вернуть Portfolio',
-        'contact.title': 'Контакты',
-        'contact.noForms': 'Без форм',
-        'contact.directLinks': 'Прямые ссылки',
-        'contact.copy': 'Копирование доступно',
-        'contact.bottom': 'Жми по ссылкам или используй Copy, чтобы скопировать.',
-        'languages.title': 'Языки',
-        'education.title': 'Образование',
-        'education.kicker': 'Учебное заведение',
-        'education.year': 'Year 5 — Активен',
-        'education.sub': 'Академический фокус'
+        'nav.contact': '\u0421\u0432\u044f\u0437\u044c',
+        'nav.languages': '\u042f\u0437\u044b\u043a\u0438',
+        'nav.education': '\u041e\u0431\u0443\u0447\u0435\u043d\u0438\u0435',
+        'nav.portfolio': '\u041f\u043e\u0440\u0442\u0444\u043e\u043b\u0438\u043e',
+        'nav.contactShort': '\u041a\u043e\u043d\u0442\u0430\u043a\u0442\u044b',
+        'hero.portfolio': '\u041f\u043e\u0440\u0442\u0444\u043e\u043b\u0438\u043e',
+        'about.title': '\u041e\u0431\u043e \u043c\u043d\u0435',
+        'about.body': '\u041c\u0435\u043d\u044f \u0437\u043e\u0432\u0443\u0442 \u041c\u0438\u0440\u043e\u043d \u0411\u0435\u0434\u0430\u0440\u0435\u0432, \u043c\u043d\u0435 16 \u043b\u0435\u0442, \u0441\u0435\u0439\u0447\u0430\u0441 \u044f \u0443\u0447\u0443\u0441\u044c \u0432 Newtown School \u0432 \u0423\u043e\u0442\u0435\u0440\u0444\u043e\u0440\u0434\u0435, \u0418\u0440\u043b\u0430\u043d\u0434\u0438\u044f. \u041f\u043e \u043f\u0440\u043e\u0438\u0441\u0445\u043e\u0436\u0434\u0435\u043d\u0438\u044e \u044f \u0443\u043a\u0440\u0430\u0438\u043d\u0435\u0446 \u0438 \u0432\u044b\u0440\u043e\u0441 \u043d\u0430 \u0447\u0435\u0442\u044b\u0440\u0451\u0445 \u044f\u0437\u044b\u043a\u0430\u0445 \u2014 \u0440\u0443\u0441\u0441\u043a\u043e\u043c, \u0443\u043a\u0440\u0430\u0438\u043d\u0441\u043a\u043e\u043c, \u0430\u043d\u0433\u043b\u0438\u0439\u0441\u043a\u043e\u043c \u0438 \u043d\u0435\u043c\u0435\u0446\u043a\u043e\u043c. \u042d\u0442\u043e \u0434\u0430\u043b\u043e \u043c\u043d\u0435 \u043d\u0435\u043e\u0431\u044b\u0447\u043d\u0443\u044e \u043f\u0435\u0440\u0441\u043f\u0435\u043a\u0442\u0438\u0432\u0443 \u0438 \u043f\u0440\u0438\u0432\u044b\u0447\u043a\u0443 \u0431\u044b\u0441\u0442\u0440\u043e \u0430\u0434\u0430\u043f\u0442\u0438\u0440\u043e\u0432\u0430\u0442\u044c\u0441\u044f \u043a \u0440\u0430\u0437\u043d\u044b\u043c \u0441\u0440\u0435\u0434\u0430\u043c. \u0421\u0435\u0439\u0447\u0430\u0441 \u043c\u043e\u0439 \u0430\u043a\u0430\u0434\u0435\u043c\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u0444\u043e\u043a\u0443\u0441 \u0441\u0432\u044f\u0437\u0430\u043d \u0441 \u043e\u0434\u043d\u043e\u0439 \u0447\u0451\u0442\u043a\u043e\u0439 \u0446\u0435\u043b\u044c\u044e: \u043f\u043e\u0441\u0442\u0443\u043f\u0438\u0442\u044c \u043d\u0430 Management Science and Information Systems Studies (MSISS) \u0432 Trinity College Dublin. \u041c\u0435\u043d\u044f \u0438\u043d\u0442\u0435\u0440\u0435\u0441\u0443\u0435\u0442 \u043f\u0435\u0440\u0435\u0441\u0435\u0447\u0435\u043d\u0438\u0435 \u0434\u0430\u043d\u043d\u044b\u0445, \u0442\u0435\u0445\u043d\u043e\u043b\u043e\u0433\u0438\u0439 \u0438 \u0443\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0447\u0435\u0441\u043a\u0438\u0445 \u0440\u0435\u0448\u0435\u043d\u0438\u0439; \u044f \u0445\u043e\u0447\u0443 \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u044c \u0441\u0432\u043e\u0439 \u043c\u0443\u043b\u044c\u0442\u0438\u043a\u0443\u043b\u044c\u0442\u0443\u0440\u043d\u044b\u0439 \u0431\u044d\u043a\u0433\u0440\u0430\u0443\u043d\u0434 \u0438 \u0430\u043d\u0430\u043b\u0438\u0442\u0438\u0447\u0435\u0441\u043a\u043e\u0435 \u043c\u044b\u0448\u043b\u0435\u043d\u0438\u0435, \u0447\u0442\u043e\u0431\u044b \u0440\u0435\u0448\u0430\u0442\u044c \u0441\u043b\u043e\u0436\u043d\u044b\u0435 \u0437\u0430\u0434\u0430\u0447\u0438 \u0432 \u0441\u043e\u0432\u0440\u0435\u043c\u0435\u043d\u043d\u043e\u043c \u043c\u0438\u0440\u0435 \u0431\u0438\u0437\u043d\u0435\u0441\u0430 \u0438 \u0441\u0438\u0441\u0442\u0435\u043c.',
+        'about.foot': '\u041f\u0440\u043e\u043a\u0440\u0443\u0442\u0438 \u0434\u043e \u043a\u043e\u043d\u0446\u0430, \u0447\u0442\u043e\u0431\u044b \u0432\u0435\u0440\u043d\u0443\u0442\u044c Portfolio',
+        'contact.title': '\u041a\u043e\u043d\u0442\u0430\u043a\u0442\u044b',
+        'contact.noForms': '\u0411\u0435\u0437 \u0444\u043e\u0440\u043c',
+        'contact.directLinks': '\u041f\u0440\u044f\u043c\u044b\u0435 \u0441\u0441\u044b\u043b\u043a\u0438',
+        'contact.copy': '\u041a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0435 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e',
+        'contact.bottom': '\u0416\u043c\u0438 \u043f\u043e \u0441\u0441\u044b\u043b\u043a\u0430\u043c \u0438\u043b\u0438 \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0439 Copy, \u0447\u0442\u043e\u0431\u044b \u0441\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u0442\u044c.',
+        'contact.channel': '\u041a\u0430\u043d\u0430\u043b',
+        'contact.email': '\u042d\u043b. \u043f\u043e\u0447\u0442\u0430',
+        'contact.phone': '\u0422\u0435\u043b\u0435\u0444\u043e\u043d',
+        'contact.primary': '\u041e\u0441\u043d\u043e\u0432\u043d\u043e\u0439',
+        'contact.secondary': '\u0414\u043e\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0439',
+        'contact.call': '\u0417\u0432\u043e\u043d\u043e\u043a',
+        'contact.sms': 'SMS',
+        'languages.title': '\u042f\u0437\u044b\u043a\u0438',
+        'lang.chipFocus': '\u041d\u0430\u0436\u043c\u0438 \u0434\u043b\u044f \u0444\u043e\u043a\u0443\u0441\u0430',
+        'lang.chipHold': '\u0423\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0439 \u0434\u043b\u044f "\u0431\u0443\u0434\u0443\u0449\u0435\u0433\u043e"',
+        'lang.chipScale': '\u0428\u043a\u0430\u043b\u0430 CEFR',
+        'lang.bottom': '\u0411\u044b\u0441\u0442\u0440\u044b\u0439 \u043e\u0431\u0437\u043e\u0440. \u0427\u0451\u0442\u043a\u0438\u0435 \u0443\u0440\u043e\u0432\u043d\u0438. \u0411\u0435\u0437 \u0432\u043e\u0434\u044b.',
+        'education.title': '\u041e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435',
+        'education.kicker': '\u0423\u0447\u0435\u0431\u043d\u043e\u0435 \u0437\u0430\u0432\u0435\u0434\u0435\u043d\u0438\u0435',
+        'education.year': 'Year 5 \u2014 \u0410\u043a\u0442\u0438\u0432\u0435\u043d',
+        'education.sub': '\u0410\u043a\u0430\u0434\u0435\u043c\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u0444\u043e\u043a\u0443\u0441',
+        'edu.chipYear': 'Year 5',
+        'edu.chipLevel': '\u0412\u044b\u0441\u0448\u0438\u0439 \u0443\u0440\u043e\u0432\u0435\u043d\u044c',
+        'edu.chipInteractive': '\u0418\u043d\u0442\u0435\u0440\u0430\u043a\u0442\u0438\u0432',
+        'edu.school': '\u0428\u043a\u043e\u043b\u0430',
+        'edu.subjects': '\u041f\u0440\u0435\u0434\u043c\u0435\u0442\u044b',
+        'edu.footerLeft': '\u0421\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0430. \u0418\u0435\u0440\u0430\u0440\u0445\u0438\u044f. \u0424\u043e\u043a\u0443\u0441 \u043d\u0430 \u043f\u0440\u0435\u0434\u043c\u0435\u0442\u0430\u0445.',
+        'plans.objective': '\u0413\u043b\u0430\u0432\u043d\u0430\u044f \u0446\u0435\u043b\u044c',
+        'plans.progress': '\u041f\u0440\u043e\u0433\u0440\u0435\u0441\u0441 \u043c\u0438\u0441\u0441\u0438\u0438',
+        'plans.intel': '\u0414\u043e\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0435 \u0434\u0430\u043d\u043d\u044b\u0435'
     },
     uk: {
-        'hero.portfolio': 'Портфоліо',
-        'about.title': 'Про мене',
-        'about.body': 'Мене звати Майрон Бедарєв, мені 16 років, зараз я навчаюся в Newtown School у Вотерфорді, Ірландія. Походжу з української родини і з дитинства живу в чотирьох мовах — українській, російській, англійській та німецькій. Це дало мені глобальний погляд і вміння швидко адаптуватися до різних середовищ. Мій навчальний фокус зараз пов’язаний з чіткою метою: вступити на Management Science and Information Systems Studies (MSISS) в Trinity College Dublin. Мене цікавить перетин даних, технологій та управлінських рішень, і я хочу використати свій мультикультурний досвід та аналітичне мислення, щоб розв’язувати складні задачі сучасних систем.',
-        'about.foot': 'Прокрути до кінця, щоб повернутися до Portfolio',
-        'contact.title': 'Контакти',
-        'contact.noForms': 'Без форм',
-        'contact.directLinks': 'Прямі посилання',
-        'contact.copy': 'Копіювання доступне',
-        'contact.bottom': 'Натискай на посилання або використовуй Copy, щоб скопіювати.',
-        'languages.title': 'Мови',
-        'education.title': 'Освіта',
-        'education.kicker': 'Навчальний заклад',
-        'education.year': 'Year 5 — Активний',
-        'education.sub': 'Академічний фокус'
+        'nav.contact': "\u0417\u0432'\u044f\u0437\u043e\u043a",
+        'nav.languages': '\u041c\u043e\u0432\u0438',
+        'nav.education': '\u041e\u0441\u0432\u0456\u0442\u0430',
+        'nav.portfolio': '\u041f\u043e\u0440\u0442\u0444\u043e\u043b\u0456\u043e',
+        'nav.contactShort': '\u041a\u043e\u043d\u0442\u0430\u043a\u0442\u0438',
+        'hero.portfolio': '\u041f\u043e\u0440\u0442\u0444\u043e\u043b\u0456\u043e',
+        'about.title': '\u041f\u0440\u043e \u043c\u0435\u043d\u0435',
+        'about.body': "\u041c\u0435\u043d\u0435 \u0437\u0432\u0430\u0442\u0438 \u041c\u0430\u0439\u0440\u043e\u043d \u0411\u0435\u0434\u0430\u0440\u0454\u0432, \u043c\u0435\u043d\u0456 16 \u0440\u043e\u043a\u0456\u0432, \u0437\u0430\u0440\u0430\u0437 \u044f \u043d\u0430\u0432\u0447\u0430\u044e\u0441\u044f \u0432 Newtown School \u0443 \u0412\u043e\u0442\u0435\u0440\u0444\u043e\u0440\u0434\u0456, \u0406\u0440\u043b\u0430\u043d\u0434\u0456\u044f. \u041f\u043e\u0445\u043e\u0434\u0436\u0443 \u0437 \u0443\u043a\u0440\u0430\u0457\u043d\u0441\u044c\u043a\u043e\u0457 \u0440\u043e\u0434\u0438\u043d\u0438 \u0456 \u0437 \u0434\u0438\u0442\u0438\u043d\u0441\u0442\u0432\u0430 \u0436\u0438\u0432\u0443 \u0432 \u0447\u043e\u0442\u0438\u0440\u044c\u043e\u0445 \u043c\u043e\u0432\u0430\u0445 \u2014 \u0443\u043a\u0440\u0430\u0457\u043d\u0441\u044c\u043a\u0456\u0439, \u0440\u043e\u0441\u0456\u0439\u0441\u044c\u043a\u0456\u0439, \u0430\u043d\u0433\u043b\u0456\u0439\u0441\u044c\u043a\u0456\u0439 \u0442\u0430 \u043d\u0456\u043c\u0435\u0446\u044c\u043a\u0456\u0439. \u0426\u0435 \u0434\u0430\u043b\u043e \u043c\u0435\u043d\u0456 \u0433\u043b\u043e\u0431\u0430\u043b\u044c\u043d\u0438\u0439 \u043f\u043e\u0433\u043b\u044f\u0434 \u0456 \u0432\u043c\u0456\u043d\u043d\u044f \u0448\u0432\u0438\u0434\u043a\u043e \u0430\u0434\u0430\u043f\u0442\u0443\u0432\u0430\u0442\u0438\u0441\u044f \u0434\u043e \u0440\u0456\u0437\u043d\u0438\u0445 \u0441\u0435\u0440\u0435\u0434\u043e\u0432\u0438\u0449. \u041c\u0456\u0439 \u043d\u0430\u0432\u0447\u0430\u043b\u044c\u043d\u0438\u0439 \u0444\u043e\u043a\u0443\u0441 \u0437\u0430\u0440\u0430\u0437 \u043f\u043e\u0432'\u044f\u0437\u0430\u043d\u0438\u0439 \u0437 \u0447\u0456\u0442\u043a\u043e\u044e \u043c\u0435\u0442\u043e\u044e: \u0432\u0441\u0442\u0443\u043f\u0438\u0442\u0438 \u043d\u0430 Management Science and Information Systems Studies (MSISS) \u0432 Trinity College Dublin. \u041c\u0435\u043d\u0435 \u0446\u0456\u043a\u0430\u0432\u0438\u0442\u044c \u043f\u0435\u0440\u0435\u0442\u0438\u043d \u0434\u0430\u043d\u0438\u0445, \u0442\u0435\u0445\u043d\u043e\u043b\u043e\u0433\u0456\u0439 \u0442\u0430 \u0443\u043f\u0440\u0430\u0432\u043b\u0456\u043d\u0441\u044c\u043a\u0438\u0445 \u0440\u0456\u0448\u0435\u043d\u044c, \u0456 \u044f \u0445\u043e\u0447\u0443 \u0432\u0438\u043a\u043e\u0440\u0438\u0441\u0442\u0430\u0442\u0438 \u0441\u0432\u0456\u0439 \u043c\u0443\u043b\u044c\u0442\u0438\u043a\u0443\u043b\u044c\u0442\u0443\u0440\u043d\u0438\u0439 \u0434\u043e\u0441\u0432\u0456\u0434 \u0442\u0430 \u0430\u043d\u0430\u043b\u0456\u0442\u0438\u0447\u043d\u0435 \u043c\u0438\u0441\u043b\u0435\u043d\u043d\u044f, \u0449\u043e\u0431 \u0440\u043e\u0437\u0432'\u044f\u0437\u0443\u0432\u0430\u0442\u0438 \u0441\u043a\u043b\u0430\u0434\u043d\u0456 \u0437\u0430\u0434\u0430\u0447\u0456 \u0441\u0443\u0447\u0430\u0441\u043d\u0438\u0445 \u0441\u0438\u0441\u0442\u0435\u043c.",
+        'about.foot': '\u041f\u0440\u043e\u043a\u0440\u0443\u0442\u0438 \u0434\u043e \u043a\u0456\u043d\u0446\u044f, \u0449\u043e\u0431 \u043f\u043e\u0432\u0435\u0440\u043d\u0443\u0442\u0438\u0441\u044f \u0434\u043e Portfolio',
+        'contact.title': '\u041a\u043e\u043d\u0442\u0430\u043a\u0442\u0438',
+        'contact.noForms': '\u0411\u0435\u0437 \u0444\u043e\u0440\u043c',
+        'contact.directLinks': '\u041f\u0440\u044f\u043c\u0456 \u043f\u043e\u0441\u0438\u043b\u0430\u043d\u043d\u044f',
+        'contact.copy': '\u041a\u043e\u043f\u0456\u044e\u0432\u0430\u043d\u043d\u044f \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u0435',
+        'contact.bottom': '\u041d\u0430\u0442\u0438\u0441\u043a\u0430\u0439 \u043d\u0430 \u043f\u043e\u0441\u0438\u043b\u0430\u043d\u043d\u044f \u0430\u0431\u043e \u0432\u0438\u043a\u043e\u0440\u0438\u0441\u0442\u043e\u0432\u0443\u0439 Copy, \u0449\u043e\u0431 \u0441\u043a\u043e\u043f\u0456\u044e\u0432\u0430\u0442\u0438.',
+        'contact.channel': '\u041a\u0430\u043d\u0430\u043b',
+        'contact.email': '\u0415\u043b. \u043f\u043e\u0448\u0442\u0430',
+        'contact.phone': '\u0422\u0435\u043b\u0435\u0444\u043e\u043d',
+        'contact.primary': '\u041e\u0441\u043d\u043e\u0432\u043d\u0438\u0439',
+        'contact.secondary': '\u0414\u043e\u0434\u0430\u0442\u043a\u043e\u0432\u0438\u0439',
+        'contact.call': '\u0414\u0437\u0432\u0456\u043d\u043e\u043a',
+        'contact.sms': 'SMS',
+        'languages.title': '\u041c\u043e\u0432\u0438',
+        'lang.chipFocus': '\u041d\u0430\u0442\u0438\u0441\u043d\u0438 \u0434\u043b\u044f \u0444\u043e\u043a\u0443\u0441\u0443',
+        'lang.chipHold': '\u0423\u0442\u0440\u0438\u043c\u0443\u0439 \u0434\u043b\u044f "\u043c\u0430\u0439\u0431\u0443\u0442\u043d\u044c\u043e\u0433\u043e"',
+        'lang.chipScale': '\u0428\u043a\u0430\u043b\u0430 CEFR',
+        'lang.bottom': '\u0428\u0432\u0438\u0434\u043a\u0438\u0439 \u043e\u0433\u043b\u044f\u0434. \u0427\u0456\u0442\u043a\u0456 \u0440\u0456\u0432\u043d\u0456. \u0411\u0435\u0437 \u0437\u0430\u0439\u0432\u043e\u0433\u043e.',
+        'education.title': '\u041e\u0441\u0432\u0456\u0442\u0430',
+        'education.kicker': '\u041d\u0430\u0432\u0447\u0430\u043b\u044c\u043d\u0438\u0439 \u0437\u0430\u043a\u043b\u0430\u0434',
+        'education.year': 'Year 5 \u2014 \u0410\u043a\u0442\u0438\u0432\u043d\u0438\u0439',
+        'education.sub': '\u0410\u043a\u0430\u0434\u0435\u043c\u0456\u0447\u043d\u0438\u0439 \u0444\u043e\u043a\u0443\u0441',
+        'edu.chipYear': 'Year 5',
+        'edu.chipLevel': '\u0412\u0438\u0449\u0438\u0439 \u0440\u0456\u0432\u0435\u043d\u044c',
+        'edu.chipInteractive': '\u0406\u043d\u0442\u0435\u0440\u0430\u043a\u0442\u0438\u0432',
+        'edu.school': '\u0428\u043a\u043e\u043b\u0430',
+        'edu.subjects': '\u041f\u0440\u0435\u0434\u043c\u0435\u0442\u0438',
+        'edu.footerLeft': '\u0421\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u0430. \u0406\u0454\u0440\u0430\u0440\u0445\u0456\u044f. \u0424\u043e\u043a\u0443\u0441 \u043d\u0430 \u043f\u0440\u0435\u0434\u043c\u0435\u0442\u0430\u0445.',
+        'plans.objective': '\u0413\u043e\u043b\u043e\u0432\u043d\u0430 \u043c\u0435\u0442\u0430',
+        'plans.progress': '\u041f\u0440\u043e\u0433\u0440\u0435\u0441 \u043c\u0456\u0441\u0456\u0457',
+        'plans.intel': '\u0414\u043e\u0434\u0430\u0442\u043a\u043e\u0432\u0456 \u0434\u0430\u043d\u0456'
     },
     de: {
+        'nav.contact': 'Kontakt',
+        'nav.languages': 'Sprachen',
+        'nav.education': 'Bildung',
+        'nav.portfolio': 'Portfolio',
+        'nav.contactShort': 'Kontakt',
         'hero.portfolio': 'Portfolio',
-        'about.title': 'Über mich',
-        'about.body': 'Ich heiße Myron Bedarev, bin 16 Jahre alt und besuche derzeit die Newtown School in Waterford, Irland. Mit ukrainischen Wurzeln bin ich mit vier Sprachen aufgewachsen – Russisch, Ukrainisch, Englisch und Deutsch. Das gibt mir eine globale Perspektive und die Fähigkeit, mich schnell an unterschiedliche Umgebungen anzupassen. Mein aktueller akademischer Fokus ist klar: Management Science and Information Systems Studies (MSISS) am Trinity College Dublin zu studieren. Mich fasziniert die Schnittstelle von Daten, Technologie und strategischen Entscheidungen, und ich möchte meinen multikulturellen Hintergrund und meine analytische Denkweise nutzen, um komplexe Probleme in modernen Systemen zu lösen.',
-        'about.foot': 'Scrolle bis zum Ende, um zu Portfolio zurückzukehren',
+        'about.title': '\u00dcber mich',
+        'about.body': 'Ich hei\u00dfe Myron Bedarev, bin 16 Jahre alt und besuche derzeit die Newtown School in Waterford, Irland. Mit ukrainischen Wurzeln bin ich mit vier Sprachen aufgewachsen \u2013 Russisch, Ukrainisch, Englisch und Deutsch. Das gibt mir eine globale Perspektive und die F\u00e4higkeit, mich schnell an unterschiedliche Umgebungen anzupassen. Mein aktueller akademischer Fokus ist klar: Management Science and Information Systems Studies (MSISS) am Trinity College Dublin zu studieren. Mich fasziniert die Schnittstelle von Daten, Technologie und strategischen Entscheidungen, und ich m\u00f6chte meinen multikulturellen Hintergrund und meine analytische Denkweise nutzen, um komplexe Probleme in modernen Systemen zu l\u00f6sen.',
+        'about.foot': 'Scrolle bis zum Ende, um zu Portfolio zur\u00fcckzukehren',
         'contact.title': 'Kontakt',
         'contact.noForms': 'Keine Formulare',
         'contact.directLinks': 'Direkte Links',
-        'contact.copy': 'Kopieren möglich',
+        'contact.copy': 'Kopieren m\u00f6glich',
         'contact.bottom': 'Links anklicken oder Copy verwenden, um zu kopieren.',
+        'contact.channel': 'Kanal',
+        'contact.email': 'E-Mail',
+        'contact.phone': 'Telefon',
+        'contact.primary': 'Prim\u00e4r',
+        'contact.secondary': 'Sekund\u00e4r',
+        'contact.call': 'Anruf',
+        'contact.sms': 'SMS',
         'languages.title': 'Sprachen',
-        'education.title': 'Ausbildung',
+        'lang.chipFocus': 'Klick zum Fokussieren',
+        'lang.chipHold': 'Halten f\u00fcr "Zukunft"',
+        'lang.chipScale': 'CEFR-Skala',
+        'lang.bottom': 'Schneller Scan. Klare Stufen. Kein Ballast.',
+        'education.title': 'Bildung',
         'education.kicker': 'Einrichtung',
-        'education.year': 'Year 5 — Aktiv',
-        'education.sub': 'Akademischer Fokus'
+        'education.year': 'Year 5 \u2014 Aktiv',
+        'education.sub': 'Akademischer Fokus',
+        'edu.chipYear': 'Year 5',
+        'edu.chipLevel': 'H\u00f6heres Niveau',
+        'edu.chipInteractive': 'Interaktiv',
+        'edu.school': 'Schule',
+        'edu.subjects': 'F\u00e4cher',
+        'edu.footerLeft': 'Struktur. Hierarchie. Fachlicher Fokus.',
+        'plans.objective': 'Hauptziel',
+        'plans.progress': 'Missionsfortschritt',
+        'plans.intel': 'Zus\u00e4tzliche Daten'
     },
     jp: {
-        'hero.portfolio': 'ポートフォリオ',
-        'about.title': '自己紹介',
-        'about.body': '私の名前は Myron Bedarev、16 歳で、現在アイルランド・ウォーターフォードの Newtown School に在学しています。ロシアとウクライナのルーツを持ち、幼い頃からロシア語、ウクライナ語、英語、ドイツ語の四言語の中で育ってきました。その経験のおかげで、多様な環境に適応しながら物事を多方面から見る視点を身につけました。現在の明確な目標は、Trinity College Dublin の Management Science and Information Systems Studies (MSISS) に進学することです。データとテクノロジー、そして意思決定の交差点に強い興味があり、このバックグラウンドと分析的思考を生かして、現代のビジネスとシステムにおける複雑な課題に取り組みたいと考えています。',
-        'about.foot': '最後までスクロールすると Portfolio に戻れます',
-        'contact.title': '連絡先',
-        'contact.noForms': 'フォームなし',
-        'contact.directLinks': 'ダイレクトリンク',
-        'contact.copy': 'コピーが可能',
-        'contact.bottom': 'リンクをクリック、または Copy でテキストをコピーしてください。',
-        'languages.title': '言語',
-        'education.title': '学歴',
-        'education.kicker': '教育機関',
-        'education.year': 'Year 5 — 在学中',
-        'education.sub': '学習フォーカス'
+        'nav.contact': '\u9023\u7d61',
+        'nav.languages': '\u8a00\u8a9e',
+        'nav.education': '\u5b66\u6b74',
+        'nav.portfolio': '\u30dd\u30fc\u30c8\u30d5\u30a9\u30ea\u30aa',
+        'nav.contactShort': '\u9023\u7d61\u5148',
+        'hero.portfolio': '\u30dd\u30fc\u30c8\u30d5\u30a9\u30ea\u30aa',
+        'about.title': '\u81ea\u5df1\u7d39\u4ecb',
+        'about.body': '\u79c1\u306e\u540d\u524d\u306f Myron Bedarev\u300116 \u6b73\u3067\u3001\u73fe\u5728\u30a2\u30a4\u30eb\u30e9\u30f3\u30c9\u30fb\u30a6\u30a9\u30fc\u30bf\u30fc\u30d5\u30a9\u30fc\u30c9\u306e Newtown School \u306b\u5728\u5b66\u3057\u3066\u3044\u307e\u3059\u3002\u30ed\u30b7\u30a2\u3068\u30a6\u30af\u30e9\u30a4\u30ca\u306e\u30eb\u30fc\u30c4\u3092\u6301\u3061\u3001\u5e7c\u3044\u9803\u304b\u3089\u30ed\u30b7\u30a2\u8a9e\u3001\u30a6\u30af\u30e9\u30a4\u30ca\u8a9e\u3001\u82f1\u8a9e\u3001\u30c9\u30a4\u30c4\u8a9e\u306e\u56db\u8a00\u8a9e\u306e\u4e2d\u3067\u80b2\u3063\u3066\u304d\u307e\u3057\u305f\u3002\u305d\u306e\u7d4c\u9a13\u306e\u304a\u304b\u3052\u3067\u3001\u591a\u69d8\u306a\u74b0\u5883\u306b\u9069\u5fdc\u3057\u306a\u304c\u3089\u7269\u4e8b\u3092\u591a\u65b9\u9762\u304b\u3089\u898b\u308b\u8996\u70b9\u3092\u8eab\u306b\u3064\u3051\u307e\u3057\u305f\u3002\u73fe\u5728\u306e\u660e\u78ba\u306a\u76ee\u6a19\u306f\u3001Trinity College Dublin \u306e Management Science and Information Systems Studies (MSISS) \u306b\u9032\u5b66\u3059\u308b\u3053\u3068\u3067\u3059\u3002\u30c7\u30fc\u30bf\u3068\u30c6\u30af\u30ce\u30ed\u30b8\u30fc\u3001\u305d\u3057\u3066\u610f\u601d\u6c7a\u5b9a\u306e\u4ea4\u5dee\u70b9\u306b\u5f37\u3044\u8208\u5473\u304c\u3042\u308a\u3001\u3053\u306e\u30d0\u30c3\u30af\u30b0\u30e9\u30a6\u30f3\u30c9\u3068\u5206\u6790\u7684\u601d\u8003\u3092\u751f\u304b\u3057\u3066\u3001\u73fe\u4ee3\u306e\u30d3\u30b8\u30cd\u30b9\u3068\u30b7\u30b9\u30c6\u30e0\u306b\u304a\u3051\u308b\u8907\u96d1\u306a\u8ab2\u984c\u306b\u53d6\u308a\u7d44\u307f\u305f\u3044\u3068\u8003\u3048\u3066\u3044\u307e\u3059\u3002',
+        'about.foot': '\u6700\u5f8c\u307e\u3067\u30b9\u30af\u30ed\u30fc\u30eb\u3059\u308b\u3068 Portfolio \u306b\u623b\u308c\u307e\u3059',
+        'contact.title': '\u9023\u7d61\u5148',
+        'contact.noForms': '\u30d5\u30a9\u30fc\u30e0\u306a\u3057',
+        'contact.directLinks': '\u30c0\u30a4\u30ec\u30af\u30c8\u30ea\u30f3\u30af',
+        'contact.copy': '\u30b3\u30d4\u30fc\u304c\u53ef\u80fd',
+        'contact.bottom': '\u30ea\u30f3\u30af\u3092\u30af\u30ea\u30c3\u30af\u3001\u307e\u305f\u306f Copy \u3067\u30c6\u30ad\u30b9\u30c8\u3092\u30b3\u30d4\u30fc\u3057\u3066\u304f\u3060\u3055\u3044\u3002',
+        'contact.channel': '\u30c1\u30e3\u30cd\u30eb',
+        'contact.email': '\u30e1\u30fc\u30eb',
+        'contact.phone': '\u96fb\u8a71',
+        'contact.primary': '\u30e1\u30a4\u30f3',
+        'contact.secondary': '\u30b5\u30d6',
+        'contact.call': '\u901a\u8a71',
+        'contact.sms': 'SMS',
+        'languages.title': '\u8a00\u8a9e',
+        'lang.chipFocus': '\u30af\u30ea\u30c3\u30af\u3067\u30d5\u30a9\u30fc\u30ab\u30b9',
+        'lang.chipHold': '\u9577\u62bc\u3057\u3067\u201c\u672a\u6765\u201d\u3092\u8868\u793a',
+        'lang.chipScale': 'CEFR\u30b9\u30b1\u30fc\u30eb',
+        'lang.bottom': '\u7d20\u65e9\u3044\u30b9\u30ad\u30e3\u30f3\u3002\u660e\u78ba\u306a\u30ec\u30d9\u30eb\u3002\u7121\u99c4\u306a\u3057\u3002',
+        'education.title': '\u5b66\u6b74',
+        'education.kicker': '\u6559\u80b2\u6a5f\u95a2',
+        'education.year': 'Year 5 \u2014 \u5728\u5b66\u4e2d',
+        'education.sub': '\u5b66\u7fd2\u30d5\u30a9\u30fc\u30ab\u30b9',
+        'edu.chipYear': 'Year 5',
+        'edu.chipLevel': '\u4e0a\u7d1a\u30ec\u30d9\u30eb',
+        'edu.chipInteractive': '\u30a4\u30f3\u30bf\u30e9\u30af\u30c6\u30a3\u30d6',
+        'edu.school': '\u5b66\u6821',
+        'edu.subjects': '\u79d1\u76ee',
+        'edu.footerLeft': '\u69cb\u9020\u7684\u306a\u30ec\u30a4\u30a2\u30a6\u30c8\u3002\u660e\u78ba\u306a\u968e\u5c64\u3002\u79d1\u76ee\u4e3b\u5c0e\u3002',
+        'plans.objective': '\u4e3b\u76ee\u6a19',
+        'plans.progress': '\u30df\u30c3\u30b7\u30e7\u30f3\u9032\u6357',
+        'plans.intel': '\u8ffd\u52a0\u60c5\u5831'
     }
 };
 
@@ -106,6 +244,20 @@ function applyLanguage(lang) {
             el.textContent = value;
         }
     });
+
+    if (navContact) navContact.textContent = dict['nav.contact'] || appTranslations.en['nav.contact'];
+    if (navLanguages) navLanguages.textContent = dict['nav.languages'] || appTranslations.en['nav.languages'];
+    if (navEducation) navEducation.textContent = dict['nav.education'] || appTranslations.en['nav.education'];
+
+    if (mobileNavContact) mobileNavContact.textContent = dict['nav.contact'] || appTranslations.en['nav.contact'];
+    if (mobileNavLanguages) mobileNavLanguages.textContent = dict['nav.languages'] || appTranslations.en['nav.languages'];
+    if (mobileNavEducation) mobileNavEducation.textContent = dict['nav.education'] || appTranslations.en['nav.education'];
+
+    if (sidenavLabels.hero) sidenavLabels.hero.textContent = dict['nav.portfolio'] || appTranslations.en['nav.portfolio'];
+    if (sidenavLabels.contact) sidenavLabels.contact.textContent = dict['nav.contactShort'] || appTranslations.en['nav.contactShort'];
+    if (sidenavLabels.languages) sidenavLabels.languages.textContent = dict['nav.languages'] || appTranslations.en['nav.languages'];
+    if (sidenavLabels.education) sidenavLabels.education.textContent = dict['nav.education'] || appTranslations.en['nav.education'];
+    if (sidenavLabels.plans) sidenavLabels.plans.textContent = 'Plans';
 
     // sync desktop dropdown
     langItems.forEach(item => {
@@ -669,11 +821,11 @@ if (aestheticCursor && canUseAestheticCursor()) {
     };
 
     const updateInversion = (el) => {
-        const inDark = !!el && !!el.closest && (
-            el.closest('#contact, #education') ||
-            el.closest('.navbar') ||
-            el.closest('.mobile-overlay')
-        );
+        const overDarkSection = !!el && !!el.closest && !!el.closest('#contact, #education');
+        const overNavbar = !!el && !!el.closest && !!el.closest('.navbar');
+        const overMobileOverlay = !!el && !!el.closest && !!el.closest('.mobile-overlay');
+        const overDarkNavbar = overNavbar && !navbar.classList.contains('inverted');
+        const inDark = overDarkSection || overDarkNavbar || overMobileOverlay;
         aestheticCursor.classList.toggle('inverted', inDark);
     };
 

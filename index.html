@@ -138,9 +138,6 @@
 
 <section id="contact" class="contactme-section">
     <div class="contact-bg" aria-hidden="true">
-        <div class="contact-marquee">
-            CONTACT — CONTACT — CONTACT — CONTACT — CONTACT — CONTACT — CONTACT — CONTACT —
-        </div>
         <div class="contact-gridlines"></div>
     </div>
 
@@ -157,12 +154,12 @@
         <div class="contact-panels" role="group" aria-label="Contact details">
             <div class="contact-panel" data-panel="left">
                 <div class="contact-panel-head">
-                    <div class="contact-panel-kicker">Channel</div>
-                    <div class="contact-panel-title">Email</div>
+                    <div class="contact-panel-kicker" data-i18n="contact.channel">Channel</div>
+                    <div class="contact-panel-title" data-i18n="contact.email">Email</div>
                 </div>
 
                 <div class="contact-item">
-                    <div class="contact-item-label">Primary</div>
+                    <div class="contact-item-label" data-i18n="contact.primary">Primary</div>
                     <div class="contact-item-main">
                         <a class="contact-link" href="mailto:me@bedarev.com">me@bedarev.com</a>
                         <button class="contact-copy" type="button" data-copy="me@bedarev.com" aria-label="Copy email me@bedarev.com">Copy</button>
@@ -170,7 +167,7 @@
                 </div>
 
                 <div class="contact-item">
-                    <div class="contact-item-label">Secondary</div>
+                    <div class="contact-item-label" data-i18n="contact.secondary">Secondary</div>
                     <div class="contact-item-main">
                         <a class="contact-link" href="mailto:myron@bedarev.com">myron@bedarev.com</a>
                         <button class="contact-copy" type="button" data-copy="myron@bedarev.com" aria-label="Copy email myron@bedarev.com">Copy</button>
@@ -182,12 +179,12 @@
 
             <div class="contact-panel" data-panel="right">
                 <div class="contact-panel-head">
-                    <div class="contact-panel-kicker">Channel</div>
-                    <div class="contact-panel-title">Phone</div>
+                    <div class="contact-panel-kicker" data-i18n="contact.channel">Channel</div>
+                    <div class="contact-panel-title" data-i18n="contact.phone">Phone</div>
                 </div>
 
                 <div class="contact-item">
-                    <div class="contact-item-label">Call</div>
+                    <div class="contact-item-label" data-i18n="contact.call">Call</div>
                     <div class="contact-item-main">
                         <a class="contact-link" href="tel:+353873720687">+353 87 372 0687</a>
                         <button class="contact-copy" type="button" data-copy="+353 87 372 0687" aria-label="Copy phone number +353 87 372 0687">Copy</button>
@@ -195,7 +192,7 @@
                 </div>
 
                 <div class="contact-item">
-                    <div class="contact-item-label">SMS</div>
+                    <div class="contact-item-label" data-i18n="contact.sms">SMS</div>
                     <div class="contact-item-main">
                         <a class="contact-link" href="sms:+353873720687">+353 87 372 0687</a>
                         <button class="contact-copy" type="button" data-copy="+353 87 372 0687" aria-label="Copy phone number +353 87 372 0687">Copy</button>
@@ -223,9 +220,9 @@
         <div class="lang-top">
             <h2 class="lang-title" data-i18n="languages.title">Languages</h2>
             <div class="lang-top-meta">
-                <div class="lang-chip">Click to focus</div>
-                <div class="lang-chip">Hold to reveal “future”</div>
-                <div class="lang-chip">CEFR scale</div>
+                <div class="lang-chip" data-i18n="lang.chipFocus">Click to focus</div>
+                <div class="lang-chip" data-i18n="lang.chipHold">Hold to reveal "future"</div>
+                <div class="lang-chip" data-i18n="lang.chipScale">CEFR scale</div>
             </div>
         </div>
 
@@ -347,7 +344,7 @@
         </div>
 
         <div class="lang-bottom">
-            <div class="lang-bottom-left">Fast scan. Clear levels. No fluff.</div>
+            <div class="lang-bottom-left" data-i18n="lang.bottom">Fast scan. Clear levels. No fluff.</div>
             <div class="lang-bottom-right">RU · EN · UK · DE · JP</div>
         </div>
     </div>
@@ -361,15 +358,18 @@
         <div class="edu-header">
             <h2 class="edu-title" data-i18n="education.title">Education</h2>
             <div class="edu-header-meta">
-                <div class="edu-chip">Year 5</div>
-                <div class="edu-chip">Higher Level</div>
-                <div class="edu-chip">Interactive</div>
+                <div class="edu-chip" data-i18n="edu.chipYear">Year 5</div>
+                <div class="edu-chip" data-i18n="edu.chipLevel">Higher Level</div>
+                <div class="edu-chip" data-i18n="edu.chipInteractive">Interactive</div>
             </div>
         </div>
 
         <div class="edu-layout" role="group" aria-label="Education details">
             <div class="edu-col-left">
-                <div class="edu-inst-kicker" data-i18n="education.kicker">Institution</div>
+                <div class="edu-panel-head">
+                    <div class="edu-panel-kicker" data-i18n="education.kicker">Institution</div>
+                    <div class="edu-panel-title" data-i18n="edu.school">School</div>
+                </div>
                 <div class="edu-inst-name">Newtown School</div>
                 <div class="edu-inst-location">Waterford, Ireland</div>
                 <div class="edu-inst-rule" aria-hidden="true"></div>
@@ -377,16 +377,15 @@
                     <span class="edu-pulse" aria-hidden="true"></span>
                     <span data-i18n="education.year">Year 5 — Active</span>
                 </div>
-
-                <div class="edu-seal" aria-hidden="true">
-                    <div class="edu-seal-inner">NS</div>
-                </div>
             </div>
 
             <div class="edu-divider" aria-hidden="true"></div>
 
             <div class="edu-col-right">
-                <div class="edu-focus-kicker" data-i18n="education.sub">Academic Focus</div>
+                <div class="edu-panel-head">
+                    <div class="edu-panel-kicker" data-i18n="education.sub">Academic Focus</div>
+                    <div class="edu-panel-title" data-i18n="edu.subjects">Subjects</div>
+                </div>
 
                 <div class="edu-focus-list" role="listbox" aria-label="Subject focus selector">
                     <button class="edu-focus-btn active" type="button" data-edu="hmath" data-desc="Proof, rigor, structure. Higher Level mathematics — the foundation of analytical thinking." aria-selected="true">
@@ -445,8 +444,8 @@
         </div>
 
         <div class="edu-footer">
-            <div class="edu-footer-left">Click subjects to explore focus areas.</div>
-            <div class="edu-footer-right">HIGHER MATH · APPLIED MATH · PHYSICS</div>
+            <div class="edu-footer-left" data-i18n="edu.footerLeft">Structured layout. Clear hierarchy. Subject-led focus.</div>
+            <div class="edu-footer-right">NEWTOWN · HIGHER MATH · APPLIED MATH · PHYSICS</div>
         </div>
     </div>
 </section>
@@ -491,13 +490,13 @@
             <div class="dossier-divider" aria-hidden="true"></div>
 
             <div class="dossier-body">
-                <div class="section-kicker">Primary objective</div>
+                <div class="section-kicker" data-i18n="plans.objective">Primary objective</div>
                 <h3 class="objective-title">MSISS @ TRINITY</h3>
                 <div class="objective-subtitle">College Dublin</div>
 
                 <div class="dossier-divider thin" aria-hidden="true"></div>
 
-                <div class="section-kicker">Mission progress</div>
+                <div class="section-kicker" data-i18n="plans.progress">Mission progress</div>
                 <div class="progress">
                     <div class="progress-labels">
                         <span>START</span>
@@ -512,7 +511,7 @@
 
                 <div class="dossier-divider thin" aria-hidden="true"></div>
 
-                <div class="section-kicker">Additional intel</div>
+                <div class="section-kicker" data-i18n="plans.intel">Additional intel</div>
                 <div class="intel" data-reveal="hover" aria-label="Sensitive information (blurred). Hover or hold to reveal.">
                     <div class="intel-row">
                         <div class="intel-label">Timeline</div>
