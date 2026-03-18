@@ -2844,7 +2844,7 @@ transition: transform 0.4s ease;
 .languages-section,
 .education-section,
 .plans-section{
---mobile-fit-scale:clamp(0.72, 0.58 + 0.55vw, 0.9);
+--mobile-fit-scale:0.72;
 --mobile-fit-width:calc((100vw - 24px) / var(--mobile-fit-scale));
 height:100dvh;
 min-height:100dvh;
@@ -2884,21 +2884,21 @@ letter-spacing:2px;
 justify-content:center;
 padding-top:74px;
 gap:10px;
---mobile-fit-scale:clamp(0.6, 0.48 + 0.5vw, 0.76);
+--mobile-fit-scale:0.58;
 --mobile-fit-width:calc((100vw - 20px) / var(--mobile-fit-scale));
 }
 .about-panel{
 width:var(--mobile-fit-width);
 height:auto;
-max-height:calc((100dvh - 132px) / var(--mobile-fit-scale));
+max-height:calc((100dvh - 118px) / var(--mobile-fit-scale));
 outline-offset:8px;
-padding:14px 12px 10px;
+padding:12px 10px 8px;
 overflow:auto;
 }
 .about-title{ font-size:12px; letter-spacing:2px; }
-.about-body{ font-size:13px; line-height:1.58; }
-.about-body::first-letter{ font-size:34px; }
-.about-foot{ margin-top:12px; padding-top:10px; font-size:11px; }
+.about-body{ font-size:12px; line-height:1.45; }
+.about-body::first-letter{ font-size:28px; }
+.about-foot{ margin-top:10px; padding-top:8px; font-size:10px; }
 
 .hero::before{ inset:22px; outline-offset:8px; }
 .hero{ --hero-frame-inset:22px; }
@@ -2914,7 +2914,7 @@ overflow:auto;
 .contact-bottom{ flex-direction:column; }
 
 /* Plans mobile */
-.plans-section{ --mobile-fit-scale:clamp(0.66, 0.5 + 0.5vw, 0.8); }
+.plans-section{ --mobile-fit-scale:0.68; }
 .plans-rule{ width:calc(100vw - 80px); }
 .dossier{ padding:18px 16px 14px; }
 .meta-block{ min-width:unset; width:100%; }
@@ -2924,7 +2924,7 @@ overflow:auto;
 .plans-grid{ background-size:56px 56px; }
 
 /* Education mobile */
-.education-section{ --mobile-fit-scale:clamp(0.66, 0.5 + 0.52vw, 0.82); }
+.education-section{ --mobile-fit-scale:0.68; }
 .edu-header{ align-items:flex-start; flex-direction:column; }
 .edu-header-meta{ display:none; }
 .edu-bg{ display:none; }
@@ -2937,7 +2937,7 @@ overflow:auto;
 .edu-footer{ flex-direction:column; }
 
 /* Languages mobile */
-.languages-section{ --mobile-fit-scale:clamp(0.66, 0.5 + 0.52vw, 0.82); }
+.languages-section{ --mobile-fit-scale:0.68; }
 .lang-top{ align-items:flex-start; flex-direction:column; }
 .lang-layout{ grid-template-columns:1fr; gap:14px; }
 .lang-divider{ display:none; }
@@ -2946,5 +2946,5 @@ overflow:auto;
 .lang-name{ font-size:28px; }
 
 /* Contact mobile */
-.contactme-section{ --mobile-fit-scale:clamp(0.68, 0.52 + 0.5vw, 0.84); }
+.contactme-section{ --mobile-fit-scale:0.58; }
 }
