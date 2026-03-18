@@ -129,7 +129,10 @@
         <div class="about-body" data-i18n="about.body">
             My name is Myron Bedarev, a 16-year-old student currently based at Newtown School in Waterford, Ireland. Of Ukrainian descent, I have grown up navigating four languages—Russian, Ukrainian, English, and German—which has given me a unique global perspective and a natural ability to adapt to diverse environments. My academic focus is currently driven by a clear ambition: to study Management Science and Information Systems Studies (MSISS) at Trinity College Dublin. I am fascinated by the intersection of data, technology, and strategic decision-making, and I aim to leverage my multicultural background and analytical mindset to solve complex challenges in the world of modern business and systems.
         </div>
-        <div class="about-foot" aria-hidden="true" data-i18n="about.foot">Scroll to the end to return</div>
+        <div class="about-foot">
+            <span data-i18n="about.foot">Scroll to the end to return</span>
+            <button class="about-end" id="about-end" type="button" aria-label="Return to portfolio view">[ END ]</button>
+        </div>
     </div>
 </section>
 
@@ -350,6 +353,102 @@
     </div>
 </section>
 <section id="education" class="education-section">
+    <div class="edu-bg" aria-hidden="true">
+        <div class="edu-gridlines"></div>
+    </div>
+
+    <div class="edu-shell" aria-label="Education section">
+        <div class="edu-header">
+            <h2 class="edu-title" data-i18n="education.title">Education</h2>
+            <div class="edu-header-meta">
+                <div class="edu-chip">Year 5</div>
+                <div class="edu-chip">Higher Level</div>
+                <div class="edu-chip">Interactive</div>
+            </div>
+        </div>
+
+        <div class="edu-layout" role="group" aria-label="Education details">
+            <div class="edu-col-left">
+                <div class="edu-inst-kicker" data-i18n="education.kicker">Institution</div>
+                <div class="edu-inst-name">Newtown School</div>
+                <div class="edu-inst-location">Waterford, Ireland</div>
+                <div class="edu-inst-rule" aria-hidden="true"></div>
+                <div class="edu-status-row">
+                    <span class="edu-pulse" aria-hidden="true"></span>
+                    <span data-i18n="education.year">Year 5 — Active</span>
+                </div>
+
+                <div class="edu-seal" aria-hidden="true">
+                    <div class="edu-seal-inner">NS</div>
+                </div>
+            </div>
+
+            <div class="edu-divider" aria-hidden="true"></div>
+
+            <div class="edu-col-right">
+                <div class="edu-focus-kicker" data-i18n="education.sub">Academic Focus</div>
+
+                <div class="edu-focus-list" role="listbox" aria-label="Subject focus selector">
+                    <button class="edu-focus-btn active" type="button" data-edu="hmath" data-desc="Proof, rigor, structure. Higher Level mathematics — the foundation of analytical thinking." aria-selected="true">
+                        <span class="edu-focus-name">Higher Math</span>
+                        <span class="edu-focus-level">Higher</span>
+                    </button>
+                    <button class="edu-focus-btn" type="button" data-edu="amath" data-desc="Mechanics, differential equations, mathematical modelling. The bridge between pure theory and the physical world." aria-selected="false">
+                        <span class="edu-focus-name">Applied Math</span>
+                        <span class="edu-focus-level">Higher</span>
+                    </button>
+                    <button class="edu-focus-btn" type="button" data-edu="phys" data-desc="Electromagnetism, optics, quantum phenomena. Understanding matter and energy at every scale." aria-selected="false">
+                        <span class="edu-focus-name">Physics</span>
+                        <span class="edu-focus-level">Higher</span>
+                    </button>
+                </div>
+
+                <div class="edu-detail">
+                    <article class="edu-detail-card active" data-edu-card="hmath">
+                        <div class="edu-detail-title">Higher Mathematics</div>
+                        <div class="edu-detail-desc" id="edu-desc">Proof, rigor, structure. Higher Level mathematics — the foundation of analytical thinking.</div>
+                        <div class="edu-detail-row">
+                            <span class="edu-detail-label">Level</span>
+                            <span class="edu-detail-value">Higher · LC</span>
+                        </div>
+                        <div class="edu-detail-row">
+                            <span class="edu-detail-label">Method</span>
+                            <span class="edu-detail-value">Proof-driven</span>
+                        </div>
+                    </article>
+                    <article class="edu-detail-card" data-edu-card="amath">
+                        <div class="edu-detail-title">Applied Mathematics</div>
+                        <div class="edu-detail-desc">Mechanics, differential equations, mathematical modelling. The bridge between pure theory and the physical world.</div>
+                        <div class="edu-detail-row">
+                            <span class="edu-detail-label">Level</span>
+                            <span class="edu-detail-value">Higher · LC</span>
+                        </div>
+                        <div class="edu-detail-row">
+                            <span class="edu-detail-label">Method</span>
+                            <span class="edu-detail-value">Model-based</span>
+                        </div>
+                    </article>
+                    <article class="edu-detail-card" data-edu-card="phys">
+                        <div class="edu-detail-title">Physics</div>
+                        <div class="edu-detail-desc">Electromagnetism, optics, quantum phenomena. Understanding matter and energy at every scale.</div>
+                        <div class="edu-detail-row">
+                            <span class="edu-detail-label">Level</span>
+                            <span class="edu-detail-value">Higher · LC</span>
+                        </div>
+                        <div class="edu-detail-row">
+                            <span class="edu-detail-label">Method</span>
+                            <span class="edu-detail-value">Experimental</span>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </div>
+
+        <div class="edu-footer">
+            <div class="edu-footer-left">Click subjects to explore focus areas.</div>
+            <div class="edu-footer-right">HIGHER MATH · APPLIED MATH · PHYSICS</div>
+        </div>
+    </div>
 </section>
 <section id="plans" class="plans-section">
     <div class="plans-bg" aria-hidden="true">
@@ -446,12 +545,24 @@
 </div>
 
 <div class="ptr" id="ptr" aria-hidden="true">
-    <div class="ptr-rail" aria-hidden="true"></div>
-    <div class="ptr-head">
-        <div class="ptr-mark" aria-hidden="true"></div>
-        <div class="ptr-text" id="ptr-text">PULL</div>
+    <div class="ptr-frame" aria-hidden="true">
+        <div class="ptr-corners"></div>
+        <div class="ptr-axis"></div>
+        <div class="ptr-rail">
+            <div class="ptr-progress" id="ptr-progress"></div>
+        </div>
     </div>
-    <div class="ptr-sub" id="ptr-sub">TO REFRESH</div>
+    <div class="ptr-head">
+        <div class="ptr-index" aria-hidden="true">01</div>
+        <div class="ptr-mark-wrap" aria-hidden="true">
+            <div class="ptr-mark"></div>
+        </div>
+        <div class="ptr-copy">
+            <div class="ptr-text" id="ptr-text">PULL</div>
+            <div class="ptr-sub" id="ptr-sub">TO REFRESH</div>
+        </div>
+        <div class="ptr-ratio" id="ptr-ratio" aria-hidden="true">00%</div>
+    </div>
 </div>
 
 <script src="script.js"></script>

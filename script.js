@@ -17,10 +17,9 @@ const appTranslations = {
         'contact.bottom': 'Click links to open. Use Copy to grab text.',
         'languages.title': 'Languages',
         'education.title': 'Education',
-        'education.kicker': 'Newtown School · Waterford',
-        'education.year': 'Year 5',
-        'education.sub': 'Academic focus',
-        'education.desc': 'Higher Math — proof, rigor, structure.'
+        'education.kicker': 'Institution',
+        'education.year': 'Year 5 — Active',
+        'education.sub': 'Academic Focus'
     },
     ru: {
         'hero.portfolio': 'Портфолио',
@@ -34,10 +33,9 @@ const appTranslations = {
         'contact.bottom': 'Жми по ссылкам или используй Copy, чтобы скопировать.',
         'languages.title': 'Языки',
         'education.title': 'Образование',
-        'education.kicker': 'Newtown School · Уотерфорд',
-        'education.year': '5 класс (Year 5)',
-        'education.sub': 'Академический фокус',
-        'education.desc': 'Higher Math — доказательства, строгость, структура.'
+        'education.kicker': 'Учебное заведение',
+        'education.year': 'Year 5 — Активен',
+        'education.sub': 'Академический фокус'
     },
     uk: {
         'hero.portfolio': 'Портфоліо',
@@ -51,10 +49,9 @@ const appTranslations = {
         'contact.bottom': 'Натискай на посилання або використовуй Copy, щоб скопіювати.',
         'languages.title': 'Мови',
         'education.title': 'Освіта',
-        'education.kicker': 'Newtown School · Waterford',
-        'education.year': 'Year 5',
-        'education.sub': 'Академічний фокус',
-        'education.desc': 'Higher Math — доведення, строгість, структура.'
+        'education.kicker': 'Навчальний заклад',
+        'education.year': 'Year 5 — Активний',
+        'education.sub': 'Академічний фокус'
     },
     de: {
         'hero.portfolio': 'Portfolio',
@@ -68,10 +65,9 @@ const appTranslations = {
         'contact.bottom': 'Links anklicken oder Copy verwenden, um zu kopieren.',
         'languages.title': 'Sprachen',
         'education.title': 'Ausbildung',
-        'education.kicker': 'Newtown School · Waterford',
-        'education.year': 'Year 5',
-        'education.sub': 'Akademischer Fokus',
-        'education.desc': 'Higher Math — Beweise, Strenge, Struktur.'
+        'education.kicker': 'Einrichtung',
+        'education.year': 'Year 5 — Aktiv',
+        'education.sub': 'Akademischer Fokus'
     },
     jp: {
         'hero.portfolio': 'ポートフォリオ',
@@ -85,10 +81,9 @@ const appTranslations = {
         'contact.bottom': 'リンクをクリック、または Copy でテキストをコピーしてください。',
         'languages.title': '言語',
         'education.title': '学歴',
-        'education.kicker': 'Newtown School · Waterford',
-        'education.year': 'Year 5',
-        'education.sub': '学習フォーカス',
-        'education.desc': 'Higher Math — 証明・厳密さ・構造。'
+        'education.kicker': '教育機関',
+        'education.year': 'Year 5 — 在学中',
+        'education.sub': '学習フォーカス'
     }
 };
 
@@ -148,7 +143,9 @@ mobileLangPills.forEach(btn => {
     const ptr = document.getElementById('ptr');
     const ptrText = document.getElementById('ptr-text');
     const ptrSub = document.getElementById('ptr-sub');
-    if (!ptr || !ptrText || !ptrSub) return;
+    const ptrProgress = document.getElementById('ptr-progress');
+    const ptrRatio = document.getElementById('ptr-ratio');
+    if (!ptr || !ptrText || !ptrSub || !ptrProgress || !ptrRatio) return;
 
     const isMobile = () =>
         window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches;
@@ -161,18 +158,27 @@ mobileLangPills.forEach(btn => {
     const threshold = 84;
     const maxPull = 140;
 
+    function setProgressUI(y) {
+        const clamped = Math.min(maxPull, Math.max(0, y));
+        const pct = Math.min(100, Math.round((clamped / threshold) * 100));
+        ptrProgress.style.width = `${pct}%`;
+        ptrRatio.textContent = `${String(pct).padStart(2, '0')}%`;
+        ptr.style.setProperty('--ptr-progress', String(pct / 100));
+    }
+
     function setPtrState(state) {
         ptr.classList.toggle('ready', state === 'ready');
         ptr.classList.toggle('refreshing', state === 'refreshing');
+        ptr.classList.toggle('pulling', state === 'pull');
         if (state === 'pull') {
             ptrText.textContent = 'PULL';
-            ptrSub.textContent = 'TO REFRESH';
+            ptrSub.textContent = 'TO REVEAL REFRESH';
         } else if (state === 'ready') {
             ptrText.textContent = 'RELEASE';
-            ptrSub.textContent = 'TO REFRESH';
+            ptrSub.textContent = 'TO EXECUTE RESET';
         } else if (state === 'refreshing') {
             ptrText.textContent = 'REFRESH';
-            ptrSub.textContent = 'IN PROGRESS';
+            ptrSub.textContent = 'RELOADING SYSTEM';
         }
     }
 
@@ -181,18 +187,20 @@ mobileLangPills.forEach(btn => {
         ptr.classList.add('show');
         ptr.style.transform = `translateX(-50%) translateY(${y - maxPull}px)`;
         ptr.style.opacity = String(Math.min(1, y / 28));
+        setProgressUI(y);
         if (!refreshing) {
             setPtrState(y >= threshold ? 'ready' : 'pull');
         }
     }
 
     function reset() {
-        ptr.classList.remove('show', 'ready', 'refreshing');
-        ptr.style.transform = 'translateX(-50%) translateY(-84px)';
+        ptr.classList.remove('show', 'ready', 'refreshing', 'pulling');
+        ptr.style.transform = 'translateX(-50%) translateY(-132px)';
         ptr.style.opacity = '0';
         progress = 0;
         pulling = false;
         refreshing = false;
+        setProgressUI(0);
         setPtrState('pull');
     }
 
@@ -234,9 +242,10 @@ mobileLangPills.forEach(btn => {
         if (y >= threshold) {
             refreshing = true;
             setPtrState('refreshing');
+            setProgressUI(threshold);
             ptr.style.transform = `translateX(-50%) translateY(${threshold - maxPull}px)`;
             ptr.style.opacity = '1';
-            setTimeout(() => window.location.reload(), 300);
+            setTimeout(() => window.location.reload(), 420);
             return;
         }
         reset();
@@ -248,6 +257,7 @@ mobileLangPills.forEach(btn => {
 // 1b. Hero: Portfolio -> About Me toggle
 const heroSection = document.getElementById('hero');
 const aboutPanel = document.getElementById('about-panel');
+const aboutEndButton = document.getElementById('about-end');
 
 function setAboutMode(on) {
     if (!heroSection || !portfolioTitle || !aboutPanel) return;
@@ -276,6 +286,14 @@ if (portfolioTitle) {
 
 if (aboutPanel) {
     // No auto-close on scroll: close only when user actually leaves the Hero section intentfully.
+}
+
+if (aboutEndButton) {
+    aboutEndButton.addEventListener('click', () => {
+        setAboutMode(false);
+        if (typeof portfolioTitle?.focus === 'function') portfolioTitle.focus();
+        window.scrollTo({ top: heroSection?.offsetTop || 0, behavior: 'smooth' });
+    });
 }
 
 // About scroll uses native scrolling (no wheel interception).
@@ -491,9 +509,9 @@ document.addEventListener('click', async (e) => {
     showContactToast(ok ? `Copied: ${text}` : 'Copy failed');
 });
 
-// 7b. Education: focus selector (Higher / Applied / Physics)
-const eduDesc = document.getElementById('edu-desc');
+// 7b. Education: focus selector (Higher Math / Applied Math / Physics)
 const eduOrbs = document.querySelectorAll('.edu-focus-btn[data-edu]');
+const eduCards = document.querySelectorAll('.edu-detail-card[data-edu-card]');
 
 function setEduFocus(code) {
     eduOrbs.forEach((b) => {
@@ -501,9 +519,10 @@ function setEduFocus(code) {
         b.classList.toggle('active', active);
         b.setAttribute('aria-selected', active ? 'true' : 'false');
     });
-    const activeBtn = Array.from(eduOrbs).find(b => b.getAttribute('data-edu') === code);
-    const desc = activeBtn?.getAttribute('data-desc');
-    if (eduDesc && desc) eduDesc.textContent = desc;
+    eduCards.forEach((c) => {
+        const active = c.getAttribute('data-edu-card') === code;
+        c.classList.toggle('active', active);
+    });
 }
 
 eduOrbs.forEach((b) => {
