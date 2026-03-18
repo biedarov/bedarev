@@ -2903,16 +2903,28 @@ animation:none;
 .about-body::first-letter{ font-size:30px; }
 .about-foot{ margin-top:10px; padding-top:8px; font-size:10px; }
 
-.hero::before{ inset:22px; outline-offset:8px; }
-.hero{ --hero-frame-inset:22px; }
+.hero::before{ 
+  inset:16px;
+  outline-offset:6px;
+}
+.hero::after{ 
+  opacity:0.4;
+}
+.hero{ --hero-frame-inset:16px; }
 .hero-logo,
 .portfolio-title,
 .SOON{
 transform:scale(0.78);
 transform-origin:center center;
 }
-.portfolio-title::before{ top:-14px; }
-.portfolio-title::after{ bottom:-14px; }
+.portfolio-title::before{ 
+  width:calc(50vw - 16px - 50%);
+  margin-right:8px;
+}
+.portfolio-title::after{ 
+  width:calc(50vw - 16px - 50%);
+  margin-left:8px;
+}
 
 .contact-top{ align-items:flex-start; flex-direction:column; gap:8px; }
 .contact-panels{ grid-template-columns:1fr; gap:10px; }
