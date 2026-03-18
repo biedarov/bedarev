@@ -14,6 +14,87 @@ font-family:'Playfair Display SC',serif;
 overflow-x:hidden;
 }
 
+/* Pull-to-refresh (mobile only) */
+.ptr{ display:none; }
+@media (hover: none) and (pointer: coarse) {
+  .ptr{
+    display:block;
+    position:fixed;
+    left:50%;
+    top:10px;
+    transform:translateX(-50%) translateY(-84px);
+    z-index:6000;
+    pointer-events:none;
+    color:black;
+    width:min(320px, calc(100vw - 40px));
+    transition:transform .18s ease, opacity .18s ease;
+    opacity:0;
+    mix-blend-mode:multiply;
+  }
+  .ptr.show{
+    opacity:1;
+  }
+  .ptr-rail{
+    height:1px;
+    background:rgba(0,0,0,0.25);
+    position:relative;
+  }
+  .ptr-rail::before,
+  .ptr-rail::after{
+    content:"";
+    position:absolute;
+    top:50%;
+    transform:translateY(-50%);
+    width:6px;
+    height:6px;
+    border-radius:99px;
+    border:1px solid rgba(0,0,0,0.22);
+    background:rgba(0,0,0,0.04);
+  }
+  .ptr-rail::before{ left:-4px; }
+  .ptr-rail::after{ right:-4px; }
+  .ptr-head{
+    margin-top:10px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+  }
+  .ptr-mark{
+    width:10px;
+    height:10px;
+    border:1px solid rgba(0,0,0,0.55);
+    background:transparent;
+    transition:transform .18s ease, background .18s ease;
+  }
+  .ptr.ready .ptr-mark{
+    background:black;
+    transform:rotate(45deg) scale(1.05);
+  }
+  .ptr.refreshing .ptr-mark{
+    background:black;
+    animation:ptrSpin 0.75s linear infinite;
+  }
+  @keyframes ptrSpin{
+    to{ transform:rotate(405deg); }
+  }
+  .ptr-text{
+    font-family:'Unbounded',sans-serif;
+    font-size:11px;
+    letter-spacing:3px;
+    text-transform:uppercase;
+  }
+  .ptr-sub{
+    margin-top:6px;
+    text-align:center;
+    font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+    font-size:10px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:rgba(0,0,0,0.65);
+  }
+}
+
 /* AESTHETIC CURSOR (19th century × futurism, strict monochrome) */
 @media (hover: hover) and (pointer: fine) {
   body{
@@ -1957,10 +2038,11 @@ opacity:0.62;
 .about-panel{
 display:none;
 width:min(1040px, calc(100vw - 120px));
-height:calc(100vh - 170px);
-overflow:auto;
-overscroll-behavior:contain;
-scrollbar-gutter: stable both-edges;
+max-height:none;
+height:auto;
+overflow:visible;
+overscroll-behavior:auto;
+scrollbar-gutter:auto;
 
 border:1px solid rgba(0,0,0,0.32);
 outline:1px solid rgba(0,0,0,0.10);
@@ -2859,10 +2941,14 @@ padding-top:96px;
 }
 .about-panel{
 width:calc(100vw - 40px);
-height:calc(100vh - 160px);
+height:auto;
+max-height:none;
 outline-offset:8px;
+padding:16px 14px 12px;
 }
-.about-body{ font-size:16px; }
+.about-title{ font-size:12px; letter-spacing:2px; }
+.about-body{ font-size:15px; line-height:1.75; }
+.about-body::first-letter{ font-size:44px; }
 
 .hero::before{ inset:22px; outline-offset:8px; }
 .hero{ --hero-frame-inset:22px; }

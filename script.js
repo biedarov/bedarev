@@ -8,7 +8,7 @@ const appTranslations = {
     en: {
         'hero.portfolio': 'Portfolio',
         'about.title': 'About Me',
-        'about.body': 'My name is Myron Bedarev, a 16-year-old student currently based at Newtown School in Waterford, Ireland. Of Russian and Ukrainian descent, I have grown up navigating four languages—Russian, Ukrainian, English, and German—which has given me a unique global perspective and a natural ability to adapt to diverse environments. My academic focus is currently driven by a clear ambition: to study Management Science and Information Systems Studies (MSISS) at Trinity College Dublin. I am fascinated by the intersection of data, technology, and strategic decision-making, and I aim to leverage my multicultural background and analytical mindset to solve complex challenges in the world of modern business and systems.',
+        'about.body': 'My name is Myron Bedarev, a 16-year-old student currently based at Newtown School in Waterford, Ireland. Of Ukrainian descent, I have grown up navigating four languages—Russian, Ukrainian, English, and German—which has given me a unique global perspective and a natural ability to adapt to diverse environments. My academic focus is currently driven by a clear ambition: to study Management Science and Information Systems Studies (MSISS) at Trinity College Dublin. I am fascinated by the intersection of data, technology, and strategic decision-making, and I aim to leverage my multicultural background and analytical mindset to solve complex challenges in the world of modern business and systems.',
         'about.foot': 'Scroll to the end to return',
         'contact.title': 'Contact',
         'contact.noForms': 'No forms',
@@ -25,7 +25,7 @@ const appTranslations = {
     ru: {
         'hero.portfolio': 'Портфолио',
         'about.title': 'Обо мне',
-        'about.body': 'Меня зовут Майрон Бедарев, мне 16 лет, сейчас я учусь в Newtown School в Уотерфорде, Ирландия. По происхождению я наполовину русский, наполовину украинец и вырос на четырёх языках — русском, украинском, английском и немецком. Это дало мне необычную перспективу и привычку быстро адаптироваться к разным средам. Сейчас мой академический фокус связан с одной чёткой целью: поступить на Management Science and Information Systems Studies (MSISS) в Trinity College Dublin. Меня интересует пересечение данных, технологий и управленческих решений; я хочу использовать свой мультикультурный бэкграунд и аналитическое мышление, чтобы решать сложные задачи в современном мире бизнеса и систем.',
+        'about.body': 'Меня зовут Мирон Бедарев, мне 16 лет, сейчас я учусь в Newtown School в Уотерфорде, Ирландия. По происхождению я украинец и вырос на четырёх языках — русском, украинском, английском и немецком. Это дало мне необычную перспективу и привычку быстро адаптироваться к разным средам. Сейчас мой академический фокус связан с одной чёткой целью: поступить на Management Science and Information Systems Studies (MSISS) в Trinity College Dublin. Меня интересует пересечение данных, технологий и управленческих решений; я хочу использовать свой мультикультурный бэкграунд и аналитическое мышление, чтобы решать сложные задачи в современном мире бизнеса и систем.',
         'about.foot': 'Прокрути до конца, чтобы вернуть Portfolio',
         'contact.title': 'Контакты',
         'contact.noForms': 'Без форм',
@@ -42,7 +42,7 @@ const appTranslations = {
     uk: {
         'hero.portfolio': 'Портфоліо',
         'about.title': 'Про мене',
-        'about.body': 'Мене звати Майрон Бедарєв, мені 16 років, зараз я навчаюся в Newtown School у Вотерфорді, Ірландія. Походжу з російсько‑української родини і з дитинства живу в чотирьох мовах — українській, російській, англійській та німецькій. Це дало мені глобальний погляд і вміння швидко адаптуватися до різних середовищ. Мій навчальний фокус зараз пов’язаний з чіткою метою: вступити на Management Science and Information Systems Studies (MSISS) в Trinity College Dublin. Мене цікавить перетин даних, технологій та управлінських рішень, і я хочу використати свій мультикультурний досвід та аналітичне мислення, щоб розв’язувати складні задачі сучасних систем.',
+        'about.body': 'Мене звати Майрон Бедарєв, мені 16 років, зараз я навчаюся в Newtown School у Вотерфорді, Ірландія. Походжу з української родини і з дитинства живу в чотирьох мовах — українській, російській, англійській та німецькій. Це дало мені глобальний погляд і вміння швидко адаптуватися до різних середовищ. Мій навчальний фокус зараз пов’язаний з чіткою метою: вступити на Management Science and Information Systems Studies (MSISS) в Trinity College Dublin. Мене цікавить перетин даних, технологій та управлінських рішень, і я хочу використати свій мультикультурний досвід та аналітичне мислення, щоб розв’язувати складні задачі сучасних систем.',
         'about.foot': 'Прокрути до кінця, щоб повернутися до Portfolio',
         'contact.title': 'Контакти',
         'contact.noForms': 'Без форм',
@@ -59,7 +59,7 @@ const appTranslations = {
     de: {
         'hero.portfolio': 'Portfolio',
         'about.title': 'Über mich',
-        'about.body': 'Ich heiße Myron Bedarev, bin 16 Jahre alt und besuche derzeit die Newtown School in Waterford, Irland. Mit russisch‑ukrainischen Wurzeln bin ich mit vier Sprachen aufgewachsen – Russisch, Ukrainisch, Englisch und Deutsch. Das gibt mir eine globale Perspektive und die Fähigkeit, mich schnell an unterschiedliche Umgebungen anzupassen. Mein aktueller akademischer Fokus ist klar: Management Science and Information Systems Studies (MSISS) am Trinity College Dublin zu studieren. Mich fasziniert die Schnittstelle von Daten, Technologie und strategischen Entscheidungen, und ich möchte meinen multikulturellen Hintergrund und meine analytische Denkweise nutzen, um komplexe Probleme in modernen Systemen zu lösen.',
+        'about.body': 'Ich heiße Myron Bedarev, bin 16 Jahre alt und besuche derzeit die Newtown School in Waterford, Irland. Mit ukrainischen Wurzeln bin ich mit vier Sprachen aufgewachsen – Russisch, Ukrainisch, Englisch und Deutsch. Das gibt mir eine globale Perspektive und die Fähigkeit, mich schnell an unterschiedliche Umgebungen anzupassen. Mein aktueller akademischer Fokus ist klar: Management Science and Information Systems Studies (MSISS) am Trinity College Dublin zu studieren. Mich fasziniert die Schnittstelle von Daten, Technologie und strategischen Entscheidungen, und ich möchte meinen multikulturellen Hintergrund und meine analytische Denkweise nutzen, um komplexe Probleme in modernen Systemen zu lösen.',
         'about.foot': 'Scrolle bis zum Ende, um zu Portfolio zurückzukehren',
         'contact.title': 'Kontakt',
         'contact.noForms': 'Keine Formulare',
@@ -142,6 +142,108 @@ mobileLangPills.forEach(btn => {
         applyLanguage(lang);
     });
 });
+
+// Mobile Pull-to-Refresh (custom)
+(() => {
+    const ptr = document.getElementById('ptr');
+    const ptrText = document.getElementById('ptr-text');
+    const ptrSub = document.getElementById('ptr-sub');
+    if (!ptr || !ptrText || !ptrSub) return;
+
+    const isMobile = () =>
+        window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+
+    let startY = 0;
+    let pulling = false;
+    let progress = 0;
+    let refreshing = false;
+
+    const threshold = 84;
+    const maxPull = 140;
+
+    function setPtrState(state) {
+        ptr.classList.toggle('ready', state === 'ready');
+        ptr.classList.toggle('refreshing', state === 'refreshing');
+        if (state === 'pull') {
+            ptrText.textContent = 'PULL';
+            ptrSub.textContent = 'TO REFRESH';
+        } else if (state === 'ready') {
+            ptrText.textContent = 'RELEASE';
+            ptrSub.textContent = 'TO REFRESH';
+        } else if (state === 'refreshing') {
+            ptrText.textContent = 'REFRESH';
+            ptrSub.textContent = 'IN PROGRESS';
+        }
+    }
+
+    function render() {
+        const y = Math.min(maxPull, Math.max(0, progress));
+        ptr.classList.add('show');
+        ptr.style.transform = `translateX(-50%) translateY(${y - maxPull}px)`;
+        ptr.style.opacity = String(Math.min(1, y / 28));
+        if (!refreshing) {
+            setPtrState(y >= threshold ? 'ready' : 'pull');
+        }
+    }
+
+    function reset() {
+        ptr.classList.remove('show', 'ready', 'refreshing');
+        ptr.style.transform = 'translateX(-50%) translateY(-84px)';
+        ptr.style.opacity = '0';
+        progress = 0;
+        pulling = false;
+        refreshing = false;
+        setPtrState('pull');
+    }
+
+    function canStart(e) {
+        if (!isMobile()) return false;
+        if (refreshing) return false;
+        if (window.scrollY > 0) return false;
+        // only if gesture starts near top
+        const y = e.touches?.[0]?.clientY ?? 0;
+        return y < 120;
+    }
+
+    window.addEventListener('touchstart', (e) => {
+        if (!canStart(e)) return;
+        startY = e.touches[0].clientY;
+        pulling = true;
+        progress = 0;
+        render();
+    }, { passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+        if (!pulling) return;
+        const y = e.touches[0].clientY;
+        const dy = y - startY;
+        if (dy <= 0) {
+            progress = 0;
+            render();
+            return;
+        }
+        // resist
+        progress = Math.pow(Math.min(maxPull, dy), 0.92);
+        render();
+        if (progress > 8) e.preventDefault();
+    }, { passive: false });
+
+    window.addEventListener('touchend', () => {
+        if (!pulling) return;
+        const y = Math.min(maxPull, Math.max(0, progress));
+        if (y >= threshold) {
+            refreshing = true;
+            setPtrState('refreshing');
+            ptr.style.transform = `translateX(-50%) translateY(${threshold - maxPull}px)`;
+            ptr.style.opacity = '1';
+            setTimeout(() => window.location.reload(), 300);
+            return;
+        }
+        reset();
+    }, { passive: true });
+
+    window.addEventListener('touchcancel', reset, { passive: true });
+})();
 
 // 1b. Hero: Portfolio -> About Me toggle
 const heroSection = document.getElementById('hero');
