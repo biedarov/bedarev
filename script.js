@@ -874,13 +874,22 @@ if (aestheticCursor && canUseAestheticCursor()) {
 
     // Hero elements start visible (already in viewport on load)
     const heroSection = document.getElementById('hero');
+    const isNearViewport = (el) => {
+        const rect = el.getBoundingClientRect();
+        const vh = window.innerHeight || document.documentElement.clientHeight || 0;
+        return rect.bottom >= -80 && rect.top <= vh - 40;
+    };
+    const revealElement = (el) => {
+        el.classList.add('in-view');
+        cleanupAfterReveal(el);
+    };
     if (heroSection) {
         requestAnimationFrame(() => {
             heroSection.querySelectorAll('[data-scroll]').forEach(el => {
-                el.classList.add('in-view');
+                revealElement(el);
             });
             heroSection.querySelectorAll('[data-scroll-stagger]').forEach(el => {
-                el.classList.add('in-view');
+                revealElement(el);
             });
         });
     }
@@ -901,8 +910,7 @@ if (aestheticCursor && canUseAestheticCursor()) {
             const el = entry.target;
             // Skip hero elements (already revealed)
             if (heroSection && heroSection.contains(el)) return;
-            el.classList.add('in-view');
-            cleanupAfterReveal(el);
+            revealElement(el);
             obs.unobserve(el); // one-shot: animate once
         });
     };
@@ -917,10 +925,18 @@ if (aestheticCursor && canUseAestheticCursor()) {
     scrollEls.forEach(el => {
         // Don't observe hero children (they animate on load)
         if (heroSection && heroSection.contains(el)) return;
+        if (isNearViewport(el)) {
+            revealElement(el);
+            return;
+        }
         scrollObs.observe(el);
     });
     staggerEls.forEach(el => {
         if (heroSection && heroSection.contains(el)) return;
+        if (isNearViewport(el)) {
+            revealElement(el);
+            return;
+        }
         scrollObs.observe(el);
     });
 })();
