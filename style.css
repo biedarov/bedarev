@@ -3011,6 +3011,17 @@ padding-bottom:calc(20px + env(safe-area-inset-bottom, 0px));
 -webkit-overflow-scrolling:auto;
 }
 
+.hero{
+justify-content:center;
+}
+
+.contactme-section,
+.languages-section,
+.education-section,
+.plans-section{
+justify-content:flex-start;
+}
+
 .hero,
 .contactme-section,
 .languages-section,
