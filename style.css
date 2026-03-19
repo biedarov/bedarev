@@ -2889,16 +2889,26 @@ position: fixed;
 top: 0;
 left: 0;
 width: 100%;
-height: 100vh;
+min-height: 100vh;
+min-height: 100svh;
 background: black;
 z-index: 2500;
-transform: translateY(-100%);
-transition: transform 0.6s cubic-bezier(0.85, 0, 0.15, 1);
+transform: translateY(calc(-100% - 48px));
+opacity: 0;
+visibility: hidden;
+pointer-events: none;
+transition: transform 0.6s cubic-bezier(0.85, 0, 0.15, 1), opacity 0.28s ease, visibility 0s linear 0.28s;
 justify-content: center;
 align-items: center;
 }
 
-.mobile-overlay.active { transform: translateY(0); }
+.mobile-overlay.active {
+transform: translateY(0);
+opacity: 1;
+visibility: visible;
+pointer-events: auto;
+transition: transform 0.6s cubic-bezier(0.85, 0, 0.15, 1), opacity 0.28s ease;
+}
 
 .mobile-links-wrapper {
 display: flex;
@@ -2991,13 +3001,14 @@ transition: transform 0.4s ease;
 .education-section,
 .plans-section{
 height:auto;
-min-height:100dvh;
+min-height:100vh;
+min-height:100svh;
 overflow-y:auto;
 overflow-x:hidden;
 justify-content:center;
 gap:8px;
-padding-top:74px;
-padding-bottom:20px;
+padding-top:calc(74px + env(safe-area-inset-top, 0px));
+padding-bottom:calc(20px + env(safe-area-inset-bottom, 0px));
 -webkit-overflow-scrolling:touch;
 }
 
@@ -3026,13 +3037,13 @@ letter-spacing:1.5px;
 
 .hero.about-mode{
 justify-content:center;
-padding-top:74px;
+padding-top:calc(74px + env(safe-area-inset-top, 0px));
 gap:10px;
 }
 .about-panel{
 width:calc(100vw - 40px);
 height:auto;
-max-height:calc(100dvh - 140px);
+max-height:calc(100svh - 140px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
 outline-offset:6px;
 padding:14px 12px 10px;
 overflow:auto;
