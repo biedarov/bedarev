@@ -2884,30 +2884,29 @@ transition:all 0.35s ease;
 
 
 .mobile-overlay {
-display: flex;
+display: none;
 position: fixed;
 top: 0;
 left: 0;
+right: 0;
+bottom: 0;
 width: 100%;
 min-height: 100vh;
 min-height: 100svh;
 background: black;
 z-index: 2500;
-transform: translateY(calc(-100% - 48px));
-opacity: 0;
-visibility: hidden;
-pointer-events: none;
-transition: transform 0.6s cubic-bezier(0.85, 0, 0.15, 1), opacity 0.28s ease, visibility 0s linear 0.28s;
+overflow: hidden;
+transform: none;
+opacity: 1;
+visibility: visible;
+pointer-events: auto;
+transition: none;
 justify-content: center;
 align-items: center;
 }
 
 .mobile-overlay.active {
-transform: translateY(0);
-opacity: 1;
-visibility: visible;
-pointer-events: auto;
-transition: transform 0.6s cubic-bezier(0.85, 0, 0.15, 1), opacity 0.28s ease;
+display: flex;
 }
 
 .mobile-links-wrapper {
@@ -3003,13 +3002,13 @@ transition: transform 0.4s ease;
 height:auto;
 min-height:100vh;
 min-height:100svh;
-overflow-y:auto;
+overflow-y:visible;
 overflow-x:hidden;
-justify-content:center;
+justify-content:flex-start;
 gap:8px;
 padding-top:calc(74px + env(safe-area-inset-top, 0px));
 padding-bottom:calc(20px + env(safe-area-inset-bottom, 0px));
--webkit-overflow-scrolling:touch;
+-webkit-overflow-scrolling:auto;
 }
 
 .hero,
@@ -3048,6 +3047,45 @@ outline-offset:6px;
 padding:14px 12px 10px;
 overflow:auto;
 -webkit-overflow-scrolling:touch;
+}
+
+.contact-title,
+.lang-title,
+.edu-title,
+.plans-topmark,
+.plans-rule,
+.dossier,
+.dossier-header,
+.dossier-body,
+.dossier-footer,
+.contact-bottom,
+.lang-bottom,
+.edu-footer,
+.contact-panel,
+.lang-nav,
+.lang-details,
+.edu-col-left,
+.edu-col-right,
+.hero-logo,
+.portfolio-title,
+.hero [data-scroll],
+.contactme-section [data-scroll],
+.languages-section [data-scroll],
+.education-section [data-scroll],
+.plans-section [data-scroll]{
+opacity:1;
+transform:none;
+filter:none;
+clip-path:none;
+transition:none;
+}
+
+.contact-top-meta[data-scroll-stagger] > *,
+.lang-top-meta[data-scroll-stagger] > *,
+.edu-header-meta[data-scroll-stagger] > *{
+opacity:1;
+transform:none;
+transition:none;
 }
 .about-panel .about-title::after{
 content:none;
