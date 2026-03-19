@@ -958,38 +958,3 @@ if (aestheticCursor && canUseAestheticCursor()) {
         });
     }, 100);
 })();
-
-// Mobile section scale — shrink shells proportionally on small viewports
-(function() {
-    var shells = document.querySelectorAll('.contact-shell, .lang-shell, .edu-shell, .plans-shell');
-    function updateMobileScale() {
-        var vw = window.innerWidth;
-        if (vw > 768) {
-            shells.forEach(function(el) {
-                el.style.transform = '';
-                el.style.transformOrigin = '';
-            });
-            return;
-        }
-        shells.forEach(function(el) {
-            var section = el.parentElement;
-            if (!section) return;
-            var sectionH = section.clientHeight;
-            var shellH = el.scrollHeight;
-            if (shellH <= 0 || sectionH <= 0) return;
-            var s = Math.min(1, (sectionH * 0.96) / shellH);
-            s = Math.max(0.5, s);
-            if (s < 0.98) {
-                el.style.transform = 'scale(' + s.toFixed(4) + ')';
-                el.style.transformOrigin = 'center center';
-            } else {
-                el.style.transform = '';
-                el.style.transformOrigin = '';
-            }
-        });
-    }
-    window.addEventListener('resize', updateMobileScale);
-    window.addEventListener('orientationchange', updateMobileScale);
-    setTimeout(updateMobileScale, 150);
-    window.addEventListener('load', updateMobileScale);
-})();
