@@ -858,6 +858,7 @@ if (aestheticCursor && canUseAestheticCursor()) {
 (() => {
     const scrollEls = document.querySelectorAll('[data-scroll]');
     const staggerEls = document.querySelectorAll('[data-scroll-stagger]');
+    console.log('Found scroll elements:', scrollEls.length, 'stagger elements:', staggerEls.length);
     if (!scrollEls.length && !staggerEls.length) return;
 
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -872,12 +873,14 @@ if (aestheticCursor && canUseAestheticCursor()) {
     const isNearViewport = (el) => {
         const rect = el.getBoundingClientRect();
         const vh = window.innerHeight || document.documentElement.clientHeight || 0;
-        return rect.bottom >= -80 && rect.top <= vh - 40;
+        return rect.bottom >= 0 && rect.top <= vh;
     };
     const revealElement = (el) => {
         el.classList.add('in-view');
         cleanupAfterReveal(el);
     };
+    
+    // Reveal hero elements immediately
     if (heroSection) {
         requestAnimationFrame(() => {
             heroSection.querySelectorAll('[data-scroll]').forEach(el => {
@@ -888,6 +891,28 @@ if (aestheticCursor && canUseAestheticCursor()) {
             });
         });
     }
+    
+    // Force check all elements that are already visible on load
+    requestAnimationFrame(() => {
+        let visibleCount = 0;
+        scrollEls.forEach(el => {
+            if (heroSection && heroSection.contains(el)) return;
+            if (isNearViewport(el)) {
+                console.log('Revealing element on load:', el);
+                revealElement(el);
+                visibleCount++;
+            }
+        });
+        staggerEls.forEach(el => {
+            if (heroSection && heroSection.contains(el)) return;
+            if (isNearViewport(el)) {
+                console.log('Revealing stagger element on load:', el);
+                revealElement(el);
+                visibleCount++;
+            }
+        });
+        console.log('Total elements revealed on load:', visibleCount);
+    });
 
     // After reveal animation finishes, clean up data-scroll so hover transitions work normally
     function cleanupAfterReveal(el) {
@@ -903,6 +928,7 @@ if (aestheticCursor && canUseAestheticCursor()) {
         entries.forEach(entry => {
             if (!entry.isIntersecting) return;
             const el = entry.target;
+            console.log('Observer triggered for:', el, 'isIntersecting:', entry.isIntersecting);
             // Skip hero elements (already revealed)
             if (heroSection && heroSection.contains(el)) return;
             revealElement(el);
@@ -911,27 +937,59 @@ if (aestheticCursor && canUseAestheticCursor()) {
     };
 
     const observerOpts = {
-        threshold: 0.15,
-        rootMargin: '0px 0px -60px 0px'
+        threshold: 0,
+        rootMargin: '0px'
     };
 
     const scrollObs = new IntersectionObserver(observerCallback, observerOpts);
 
-    scrollEls.forEach(el => {
-        // Don't observe hero children (they animate on load)
-        if (heroSection && heroSection.contains(el)) return;
-        if (isNearViewport(el)) {
-            revealElement(el);
+    // Delay observer setup slightly to ensure it catches already-visible elements
+    setTimeout(() => {
+        scrollEls.forEach(el => {
+            // Don't observe hero children (they animate on load)
+            if (heroSection && heroSection.contains(el)) return;
+            console.log('Observing element:', el);
+            scrollObs.observe(el);
+        });
+        staggerEls.forEach(el => {
+            if (heroSection && heroSection.contains(el)) return;
+            console.log('Observing stagger element:', el);
+            scrollObs.observe(el);
+        });
+    }, 100);
+})();
+
+// Mobile section scale — shrink shells proportionally on small viewports
+(function() {
+    var shells = document.querySelectorAll('.contact-shell, .lang-shell, .edu-shell, .plans-shell');
+    function updateMobileScale() {
+        var vw = window.innerWidth;
+        if (vw > 768) {
+            shells.forEach(function(el) {
+                el.style.transform = '';
+                el.style.transformOrigin = '';
+            });
             return;
         }
-        scrollObs.observe(el);
-    });
-    staggerEls.forEach(el => {
-        if (heroSection && heroSection.contains(el)) return;
-        if (isNearViewport(el)) {
-            revealElement(el);
-            return;
-        }
-        scrollObs.observe(el);
-    });
+        shells.forEach(function(el) {
+            var section = el.parentElement;
+            if (!section) return;
+            var sectionH = section.clientHeight;
+            var shellH = el.scrollHeight;
+            if (shellH <= 0 || sectionH <= 0) return;
+            var s = Math.min(1, (sectionH * 0.96) / shellH);
+            s = Math.max(0.5, s);
+            if (s < 0.98) {
+                el.style.transform = 'scale(' + s.toFixed(4) + ')';
+                el.style.transformOrigin = 'center center';
+            } else {
+                el.style.transform = '';
+                el.style.transformOrigin = '';
+            }
+        });
+    }
+    window.addEventListener('resize', updateMobileScale);
+    window.addEventListener('orientationchange', updateMobileScale);
+    setTimeout(updateMobileScale, 150);
+    window.addEventListener('load', updateMobileScale);
 })();
