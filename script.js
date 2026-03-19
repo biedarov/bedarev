@@ -616,18 +616,6 @@ function createParticles(xPos, yPos) {
 }
 
 // 6. Copy-to-clipboard for Contact section
-const contactToast = document.querySelector('.contact-toast');
-let contactToastTimer = null;
-
-function showContactToast(text) {
-    if (!contactToast) return;
-    contactToast.textContent = text;
-    contactToast.classList.add('show');
-    if (contactToastTimer) clearTimeout(contactToastTimer);
-    contactToastTimer = setTimeout(() => {
-        contactToast.classList.remove('show');
-    }, 1300);
-}
 
 async function copyTextToClipboard(text) {
     try {
@@ -658,7 +646,14 @@ document.addEventListener('click', async (e) => {
     const text = btn.getAttribute('data-copy') || '';
     if (!text) return;
     const ok = await copyTextToClipboard(text);
-    showContactToast(ok ? `Copied: ${text}` : 'Copy failed');
+    if (ok) {
+        btn.classList.add('copied');
+        btn.textContent = 'Copied!';
+        setTimeout(() => {
+            btn.classList.remove('copied');
+            btn.textContent = 'Copy';
+        }, 1400);
+    }
 });
 
 // 7b. Education: focus selector (Higher Math / Applied Math / Physics)
