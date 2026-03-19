@@ -117,8 +117,8 @@
 </div>
 
 <section id="hero" class="hero">
-    <img src="logo-large.png" class="hero-logo">
-    <h1 class="portfolio-title portfolio-toggle" id="portfolio-title" role="button" tabindex="0" aria-controls="about-panel" aria-expanded="false">
+    <img src="logo-large.png" class="hero-logo" data-scroll="scale-up" data-scroll-delay="100">
+    <h1 class="portfolio-title portfolio-toggle" id="portfolio-title" role="button" tabindex="0" aria-controls="about-panel" aria-expanded="false" data-scroll="fade-up" data-scroll-delay="300">
         <span class="portfolio-bracket" aria-hidden="true">&gt;</span>
         <span class="portfolio-text" id="portfolio-text" data-i18n="hero.portfolio">Portfolio</span>
         <span class="portfolio-bracket" aria-hidden="true">&lt;</span>
@@ -143,8 +143,8 @@
 
     <div class="contact-shell" aria-label="Contact section">
         <div class="contact-top">
-            <h2 class="contact-title" data-i18n="contact.title">Contact</h2>
-            <div class="contact-top-meta">
+            <h2 class="contact-title" data-i18n="contact.title" data-scroll="clip-left">Contact</h2>
+            <div class="contact-top-meta" data-scroll-stagger>
                 <div class="contact-chip" data-i18n="contact.noForms">No forms</div>
                 <div class="contact-chip" data-i18n="contact.directLinks">Direct links</div>
                 <div class="contact-chip" data-i18n="contact.copy">Copy available</div>
@@ -152,7 +152,7 @@
         </div>
 
         <div class="contact-panels" role="group" aria-label="Contact details">
-            <div class="contact-panel" data-panel="left">
+            <div class="contact-panel" data-panel="left" data-scroll="fade-up" data-scroll-delay="200">
                 <div class="contact-panel-head">
                     <div class="contact-panel-kicker" data-i18n="contact.channel">Channel</div>
                     <div class="contact-panel-title" data-i18n="contact.email">Email</div>
@@ -177,7 +177,7 @@
 
             <div class="contact-panel-divider" aria-hidden="true"></div>
 
-            <div class="contact-panel" data-panel="right">
+            <div class="contact-panel" data-panel="right" data-scroll="fade-up" data-scroll-delay="400">
                 <div class="contact-panel-head">
                     <div class="contact-panel-kicker" data-i18n="contact.channel">Channel</div>
                     <div class="contact-panel-title" data-i18n="contact.phone">Phone</div>
@@ -201,7 +201,7 @@
             </div>
         </div>
 
-        <div class="contact-bottom">
+        <div class="contact-bottom" data-scroll="fade-up" data-scroll-delay="500">
             <div class="contact-bottom-left" data-i18n="contact.bottom">Click links to open. Use Copy to grab text.</div>
             <div class="contact-bottom-right">MAILTO / TEL / SMS</div>
         </div>
@@ -218,8 +218,8 @@
 
     <div class="lang-shell" aria-label="Languages section">
         <div class="lang-top">
-            <h2 class="lang-title" data-i18n="languages.title">Languages</h2>
-            <div class="lang-top-meta">
+            <h2 class="lang-title" data-i18n="languages.title" data-scroll="clip-left">Languages</h2>
+            <div class="lang-top-meta" data-scroll-stagger>
                 <div class="lang-chip" data-i18n="lang.chipFocus">Click to focus</div>
                 <div class="lang-chip" data-i18n="lang.chipHold">Hold to reveal "future"</div>
                 <div class="lang-chip" data-i18n="lang.chipScale">CEFR scale</div>
@@ -227,7 +227,7 @@
         </div>
 
         <div class="lang-layout" role="group" aria-label="Language selector and details">
-            <nav class="lang-nav" aria-label="Language list">
+            <nav class="lang-nav" aria-label="Language list" data-scroll="fade-left" data-scroll-delay="200">
                 <button class="lang-btn active" type="button" data-lang="ru" aria-pressed="true">
                     <span class="lang-btn-name">Русский</span>
                     <span class="lang-btn-meta">Native</span>
@@ -259,7 +259,7 @@
 
             <div class="lang-divider" aria-hidden="true"></div>
 
-            <div class="lang-details">
+            <div class="lang-details" data-scroll="fade-right" data-scroll-delay="300">
                 <article class="lang-card active" id="lang-ru" data-lang-card="ru" aria-label="Russian details">
                     <div class="lang-card-head">
                         <div class="lang-kicker">Language</div>
@@ -343,7 +343,7 @@
             </div>
         </div>
 
-        <div class="lang-bottom">
+        <div class="lang-bottom" data-scroll="fade-up" data-scroll-delay="500">
             <div class="lang-bottom-left" data-i18n="lang.bottom">Fast scan. Clear levels. No fluff.</div>
             <div class="lang-bottom-right">RU · EN · UK · DE · JP</div>
         </div>
@@ -356,8 +356,8 @@
 
     <div class="edu-shell" aria-label="Education section">
         <div class="edu-header">
-            <h2 class="edu-title" data-i18n="education.title">Education</h2>
-            <div class="edu-header-meta">
+            <h2 class="edu-title" data-i18n="education.title" data-scroll="clip-left">Education</h2>
+            <div class="edu-header-meta" data-scroll-stagger>
                 <div class="edu-chip" data-i18n="edu.chipYear">Year 5</div>
                 <div class="edu-chip" data-i18n="edu.chipLevel">Higher Level</div>
                 <div class="edu-chip" data-i18n="edu.chipInteractive">Interactive</div>
@@ -365,7 +365,7 @@
         </div>
 
         <div class="edu-layout" role="group" aria-label="Education details">
-            <div class="edu-col-left">
+            <div class="edu-col-left" data-scroll="fade-left" data-scroll-delay="200">
                 <div class="edu-panel-head">
                     <div class="edu-panel-kicker" data-i18n="education.kicker">Institution</div>
                     <div class="edu-panel-title" data-i18n="edu.school">School</div>
@@ -381,7 +381,7 @@
 
             <div class="edu-divider" aria-hidden="true"></div>
 
-            <div class="edu-col-right">
+            <div class="edu-col-right" data-scroll="fade-right" data-scroll-delay="300">
                 <div class="edu-panel-head">
                     <div class="edu-panel-kicker" data-i18n="education.sub">Academic Focus</div>
                     <div class="edu-panel-title" data-i18n="edu.subjects">Subjects</div>
@@ -443,7 +443,7 @@
             </div>
         </div>
 
-        <div class="edu-footer">
+        <div class="edu-footer" data-scroll="fade-up" data-scroll-delay="500">
             <div class="edu-footer-left" data-i18n="edu.footerLeft">Structured layout. Clear hierarchy. Subject-led focus.</div>
             <div class="edu-footer-right">NEWTOWN · HIGHER MATH · APPLIED MATH · PHYSICS</div>
         </div>
@@ -457,20 +457,20 @@
     </div>
 
     <div class="plans-shell" aria-label="Plans section">
-        <div class="plans-topmark" aria-hidden="true">
+        <div class="plans-topmark" aria-hidden="true" data-scroll="tracking-in">
             <span class="plans-scribble">PLANS</span>
             <span class="plans-topmark-label">MISSION DIRECTIVE</span>
         </div>
 
-        <div class="plans-rule" aria-hidden="true"></div>
+        <div class="plans-rule" aria-hidden="true" data-scroll="draw-line" data-scroll-delay="200"></div>
 
-        <article class="dossier" id="dossier" aria-label="Secret plan dossier">
+        <article class="dossier" id="dossier" aria-label="Secret plan dossier" data-scroll="scale-up" data-scroll-delay="300">
             <div class="dossier-corner top-left" aria-hidden="true"></div>
             <div class="dossier-corner top-right" aria-hidden="true"></div>
             <div class="dossier-corner bottom-left" aria-hidden="true"></div>
             <div class="dossier-corner bottom-right" aria-hidden="true"></div>
 
-            <div class="dossier-header">
+            <div class="dossier-header" data-scroll="fade-down" data-scroll-delay="400">
                 <div class="dossier-meta">
                     <div class="meta-block">
                         <div class="meta-kicker">Document classification</div>
@@ -489,7 +489,7 @@
 
             <div class="dossier-divider" aria-hidden="true"></div>
 
-            <div class="dossier-body">
+            <div class="dossier-body" data-scroll="blur-in" data-scroll-delay="500">
                 <div class="section-kicker" data-i18n="plans.objective">Primary objective</div>
                 <h3 class="objective-title">MSISS @ TRINITY</h3>
                 <div class="objective-subtitle">College Dublin</div>
@@ -512,7 +512,7 @@
                 <div class="dossier-divider thin" aria-hidden="true"></div>
 
                 <div class="section-kicker" data-i18n="plans.intel">Additional intel</div>
-                <div class="intel" data-reveal="hover" aria-label="Sensitive information (blurred). Hover or hold to reveal.">
+                <div class="intel" data-reveal="hover" aria-label="Sensitive information (blurred). Hover or hold to reveal." data-scroll="flip-up" data-scroll-delay="600">
                     <div class="intel-row">
                         <div class="intel-label">Timeline</div>
                         <div class="intel-value blur">2026 intake · preparation & documents</div>
@@ -529,7 +529,7 @@
                 </div>
             </div>
 
-            <div class="dossier-footer">
+            <div class="dossier-footer" data-scroll="fade-up" data-scroll-delay="700">
                 <div class="footer-left">ACCESS LOG: <span class="mono" id="access-count">0001</span></div>
                 <div class="footer-right">DO NOT DISTRIBUTE</div>
             </div>

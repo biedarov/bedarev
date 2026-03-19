@@ -858,3 +858,69 @@ if (aestheticCursor && canUseAestheticCursor()) {
         raf = null;
     });
 }
+
+// 10. Scroll-triggered reveal animations
+(() => {
+    const scrollEls = document.querySelectorAll('[data-scroll]');
+    const staggerEls = document.querySelectorAll('[data-scroll-stagger]');
+    if (!scrollEls.length && !staggerEls.length) return;
+
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReduced) {
+        scrollEls.forEach(el => el.classList.add('in-view'));
+        staggerEls.forEach(el => el.classList.add('in-view'));
+        return;
+    }
+
+    // Hero elements start visible (already in viewport on load)
+    const heroSection = document.getElementById('hero');
+    if (heroSection) {
+        requestAnimationFrame(() => {
+            heroSection.querySelectorAll('[data-scroll]').forEach(el => {
+                el.classList.add('in-view');
+            });
+            heroSection.querySelectorAll('[data-scroll-stagger]').forEach(el => {
+                el.classList.add('in-view');
+            });
+        });
+    }
+
+    // After reveal animation finishes, clean up data-scroll so hover transitions work normally
+    function cleanupAfterReveal(el) {
+        const delay = parseInt(el.getAttribute('data-scroll-delay') || '0', 10);
+        const speed = el.getAttribute('data-scroll-speed');
+        const dur = speed === 'fast' ? 500 : speed === 'slow' ? 1200 : 800;
+        setTimeout(() => {
+            el.style.willChange = 'auto';
+        }, delay + dur + 100);
+    }
+
+    const observerCallback = (entries, obs) => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            const el = entry.target;
+            // Skip hero elements (already revealed)
+            if (heroSection && heroSection.contains(el)) return;
+            el.classList.add('in-view');
+            cleanupAfterReveal(el);
+            obs.unobserve(el); // one-shot: animate once
+        });
+    };
+
+    const observerOpts = {
+        threshold: 0.15,
+        rootMargin: '0px 0px -60px 0px'
+    };
+
+    const scrollObs = new IntersectionObserver(observerCallback, observerOpts);
+
+    scrollEls.forEach(el => {
+        // Don't observe hero children (they animate on load)
+        if (heroSection && heroSection.contains(el)) return;
+        scrollObs.observe(el);
+    });
+    staggerEls.forEach(el => {
+        if (heroSection && heroSection.contains(el)) return;
+        scrollObs.observe(el);
+    });
+})();
