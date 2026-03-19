@@ -1,6 +1,3 @@
-// Mark that JS has loaded
-document.documentElement.classList.add('js-loaded');
-
 // 1. Глобальный перевод (кроме navbar)
 const portfolioTitle = document.getElementById('portfolio-title');
 const portfolioText = document.getElementById('portfolio-text');
@@ -927,33 +924,37 @@ if (aestheticCursor && canUseAestheticCursor()) {
         }, delay + dur + 100);
     }
 
-    // Simple scroll-based reveal - more reliable than IntersectionObserver
-    const elementsToReveal = new Set();
-    scrollEls.forEach(el => {
-        if (!heroSection || !heroSection.contains(el)) {
-            elementsToReveal.add(el);
-        }
-    });
-    staggerEls.forEach(el => {
-        if (!heroSection || !heroSection.contains(el)) {
-            elementsToReveal.add(el);
-        }
-    });
-
-    function checkScrollReveal() {
-        const vh = window.innerHeight;
-        elementsToReveal.forEach(el => {
-            const rect = el.getBoundingClientRect();
-            // Trigger when element top is 100px from bottom of viewport
-            if (rect.top < vh - 100) {
-                revealElement(el);
-                elementsToReveal.delete(el);
-            }
+    const observerCallback = (entries, obs) => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            const el = entry.target;
+            console.log('Observer triggered for:', el, 'isIntersecting:', entry.isIntersecting);
+            // Skip hero elements (already revealed)
+            if (heroSection && heroSection.contains(el)) return;
+            revealElement(el);
+            obs.unobserve(el); // one-shot: animate once
         });
-    }
+    };
 
-    window.addEventListener('scroll', checkScrollReveal, { passive: true });
-    window.addEventListener('resize', checkScrollReveal);
-    // Initial check
-    setTimeout(checkScrollReveal, 100);
+    const observerOpts = {
+        threshold: 0,
+        rootMargin: '0px'
+    };
+
+    const scrollObs = new IntersectionObserver(observerCallback, observerOpts);
+
+    // Delay observer setup slightly to ensure it catches already-visible elements
+    setTimeout(() => {
+        scrollEls.forEach(el => {
+            // Don't observe hero children (they animate on load)
+            if (heroSection && heroSection.contains(el)) return;
+            console.log('Observing element:', el);
+            scrollObs.observe(el);
+        });
+        staggerEls.forEach(el => {
+            if (heroSection && heroSection.contains(el)) return;
+            console.log('Observing stagger element:', el);
+            scrollObs.observe(el);
+        });
+    }, 100);
 })();
