@@ -937,8 +937,8 @@ if (aestheticCursor && canUseAestheticCursor()) {
     };
 
     const observerOpts = {
-        threshold: 0,
-        rootMargin: '0px'
+        threshold: 0.5,
+        rootMargin: '-250px 0px -250px 0px'
     };
 
     const scrollObs = new IntersectionObserver(observerCallback, observerOpts);
