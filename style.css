@@ -382,10 +382,8 @@ align-items:center;
 }
 
 .logo-nav{
-width:48px;
-height:48px;
+height:30px;
 display:block;
-object-fit:contain;
 }
 
 /* TEXT */
@@ -2868,7 +2866,7 @@ justify-self:center;
 margin: 0;
 }
 
-.logo-nav { width: 36px; height: 36px; }
+.logo-nav { height: 24px; }
 
 .burger-menu {
 display:flex;
