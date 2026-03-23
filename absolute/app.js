@@ -5,6 +5,11 @@
 (function(){
 'use strict';
 
+const SUPABASE_URL = 'https://sdmxalbztbmpnalduwer.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkbXhhbGJ6dGJtcG5hbGR1d2VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDQxMTgsImV4cCI6MjA4OTg4MDExOH0.Psvmck43C-df3szPwR9quZW97O9j3h1JLZtsAbIQAs4';
+const ALLOWED_EMAIL = 'me@bedarev.com';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 /* ─── STORAGE KEYS ─── */
 const K = {
     tasks:    'abs_tasks',
@@ -13,10 +18,6 @@ const K = {
     activity: 'abs_activity',
     auth:     'abs_auth'
 };
-
-/* ─── SALT for password hashing ─── */
-const SALT = 'bedarev-salt-2024';
-const EXPECTED = 'd49d4bef4cc85ceced527b2d44cf03ac3e532b77295b25f6334217b23177c8b7';
 
 /* ─── STATE ─── */
 let state = {
@@ -36,79 +37,208 @@ let state = {
 };
 
 let charts = {};
+let currentUser = null;
+let saveTimer = null;
 
 /* ═══════════ AUTH ═══════════ */
 
-async function hashStr(str) {
-    const data = new TextEncoder().encode(str + ':' + SALT);
-    const buf = await crypto.subtle.digest('SHA-256', data);
-    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join('');
+function normalizeEmail(v) {
+    return (v || '').trim().toLowerCase();
 }
 
-async function verifyPassword(pwd) {
-    const h = await hashStr(pwd);
-    return h === EXPECTED;
+function isAllowedEmail(email) {
+    return normalizeEmail(email) === normalizeEmail(ALLOWED_EMAIL);
 }
 
-function isAuthed() {
-    return sessionStorage.getItem(K.auth) === '1';
+async function getSessionUser() {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) throw error;
+    const user = data.session?.user || null;
+    if (!user) return null;
+    if (!isAllowedEmail(user.email)) {
+        await supabase.auth.signOut();
+        return null;
+    }
+    return user;
 }
 
-function setAuthed(v) {
-    if (v) sessionStorage.setItem(K.auth, '1');
-    else sessionStorage.removeItem(K.auth);
+async function isAuthed() {
+    currentUser = await getSessionUser();
+    return !!currentUser;
+}
+
+function showLogin(message) {
+    appEl.classList.add('hidden');
+    loginScreen.classList.remove('hidden');
+    if (message) showLoginError(message);
+}
+
+function showLoginError(message) {
+    loginError.textContent = message;
+    loginError.classList.add('show');
+    setTimeout(() => loginError.classList.remove('show'), 3200);
 }
 
 /* ─── LOGIN UI ─── */
 const loginScreen = document.getElementById('login-screen');
+const loginEmail  = document.getElementById('login-email');
 const loginPw     = document.getElementById('login-pw');
 const loginBtn    = document.getElementById('login-btn');
+const signupBtn   = document.getElementById('signup-btn');
 const loginError  = document.getElementById('login-error');
 const appEl       = document.getElementById('app');
 
-function showApp() {
+async function showApp() {
     loginScreen.classList.add('hidden');
     appEl.classList.remove('hidden');
-    loadState();
+    await loadState();
     renderAll();
 }
 
 loginBtn.addEventListener('click', async () => {
-    const ok = await verifyPassword(loginPw.value);
-    if (ok) {
-        setAuthed(true);
-        showApp();
-    } else {
-        loginError.classList.add('show');
+    const email = normalizeEmail(loginEmail.value);
+    const password = loginPw.value;
+    if (!isAllowedEmail(email)) {
+        showLoginError('ACCESS DENIED — ONLY THE AUTHORIZED ACCOUNT IS ALLOWED');
+        loginEmail.focus();
+        return;
+    }
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
         loginPw.value = '';
         loginPw.focus();
-        setTimeout(() => loginError.classList.remove('show'), 2500);
+        showLoginError('ACCESS DENIED — UNAUTHORIZED ACCOUNT OR INVALID PASSWORD');
+        return;
     }
+    currentUser = await getSessionUser();
+    if (!currentUser) {
+        loginPw.value = '';
+        showLoginError('ACCESS DENIED — ONLY THE AUTHORIZED ACCOUNT IS ALLOWED');
+        return;
+    }
+    await showApp();
 });
 
-loginPw.addEventListener('keydown', e => {
+signupBtn.addEventListener('click', async () => {
+    const email = normalizeEmail(loginEmail.value);
+    const password = loginPw.value;
+    if (!isAllowedEmail(email)) {
+        showLoginError('ACCOUNT CREATION IS RESTRICTED TO THE AUTHORIZED EMAIL');
+        loginEmail.focus();
+        return;
+    }
+    if (!password || password.length < 6) {
+        showLoginError('PASSWORD MUST BE AT LEAST 6 CHARACTERS');
+        loginPw.focus();
+        return;
+    }
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) {
+        showLoginError('ACCOUNT CREATION FAILED — ' + error.message.toUpperCase());
+        return;
+    }
+    if (data.session?.user) {
+        currentUser = data.session.user;
+        await showApp();
+        toast('Account ready', 'success');
+        return;
+    }
+    showLoginError('ACCOUNT CREATED — CONFIRM EMAIL IF SUPABASE REQUIRES IT');
+});
+
+[loginEmail, loginPw].forEach(el => el.addEventListener('keydown', e => {
     if (e.key === 'Enter') loginBtn.click();
-});
+}));
 
-document.getElementById('logout-btn').addEventListener('click', () => {
-    setAuthed(false);
+document.getElementById('logout-btn').addEventListener('click', async () => {
+    await supabase.auth.signOut();
+    currentUser = null;
     location.reload();
 });
 
 /* ═══════════ PERSISTENCE ═══════════ */
 
-function save() {
-    localStorage.setItem(K.tasks, JSON.stringify(state.tasks));
-    localStorage.setItem(K.projects, JSON.stringify(state.projects));
-    localStorage.setItem(K.settings, JSON.stringify(state.settings));
-    localStorage.setItem(K.activity, JSON.stringify(state.activity.slice(-200)));
+function buildPersistedState() {
+    return {
+        tasks: state.tasks,
+        projects: state.projects,
+        settings: state.settings,
+        activity: state.activity.slice(-200)
+    };
 }
 
-function loadState() {
+function saveLocalBackup() {
+    const persisted = buildPersistedState();
+    localStorage.setItem(K.tasks, JSON.stringify(persisted.tasks));
+    localStorage.setItem(K.projects, JSON.stringify(persisted.projects));
+    localStorage.setItem(K.settings, JSON.stringify(persisted.settings));
+    localStorage.setItem(K.activity, JSON.stringify(persisted.activity));
+}
+
+async function saveRemoteState() {
+    if (!currentUser) return;
+    const persisted = buildPersistedState();
+    const { error } = await supabase.from('absolute_state').upsert({
+        user_id: currentUser.id,
+        email: normalizeEmail(currentUser.email),
+        tasks: persisted.tasks,
+        projects: persisted.projects,
+        settings: persisted.settings,
+        activity: persisted.activity,
+        updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id' });
+    if (error) throw error;
+}
+
+function scheduleRemoteSave() {
+    if (!currentUser) return;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(async () => {
+        try {
+            await saveRemoteState();
+        } catch (error) {
+            toast('Cloud sync failed', 'error');
+        }
+    }, 180);
+}
+
+function save() {
+    saveLocalBackup();
+    scheduleRemoteSave();
+}
+
+function loadLocalState() {
     try { state.tasks = JSON.parse(localStorage.getItem(K.tasks)) || []; } catch { state.tasks = []; }
     try { state.projects = JSON.parse(localStorage.getItem(K.projects)) || []; } catch { state.projects = []; }
     try { state.settings = { ...state.settings, ...JSON.parse(localStorage.getItem(K.settings)) }; } catch {}
     try { state.activity = JSON.parse(localStorage.getItem(K.activity)) || []; } catch { state.activity = []; }
+}
+
+async function loadState() {
+    loadLocalState();
+    if (!currentUser) {
+        applySettings();
+        return;
+    }
+    const { data, error } = await supabase
+        .from('absolute_state')
+        .select('tasks, projects, settings, activity')
+        .eq('user_id', currentUser.id)
+        .maybeSingle();
+    if (error) {
+        toast('Cloud state unavailable', 'error');
+        applySettings();
+        return;
+    }
+    if (data) {
+        state.tasks = Array.isArray(data.tasks) ? data.tasks : [];
+        state.projects = Array.isArray(data.projects) ? data.projects : [];
+        state.settings = { ...state.settings, ...(data.settings || {}) };
+        state.activity = Array.isArray(data.activity) ? data.activity : [];
+        saveLocalBackup();
+    } else {
+        await saveRemoteState();
+    }
     applySettings();
 }
 
@@ -1111,10 +1241,27 @@ function renderCurrent() {
 
 /* ═══════════ INIT ═══════════ */
 
-if (isAuthed()) {
-    showApp();
-} else {
-    loginPw.focus();
-}
+supabase.auth.onAuthStateChange(async (_event, session) => {
+    const user = session?.user || null;
+    if (!user) {
+        currentUser = null;
+        return;
+    }
+    if (!isAllowedEmail(user.email)) {
+        await supabase.auth.signOut();
+        currentUser = null;
+        showLogin('ACCESS DENIED — ONLY THE AUTHORIZED ACCOUNT IS ALLOWED');
+        return;
+    }
+    currentUser = user;
+});
+
+(async function init() {
+    if (await isAuthed()) {
+        await showApp();
+    } else {
+        loginEmail.focus();
+    }
+})();
 
 })();
