@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Absolute | Task Command Center</title>
+    <link rel="icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="48x48" href="/logo-icon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700&family=Playfair+Display+SC:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ═══════════ LOGIN SCREEN ═══════════ -->
+<div id="login-screen" class="login-screen">
+    <div class="login-bg">
+        <div class="login-grid"></div>
+    </div>
+    <div class="login-box">
+        <div class="login-corner tl"></div>
+        <div class="login-corner tr"></div>
+        <div class="login-corner bl"></div>
+        <div class="login-corner br"></div>
+        <div class="login-header">
+            <div class="login-kicker">ACCESS TERMINAL</div>
+            <div class="login-stamp">RESTRICTED</div>
+        </div>
+        <div class="login-divider"></div>
+        <div class="login-title">ABSOLUTE</div>
+        <div class="login-subtitle">Task Command Center</div>
+        <div class="login-form">
+            <label class="login-label" for="login-pw">PASSPHRASE</label>
+            <div class="login-input-wrap">
+                <input type="password" id="login-pw" class="login-input" placeholder="Enter access code" autocomplete="off" spellcheck="false">
+                <button type="button" id="login-btn" class="login-submit">VERIFY</button>
+            </div>
+            <div class="login-error" id="login-error">ACCESS DENIED — INVALID PASSPHRASE</div>
+        </div>
+        <div class="login-footer">
+            <span>CLASSIFICATION: LEVEL 5</span>
+            <span>EYES ONLY</span>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════ MAIN APP ═══════════ -->
+<div id="app" class="app hidden">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+            <a href="/" class="sidebar-logo-link">
+                <img src="/logo-small-black.png" alt="logo" class="sidebar-logo-img">
+            </a>
+        </div>
+        <nav class="sidebar-nav">
+            <button class="sidebar-btn active" data-view="dashboard" type="button">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                <span>Dashboard</span>
+            </button>
+            <button class="sidebar-btn" data-view="tasks" type="button">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                <span>Tasks</span>
+            </button>
+            <button class="sidebar-btn" data-view="projects" type="button">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+                <span>Projects</span>
+            </button>
+            <button class="sidebar-btn" data-view="analytics" type="button">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                <span>Analytics</span>
+            </button>
+            <button class="sidebar-btn" data-view="settings" type="button">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                <span>Settings</span>
+            </button>
+        </nav>
+        <div class="sidebar-footer">
+            <button class="sidebar-btn logout-btn" id="logout-btn" type="button">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                <span>Logout</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- MOBILE TOPBAR -->
+    <div class="topbar" id="topbar">
+        <button class="topbar-burger" id="topbar-burger" type="button">
+            <span></span><span></span><span></span>
+        </button>
+        <div class="topbar-title">ABSOLUTE</div>
+        <button class="topbar-add" id="topbar-add" type="button">+</button>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <main class="main" id="main">
+
+        <!-- ── DASHBOARD VIEW ── -->
+        <section class="view active" id="view-dashboard">
+            <div class="view-header">
+                <div>
+                    <h1 class="view-title">Dashboard</h1>
+                    <div class="view-subtitle" id="dash-date"></div>
+                </div>
+                <button class="btn-primary" id="dash-add-btn" type="button">+ New Task</button>
+            </div>
+
+            <div class="stats-row" id="stats-row">
+                <div class="stat-card">
+                    <div class="stat-kicker">Total Tasks</div>
+                    <div class="stat-value" id="stat-total">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-kicker">In Progress</div>
+                    <div class="stat-value" id="stat-progress">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-kicker">Completed</div>
+                    <div class="stat-value" id="stat-done">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-kicker">Overdue</div>
+                    <div class="stat-value stat-danger" id="stat-overdue">0</div>
+                </div>
+            </div>
+
+            <div class="dash-grid">
+                <div class="dash-panel">
+                    <div class="panel-head">
+                        <span class="panel-title">Today's Tasks</span>
+                        <span class="panel-badge" id="today-count">0</span>
+                    </div>
+                    <div class="panel-body" id="today-tasks"></div>
+                </div>
+                <div class="dash-panel">
+                    <div class="panel-head">
+                        <span class="panel-title">Weekly Overview</span>
+                    </div>
+                    <div class="panel-body chart-wrap">
+                        <canvas id="chart-weekly"></canvas>
+                    </div>
+                </div>
+                <div class="dash-panel">
+                    <div class="panel-head">
+                        <span class="panel-title">By Status</span>
+                    </div>
+                    <div class="panel-body chart-wrap">
+                        <canvas id="chart-status"></canvas>
+                    </div>
+                </div>
+                <div class="dash-panel">
+                    <div class="panel-head">
+                        <span class="panel-title">Recent Activity</span>
+                    </div>
+                    <div class="panel-body" id="recent-activity"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── TASKS VIEW ── -->
+        <section class="view" id="view-tasks">
+            <div class="view-header">
+                <div>
+                    <h1 class="view-title">Tasks</h1>
+                    <div class="view-subtitle" id="tasks-count-label">0 tasks</div>
+                </div>
+                <button class="btn-primary" id="tasks-add-btn" type="button">+ New Task</button>
+            </div>
+
+            <div class="tasks-toolbar">
+                <input type="text" class="search-input" id="task-search" placeholder="Search tasks...">
+                <div class="filter-group">
+                    <select class="filter-select" id="filter-status">
+                        <option value="all">All Status</option>
+                        <option value="not_started">Not Started</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="done">Done</option>
+                    </select>
+                    <select class="filter-select" id="filter-priority">
+                        <option value="all">All Priority</option>
+                        <option value="urgent">Urgent</option>
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+                    <select class="filter-select" id="filter-project">
+                        <option value="all">All Projects</option>
+                    </select>
+                    <select class="filter-select" id="sort-by">
+                        <option value="created_desc">Newest First</option>
+                        <option value="created_asc">Oldest First</option>
+                        <option value="due_asc">Due Date ↑</option>
+                        <option value="due_desc">Due Date ↓</option>
+                        <option value="priority_desc">Priority ↓</option>
+                        <option value="priority_asc">Priority ↑</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="task-list" id="task-list"></div>
+        </section>
+
+        <!-- ── PROJECTS VIEW ── -->
+        <section class="view" id="view-projects">
+            <div class="view-header">
+                <div>
+                    <h1 class="view-title">Projects</h1>
+                    <div class="view-subtitle" id="projects-count-label">0 projects</div>
+                </div>
+                <button class="btn-primary" id="projects-add-btn" type="button">+ New Project</button>
+            </div>
+            <div class="projects-grid" id="projects-grid"></div>
+        </section>
+
+        <!-- ── ANALYTICS VIEW ── -->
+        <section class="view" id="view-analytics">
+            <div class="view-header">
+                <div>
+                    <h1 class="view-title">Analytics</h1>
+                    <div class="view-subtitle">Productivity insights</div>
+                </div>
+            </div>
+
+            <div class="analytics-tabs">
+                <button class="tab-btn active" data-period="day" type="button">Day</button>
+                <button class="tab-btn" data-period="week" type="button">Week</button>
+                <button class="tab-btn" data-period="month" type="button">Month</button>
+                <button class="tab-btn" data-period="year" type="button">Year</button>
+                <button class="tab-btn" data-period="custom" type="button">Custom</button>
+            </div>
+
+            <div class="custom-range hidden" id="custom-range">
+                <input type="date" id="range-from" class="date-input">
+                <span class="range-sep">—</span>
+                <input type="date" id="range-to" class="date-input">
+                <button class="btn-small" id="range-apply" type="button">Apply</button>
+            </div>
+
+            <div class="analytics-grid">
+                <div class="analytics-panel full">
+                    <div class="panel-head">
+                        <span class="panel-title">Completion Over Time</span>
+                        <span class="panel-badge" id="analytics-completed-count">0</span>
+                    </div>
+                    <div class="panel-body chart-wrap chart-large">
+                        <canvas id="chart-completion"></canvas>
+                    </div>
+                </div>
+                <div class="analytics-panel">
+                    <div class="panel-head">
+                        <span class="panel-title">By Priority</span>
+                    </div>
+                    <div class="panel-body chart-wrap">
+                        <canvas id="chart-priority"></canvas>
+                    </div>
+                </div>
+                <div class="analytics-panel">
+                    <div class="panel-head">
+                        <span class="panel-title">By Project</span>
+                    </div>
+                    <div class="panel-body chart-wrap">
+                        <canvas id="chart-project"></canvas>
+                    </div>
+                </div>
+                <div class="analytics-stats" id="analytics-stats">
+                    <div class="a-stat">
+                        <div class="a-stat-label">Tasks Created</div>
+                        <div class="a-stat-value" id="a-created">0</div>
+                    </div>
+                    <div class="a-stat">
+                        <div class="a-stat-label">Tasks Completed</div>
+                        <div class="a-stat-value" id="a-completed">0</div>
+                    </div>
+                    <div class="a-stat">
+                        <div class="a-stat-label">Completion Rate</div>
+                        <div class="a-stat-value" id="a-rate">0%</div>
+                    </div>
+                    <div class="a-stat">
+                        <div class="a-stat-label">Avg. Completion Time</div>
+                        <div class="a-stat-value" id="a-avg-time">—</div>
+                    </div>
+                    <div class="a-stat">
+                        <div class="a-stat-label">Most Productive Day</div>
+                        <div class="a-stat-value" id="a-best-day">—</div>
+                    </div>
+                    <div class="a-stat">
+                        <div class="a-stat-label">Current Streak</div>
+                        <div class="a-stat-value" id="a-streak">0 days</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── SETTINGS VIEW ── -->
+        <section class="view" id="view-settings">
+            <div class="view-header">
+                <div>
+                    <h1 class="view-title">Settings</h1>
+                    <div class="view-subtitle">Configuration & data</div>
+                </div>
+            </div>
+
+            <div class="settings-grid">
+                <div class="settings-panel">
+                    <div class="panel-head"><span class="panel-title">Display</span></div>
+                    <div class="panel-body">
+                        <div class="setting-row">
+                            <label>Default View</label>
+                            <select id="setting-default-view" class="filter-select">
+                                <option value="dashboard">Dashboard</option>
+                                <option value="tasks">Tasks</option>
+                            </select>
+                        </div>
+                        <div class="setting-row">
+                            <label>Compact Mode</label>
+                            <label class="toggle"><input type="checkbox" id="setting-compact"><span class="toggle-slider"></span></label>
+                        </div>
+                        <div class="setting-row">
+                            <label>Show Completed Tasks</label>
+                            <label class="toggle"><input type="checkbox" id="setting-show-done" checked><span class="toggle-slider"></span></label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-panel">
+                    <div class="panel-head"><span class="panel-title">Notifications</span></div>
+                    <div class="panel-body">
+                        <div class="setting-row">
+                            <label>Due Date Reminders</label>
+                            <label class="toggle"><input type="checkbox" id="setting-reminders" checked><span class="toggle-slider"></span></label>
+                        </div>
+                        <div class="setting-row">
+                            <label>Sound Effects</label>
+                            <label class="toggle"><input type="checkbox" id="setting-sounds"><span class="toggle-slider"></span></label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-panel">
+                    <div class="panel-head"><span class="panel-title">Data Management</span></div>
+                    <div class="panel-body">
+                        <div class="setting-row">
+                            <label>Export Data (JSON)</label>
+                            <button class="btn-small" id="export-btn" type="button">Export</button>
+                        </div>
+                        <div class="setting-row">
+                            <label>Import Data</label>
+                            <input type="file" id="import-file" accept=".json" class="file-input">
+                            <button class="btn-small" id="import-btn" type="button">Import</button>
+                        </div>
+                        <div class="setting-row danger-row">
+                            <label>Delete All Data</label>
+                            <button class="btn-danger" id="clear-btn" type="button">Clear Everything</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-panel">
+                    <div class="panel-head"><span class="panel-title">Keyboard Shortcuts</span></div>
+                    <div class="panel-body shortcuts-body">
+                        <div class="shortcut-row"><kbd>N</kbd> <span>New Task</span></div>
+                        <div class="shortcut-row"><kbd>D</kbd> <span>Dashboard</span></div>
+                        <div class="shortcut-row"><kbd>T</kbd> <span>Tasks</span></div>
+                        <div class="shortcut-row"><kbd>P</kbd> <span>Projects</span></div>
+                        <div class="shortcut-row"><kbd>A</kbd> <span>Analytics</span></div>
+                        <div class="shortcut-row"><kbd>Esc</kbd> <span>Close Modal</span></div>
+                        <div class="shortcut-row"><kbd>/</kbd> <span>Search</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<!-- ═══════════ TASK MODAL ═══════════ -->
+<div class="modal-overlay hidden" id="task-modal">
+    <div class="modal">
+        <div class="modal-corner tl"></div>
+        <div class="modal-corner tr"></div>
+        <div class="modal-corner bl"></div>
+        <div class="modal-corner br"></div>
+        <div class="modal-header">
+            <h2 class="modal-title" id="modal-title">New Task</h2>
+            <button class="modal-close" id="modal-close" type="button">&times;</button>
+        </div>
+        <div class="modal-divider"></div>
+        <form id="task-form" class="modal-form">
+            <input type="hidden" id="task-id">
+            <div class="form-group">
+                <label for="task-title">Title</label>
+                <input type="text" id="task-title" class="form-input" required placeholder="Task title">
+            </div>
+            <div class="form-group">
+                <label for="task-desc">Description</label>
+                <textarea id="task-desc" class="form-input form-textarea" placeholder="Optional description"></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="task-status">Status</label>
+                    <select id="task-status" class="form-input">
+                        <option value="not_started">Not Started</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="done">Done</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="task-priority">Priority</label>
+                    <select id="task-priority" class="form-input">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                        <option value="urgent">Urgent</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="task-due">Due Date</label>
+                    <input type="date" id="task-due" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label for="task-project">Project</label>
+                    <select id="task-project" class="form-input">
+                        <option value="">No Project</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="task-tags">Tags <span class="form-hint">(comma separated)</span></label>
+                <input type="text" id="task-tags" class="form-input" placeholder="e.g. design, urgent, review">
+            </div>
+
+            <div class="form-group">
+                <label>Subtasks</label>
+                <div id="subtask-list" class="subtask-list"></div>
+                <div class="subtask-add-row">
+                    <input type="text" id="subtask-input" class="form-input subtask-input" placeholder="Add subtask...">
+                    <button type="button" class="btn-small" id="add-subtask-btn">+</button>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary" id="modal-cancel">Cancel</button>
+                <button type="button" class="btn-danger modal-delete hidden" id="modal-delete">Delete</button>
+                <button type="submit" class="btn-primary">Save Task</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ═══════════ PROJECT MODAL ═══════════ -->
+<div class="modal-overlay hidden" id="project-modal">
+    <div class="modal modal-sm">
+        <div class="modal-corner tl"></div>
+        <div class="modal-corner tr"></div>
+        <div class="modal-corner bl"></div>
+        <div class="modal-corner br"></div>
+        <div class="modal-header">
+            <h2 class="modal-title" id="project-modal-title">New Project</h2>
+            <button class="modal-close" id="project-modal-close" type="button">&times;</button>
+        </div>
+        <div class="modal-divider"></div>
+        <form id="project-form" class="modal-form">
+            <input type="hidden" id="project-id">
+            <div class="form-group">
+                <label for="project-name">Name</label>
+                <input type="text" id="project-name" class="form-input" required placeholder="Project name">
+            </div>
+            <div class="form-group">
+                <label for="project-color">Color</label>
+                <div class="color-picker" id="color-picker">
+                    <button type="button" class="color-swatch active" data-color="#000000" style="background:#000"></button>
+                    <button type="button" class="color-swatch" data-color="#555555" style="background:#555"></button>
+                    <button type="button" class="color-swatch" data-color="#888888" style="background:#888"></button>
+                    <button type="button" class="color-swatch" data-color="#1a1a2e" style="background:#1a1a2e"></button>
+                    <button type="button" class="color-swatch" data-color="#16213e" style="background:#16213e"></button>
+                    <button type="button" class="color-swatch" data-color="#0f3460" style="background:#0f3460"></button>
+                    <button type="button" class="color-swatch" data-color="#533483" style="background:#533483"></button>
+                    <button type="button" class="color-swatch" data-color="#e94560" style="background:#e94560"></button>
+                </div>
+                <input type="hidden" id="project-color-val" value="#000000">
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary" id="project-cancel">Cancel</button>
+                <button type="button" class="btn-danger modal-delete hidden" id="project-delete">Delete</button>
+                <button type="submit" class="btn-primary">Save Project</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ═══════════ CONFIRM MODAL ═══════════ -->
+<div class="modal-overlay hidden" id="confirm-modal">
+    <div class="modal modal-sm">
+        <div class="modal-header">
+            <h2 class="modal-title" id="confirm-title">Confirm</h2>
+            <button class="modal-close" id="confirm-close" type="button">&times;</button>
+        </div>
+        <div class="modal-divider"></div>
+        <div class="confirm-body" id="confirm-body"></div>
+        <div class="modal-actions">
+            <button type="button" class="btn-secondary" id="confirm-no">Cancel</button>
+            <button type="button" class="btn-danger" id="confirm-yes">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-container" id="toast-container"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
