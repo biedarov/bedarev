@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
     <title>Absolute | Task Command Center</title>
     <link rel="icon" href="/favicon.ico">
     <link rel="icon" type="image/png" sizes="48x48" href="/logo-icon.png">
@@ -93,6 +93,9 @@
             </button>
         </div>
     </aside>
+
+    <!-- SIDEBAR BACKDROP (mobile) -->
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
 
     <!-- MOBILE TOPBAR -->
     <div class="topbar" id="topbar">
@@ -369,13 +372,13 @@
                 <div class="settings-panel">
                     <div class="panel-head"><span class="panel-title">Keyboard Shortcuts</span></div>
                     <div class="panel-body shortcuts-body">
+                        <div class="shortcut-row"><kbd>Esc</kbd> <span>Close Modal / Blur</span></div>
+                        <div class="shortcut-row"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> <span>Save Form</span></div>
                         <div class="shortcut-row"><kbd>N</kbd> <span>New Task</span></div>
-                        <div class="shortcut-row"><kbd>D</kbd> <span>Dashboard</span></div>
-                        <div class="shortcut-row"><kbd>T</kbd> <span>Tasks</span></div>
-                        <div class="shortcut-row"><kbd>P</kbd> <span>Projects</span></div>
-                        <div class="shortcut-row"><kbd>A</kbd> <span>Analytics</span></div>
-                        <div class="shortcut-row"><kbd>Esc</kbd> <span>Close Modal</span></div>
-                        <div class="shortcut-row"><kbd>/</kbd> <span>Search</span></div>
+                        <div class="shortcut-row"><kbd>P</kbd> <span>New Project</span></div>
+                        <div class="shortcut-row"><kbd>/</kbd> <span>Search Tasks</span></div>
+                        <div class="shortcut-row"><kbd>1</kbd>–<kbd>5</kbd> <span>Navigate Views</span></div>
+                        <div class="shortcut-row"><kbd>1</kbd>–<kbd>4</kbd> <span>Priority (in modal)</span></div>
                     </div>
                 </div>
             </div>
@@ -386,44 +389,58 @@
 <!-- ═══════════ TASK MODAL ═══════════ -->
 <div class="modal-overlay hidden" id="task-modal">
     <div class="modal">
-        <div class="modal-corner tl"></div>
-        <div class="modal-corner tr"></div>
-        <div class="modal-corner bl"></div>
-        <div class="modal-corner br"></div>
         <div class="modal-header">
-            <h2 class="modal-title" id="modal-title">New Task</h2>
+            <div class="modal-header-left">
+                <div class="modal-kicker">TASK COMMAND CENTER</div>
+                <h2 class="modal-title" id="modal-title">New Task</h2>
+            </div>
             <button class="modal-close" id="modal-close" type="button">&times;</button>
         </div>
-        <div class="modal-divider"></div>
+
         <form id="task-form" class="modal-form">
             <input type="hidden" id="task-id">
+
+            <!-- Title — big and prominent -->
             <div class="form-group">
-                <label for="task-title">Title</label>
-                <input type="text" id="task-title" class="form-input" required placeholder="Task title">
+                <input type="text" id="task-title" class="form-input form-input-title" required placeholder="What needs to be done?" autofocus>
             </div>
+
+            <!-- Description — subtle -->
             <div class="form-group">
-                <label for="task-desc">Description</label>
-                <textarea id="task-desc" class="form-input form-textarea" placeholder="Optional description"></textarea>
+                <textarea id="task-desc" class="form-input form-textarea" placeholder="Add details or notes..."></textarea>
             </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="task-status">Status</label>
-                    <select id="task-status" class="form-input">
-                        <option value="not_started">Not Started</option>
-                        <option value="in_progress">In Progress</option>
-                        <option value="done">Done</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="task-priority">Priority</label>
-                    <select id="task-priority" class="form-input">
-                        <option value="low">Low</option>
-                        <option value="medium" selected>Medium</option>
-                        <option value="high">High</option>
-                        <option value="urgent">Urgent</option>
-                    </select>
-                </div>
+
+            <div class="form-section-label">Status</div>
+            <div class="pill-group" id="status-pills">
+                <button type="button" class="pill pill-status active" data-value="not_started">
+                    <span class="pill-dot"></span>Not Started
+                </button>
+                <button type="button" class="pill pill-status" data-value="in_progress">
+                    <span class="pill-dot in-progress"></span>In Progress
+                </button>
+                <button type="button" class="pill pill-status" data-value="done">
+                    <span class="pill-dot done"></span>Done
+                </button>
             </div>
+            <input type="hidden" id="task-status" value="not_started">
+
+            <div class="form-section-label">Priority</div>
+            <div class="pill-group" id="priority-pills">
+                <button type="button" class="pill pill-priority" data-value="low">
+                    <span class="pill-bar low"></span>Low
+                </button>
+                <button type="button" class="pill pill-priority active" data-value="medium">
+                    <span class="pill-bar medium"></span>Medium
+                </button>
+                <button type="button" class="pill pill-priority" data-value="high">
+                    <span class="pill-bar high"></span>High
+                </button>
+                <button type="button" class="pill pill-priority" data-value="urgent">
+                    <span class="pill-bar urgent"></span>Urgent
+                </button>
+            </div>
+            <input type="hidden" id="task-priority" value="medium">
+
             <div class="form-row">
                 <div class="form-group">
                     <label for="task-due">Due Date</label>
@@ -436,9 +453,10 @@
                     </select>
                 </div>
             </div>
+
             <div class="form-group">
                 <label for="task-tags">Tags <span class="form-hint">(comma separated)</span></label>
-                <input type="text" id="task-tags" class="form-input" placeholder="e.g. design, urgent, review">
+                <input type="text" id="task-tags" class="form-input" placeholder="design, review, frontend...">
             </div>
 
             <div class="form-group">
@@ -453,7 +471,7 @@
             <div class="modal-actions">
                 <button type="button" class="btn-secondary" id="modal-cancel">Cancel</button>
                 <button type="button" class="btn-danger modal-delete hidden" id="modal-delete">Delete</button>
-                <button type="submit" class="btn-primary">Save Task</button>
+                <button type="submit" class="btn-primary modal-save">Save Task</button>
             </div>
         </form>
     </div>
@@ -462,23 +480,21 @@
 <!-- ═══════════ PROJECT MODAL ═══════════ -->
 <div class="modal-overlay hidden" id="project-modal">
     <div class="modal modal-sm">
-        <div class="modal-corner tl"></div>
-        <div class="modal-corner tr"></div>
-        <div class="modal-corner bl"></div>
-        <div class="modal-corner br"></div>
         <div class="modal-header">
-            <h2 class="modal-title" id="project-modal-title">New Project</h2>
+            <div class="modal-header-left">
+                <div class="modal-kicker">PROJECT</div>
+                <h2 class="modal-title" id="project-modal-title">New Project</h2>
+            </div>
             <button class="modal-close" id="project-modal-close" type="button">&times;</button>
         </div>
-        <div class="modal-divider"></div>
+
         <form id="project-form" class="modal-form">
             <input type="hidden" id="project-id">
             <div class="form-group">
-                <label for="project-name">Name</label>
-                <input type="text" id="project-name" class="form-input" required placeholder="Project name">
+                <input type="text" id="project-name" class="form-input form-input-title" required placeholder="Project name">
             </div>
             <div class="form-group">
-                <label for="project-color">Color</label>
+                <div class="form-section-label">Color</div>
                 <div class="color-picker" id="color-picker">
                     <button type="button" class="color-swatch active" data-color="#000000" style="background:#000"></button>
                     <button type="button" class="color-swatch" data-color="#555555" style="background:#555"></button>
@@ -494,7 +510,7 @@
             <div class="modal-actions">
                 <button type="button" class="btn-secondary" id="project-cancel">Cancel</button>
                 <button type="button" class="btn-danger modal-delete hidden" id="project-delete">Delete</button>
-                <button type="submit" class="btn-primary">Save Project</button>
+                <button type="submit" class="btn-primary modal-save">Save Project</button>
             </div>
         </form>
     </div>
@@ -502,12 +518,11 @@
 
 <!-- ═══════════ CONFIRM MODAL ═══════════ -->
 <div class="modal-overlay hidden" id="confirm-modal">
-    <div class="modal modal-sm">
+    <div class="modal modal-sm modal-confirm">
         <div class="modal-header">
             <h2 class="modal-title" id="confirm-title">Confirm</h2>
             <button class="modal-close" id="confirm-close" type="button">&times;</button>
         </div>
-        <div class="modal-divider"></div>
         <div class="confirm-body" id="confirm-body"></div>
         <div class="modal-actions">
             <button type="button" class="btn-secondary" id="confirm-no">Cancel</button>
@@ -518,6 +533,13 @@
 
 <!-- TOAST -->
 <div class="toast-container" id="toast-container"></div>
+
+<!-- AESTHETIC CURSOR -->
+<div id="aesthetic-cursor" aria-hidden="true">
+    <div class="ac-ring"></div>
+    <div class="ac-cross"></div>
+    <div class="ac-label">VIEW</div>
+</div>
 
 <script src="app.js"></script>
 </body>

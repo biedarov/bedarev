@@ -319,15 +319,29 @@ function switchView(name) {
     if (name === 'analytics') renderAnalytics();
 
     // close mobile sidebar
-    document.getElementById('sidebar').classList.remove('open');
+    closeSidebar();
 }
 
 sidebarBtns.forEach(b => b.addEventListener('click', () => switchView(b.dataset.view)));
 
-// Mobile
+// Mobile sidebar with backdrop
+const sidebarEl = document.getElementById('sidebar');
+const backdropEl = document.getElementById('sidebar-backdrop');
+
+function openSidebar() {
+    sidebarEl.classList.add('open');
+    backdropEl.classList.add('active');
+}
+function closeSidebar() {
+    sidebarEl.classList.remove('open');
+    backdropEl.classList.remove('active');
+}
+
 document.getElementById('topbar-burger').addEventListener('click', () => {
-    document.getElementById('sidebar').classList.toggle('open');
+    if (sidebarEl.classList.contains('open')) closeSidebar();
+    else openSidebar();
 });
+backdropEl.addEventListener('click', closeSidebar);
 document.getElementById('topbar-add').addEventListener('click', () => openTaskModal());
 
 /* ═══════════ RENDER ALL ═══════════ */
@@ -601,10 +615,35 @@ const taskForm    = document.getElementById('task-form');
 const modalTitle  = document.getElementById('modal-title');
 const modalDelete = document.getElementById('modal-delete');
 
+/* Pill selectors */
+function initPillGroup(groupId, hiddenId) {
+    const group = document.getElementById(groupId);
+    const hidden = document.getElementById(hiddenId);
+    group.querySelectorAll('.pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+            group.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
+            hidden.value = pill.dataset.value;
+        });
+    });
+}
+initPillGroup('status-pills', 'task-status');
+initPillGroup('priority-pills', 'task-priority');
+
+function setPillValue(groupId, hiddenId, value) {
+    const group = document.getElementById(groupId);
+    const hidden = document.getElementById(hiddenId);
+    hidden.value = value;
+    group.querySelectorAll('.pill').forEach(p => {
+        p.classList.toggle('active', p.dataset.value === value);
+    });
+}
+
 function openTaskModal(id) {
     taskForm.reset();
     document.getElementById('subtask-list').innerHTML = '';
-    document.getElementById('task-priority').value = 'medium';
+    setPillValue('priority-pills', 'task-priority', 'medium');
+    setPillValue('status-pills', 'task-status', 'not_started');
     populateProjectSelects();
 
     if (id) {
@@ -615,8 +654,8 @@ function openTaskModal(id) {
         document.getElementById('task-id').value = t.id;
         document.getElementById('task-title').value = t.title;
         document.getElementById('task-desc').value = t.description || '';
-        document.getElementById('task-status').value = t.status;
-        document.getElementById('task-priority').value = t.priority;
+        setPillValue('status-pills', 'task-status', t.status);
+        setPillValue('priority-pills', 'task-priority', t.priority);
         document.getElementById('task-due').value = t.dueDate || '';
         document.getElementById('task-project').value = t.project || '';
         document.getElementById('task-tags').value = (t.tags || []).join(', ');
@@ -1195,27 +1234,72 @@ document.getElementById('confirm-modal').addEventListener('click', e => { if (e.
 
 /* ═══════════ KEYBOARD SHORTCUTS ═══════════ */
 
+function isAnyModalOpen() {
+    return !taskModal.classList.contains('hidden')
+        || !document.getElementById('project-modal').classList.contains('hidden')
+        || !document.getElementById('confirm-modal').classList.contains('hidden');
+}
+
 document.addEventListener('keydown', e => {
-    // skip if typing in input
-    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
     if (!isAuthed() || appEl.classList.contains('hidden')) return;
 
-    const key = e.key.toLowerCase();
-    if (key === 'n') { e.preventDefault(); openTaskModal(); }
-    if (key === 'd') { e.preventDefault(); switchView('dashboard'); }
-    if (key === 't') { e.preventDefault(); switchView('tasks'); }
-    if (key === 'p') { e.preventDefault(); switchView('projects'); }
-    if (key === 'a') { e.preventDefault(); switchView('analytics'); }
-    if (key === 'escape') {
-        closeTaskModal();
-        closeProjectModal();
-        closeConfirm();
-    }
-    if (key === '/') {
+    const key = e.key;
+    const k = key.toLowerCase();
+    const ctrl = e.ctrlKey || e.metaKey;
+    const inInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName);
+
+    // ── GLOBAL (always work, even in inputs) ──
+
+    // Esc — close modals → blur input → close sidebar
+    if (key === 'Escape') {
         e.preventDefault();
-        switchView('tasks');
-        setTimeout(() => document.getElementById('task-search').focus(), 100);
+        if (!document.getElementById('confirm-modal').classList.contains('hidden')) { closeConfirm(); return; }
+        if (!taskModal.classList.contains('hidden')) { closeTaskModal(); return; }
+        if (!document.getElementById('project-modal').classList.contains('hidden')) { closeProjectModal(); return; }
+        if (inInput) { e.target.blur(); return; }
+        closeSidebar();
+        return;
     }
+
+    // Ctrl+Enter — save/submit open form or confirm dialog
+    if (key === 'Enter' && ctrl) {
+        e.preventDefault();
+        if (!taskModal.classList.contains('hidden')) { taskForm.requestSubmit(); return; }
+        if (!document.getElementById('project-modal').classList.contains('hidden')) {
+            document.getElementById('project-form').requestSubmit(); return;
+        }
+        if (!document.getElementById('confirm-modal').classList.contains('hidden')) {
+            document.getElementById('confirm-yes').click(); return;
+        }
+        return;
+    }
+
+    // ── SKIP if typing in a field ──
+    if (inInput) return;
+
+    // ── INSIDE TASK MODAL (not typing) ──
+    if (!taskModal.classList.contains('hidden')) {
+        if (key === '1') { setPillValue('priority-pills', 'task-priority', 'low'); return; }
+        if (key === '2') { setPillValue('priority-pills', 'task-priority', 'medium'); return; }
+        if (key === '3') { setPillValue('priority-pills', 'task-priority', 'high'); return; }
+        if (key === '4') { setPillValue('priority-pills', 'task-priority', 'urgent'); return; }
+        return;
+    }
+
+    // ── SKIP if any other modal is open ──
+    if (isAnyModalOpen()) return;
+
+    // ── MAIN SHORTCUTS ──
+    if (k === 'n') { e.preventDefault(); openTaskModal(); return; }
+    if (k === 'p') { e.preventDefault(); openProjectModal(); return; }
+    if (k === '/') { e.preventDefault(); switchView('tasks'); setTimeout(() => document.getElementById('task-search').focus(), 100); return; }
+
+    // Navigation: 1–5
+    if (key === '1') { e.preventDefault(); switchView('dashboard'); }
+    if (key === '2') { e.preventDefault(); switchView('tasks'); }
+    if (key === '3') { e.preventDefault(); switchView('projects'); }
+    if (key === '4') { e.preventDefault(); switchView('analytics'); }
+    if (key === '5') { e.preventDefault(); switchView('settings'); }
 });
 
 /* ═══════════ FILTER LISTENERS ═══════════ */
@@ -1262,6 +1346,69 @@ supabase.auth.onAuthStateChange(async (_event, session) => {
     } else {
         loginEmail.focus();
     }
+})();
+
+/* ═══════════ AESTHETIC CURSOR ═══════════ */
+
+(function initCursor() {
+    const ac = document.getElementById('aesthetic-cursor');
+    const label = ac ? ac.querySelector('.ac-label') : null;
+    if (!ac) return;
+
+    const canUse = () =>
+        window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+    if (!canUse()) return;
+
+    let raf = null;
+    let tx = 0, ty = 0, lx = 0, ly = 0;
+
+    const tick = () => {
+        lx += (tx - lx) * 0.22;
+        ly += (ty - ly) * 0.22;
+        ac.style.transform = `translate3d(${lx}px, ${ly}px, 0)`;
+        raf = requestAnimationFrame(tick);
+    };
+
+    const updateInversion = (el) => {
+        if (!el) { ac.classList.remove('inverted'); return; }
+        const inDark = !!(
+            el.closest('.sidebar') ||
+            el.closest('.topbar') ||
+            el.closest('.modal-header') && !el.closest('.modal-confirm') ||
+            el.closest('.login-screen') ||
+            el.closest('.pill.active') ||
+            el.closest('.btn-primary')
+        );
+        ac.classList.toggle('inverted', inDark);
+    };
+
+    document.addEventListener('mousemove', (e) => {
+        tx = e.clientX;
+        ty = e.clientY;
+
+        if (!ac.classList.contains('active')) {
+            ac.classList.add('active');
+            lx = tx; ly = ty;
+            if (!raf) raf = requestAnimationFrame(tick);
+        }
+
+        const hoverEl = document.elementFromPoint(e.clientX, e.clientY);
+        const interactive = hoverEl && hoverEl.closest &&
+            hoverEl.closest('a, button, [role="button"], select, .task-item, .project-card, .pill, .color-swatch, .toggle, .tab-btn, .sidebar-btn, input, textarea');
+        ac.classList.toggle('is-hover', !!interactive);
+        if (label) label.textContent = interactive ? 'CLICK' : '';
+        updateInversion(hoverEl);
+    }, { passive: true });
+
+    document.addEventListener('mousedown', () => ac.classList.add('is-down'));
+    document.addEventListener('mouseup', () => ac.classList.remove('is-down'));
+
+    document.addEventListener('mouseleave', () => {
+        ac.classList.remove('active', 'is-hover', 'is-down');
+        if (raf) cancelAnimationFrame(raf);
+        raf = null;
+    });
 })();
 
 })();
