@@ -7,7 +7,11 @@
 
 const SUPABASE_URL = 'https://sdmxalbztbmpnalduwer.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkbXhhbGJ6dGJtcG5hbGR1d2VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDQxMTgsImV4cCI6MjA4OTg4MDExOH0.Psvmck43C-df3szPwR9quZW97O9j3h1JLZtsAbIQAs4';
-const ALLOWED_EMAIL = 'me@bedarev.com';
+const ALLOWED_EMAILS = [
+    'me@bedarev.com',
+    'ser.biedarov@gmail.com',
+    'zakharbiedarov@gmail.com'
+];
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /* ─── STORAGE KEYS ─── */
@@ -47,7 +51,7 @@ function normalizeEmail(v) {
 }
 
 function isAllowedEmail(email) {
-    return normalizeEmail(email) === normalizeEmail(ALLOWED_EMAIL);
+    return ALLOWED_EMAILS.some(a => normalizeEmail(email) === normalizeEmail(a));
 }
 
 async function getSessionUser() {
@@ -147,7 +151,8 @@ signupBtn.addEventListener('click', async () => {
 });
 
 [loginEmail, loginPw].forEach(el => el.addEventListener('keydown', e => {
-    if (e.key === 'Enter') loginBtn.click();
+    if (e.key === 'Enter' && e.shiftKey) signupBtn.click();
+    else if (e.key === 'Enter') loginBtn.click();
 }));
 
 document.getElementById('logout-btn').addEventListener('click', async () => {
@@ -1375,10 +1380,11 @@ supabase.auth.onAuthStateChange(async (_event, session) => {
         const inDark = !!(
             el.closest('.sidebar') ||
             el.closest('.topbar') ||
-            el.closest('.modal-header') && !el.closest('.modal-confirm') ||
-            el.closest('.login-screen') ||
+            (el.closest('.modal-header') && !el.closest('.modal-confirm')) ||
             el.closest('.pill.active') ||
-            el.closest('.btn-primary')
+            el.closest('.btn-primary') ||
+            el.closest('.btn-danger') ||
+            el.closest('.login-submit:not(.login-submit-secondary)')
         );
         ac.classList.toggle('inverted', inDark);
     };

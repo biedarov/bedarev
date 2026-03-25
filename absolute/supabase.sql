@@ -20,7 +20,7 @@ on public.absolute_state
 for insert
 with check (
     auth.uid() = user_id
-    and lower(email) = 'me@bedarev.com'
+    and lower(email) = any(array['me@bedarev.com','ser.biedarov@gmail.com','zakharbiedarov@gmail.com'])
 );
 
 create policy "absolute_state_update_own"
@@ -29,7 +29,7 @@ for update
 using (auth.uid() = user_id)
 with check (
     auth.uid() = user_id
-    and lower(email) = 'me@bedarev.com'
+    and lower(email) = any(array['me@bedarev.com','ser.biedarov@gmail.com','zakharbiedarov@gmail.com'])
 );
 
 create policy "absolute_state_delete_own"
