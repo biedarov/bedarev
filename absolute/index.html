@@ -19,7 +19,9 @@
     <div class="login-bg">
         <div class="login-grid"></div>
     </div>
-    <div class="login-box">
+
+    <!-- SIGN IN VIEW -->
+    <div class="login-box" id="login-view">
         <div class="login-corner tl"></div>
         <div class="login-corner tr"></div>
         <div class="login-corner bl"></div>
@@ -32,7 +34,7 @@
         <div class="login-title">ABSOLUTE</div>
         <div class="login-subtitle">Task Command Center</div>
         <div class="login-form">
-            <label class="login-label" for="login-email">AUTHORIZED ACCOUNT</label>
+            <label class="login-label" for="login-email">EMAIL</label>
             <div class="login-input-wrap">
                 <input type="email" id="login-email" class="login-input" placeholder="Email address" autocomplete="email" spellcheck="false">
             </div>
@@ -42,14 +44,49 @@
             </div>
             <div class="login-actions">
                 <button type="button" id="login-btn" class="login-submit">SIGN IN</button>
-                <button type="button" id="signup-btn" class="login-submit login-submit-secondary">CREATE ACCOUNT</button>
             </div>
-            <div class="login-account-hint">AUTHORIZED ACCOUNTS ONLY</div>
-            <div class="login-error" id="login-error">ACCESS DENIED — UNAUTHORIZED ACCOUNT OR INVALID PASSWORD</div>
+            <div class="login-error" id="login-error"></div>
         </div>
         <div class="login-footer">
-            <span>CLASSIFICATION: LEVEL 5</span>
-            <span>EYES ONLY</span>
+            <span>AUTHORIZED ACCOUNTS ONLY</span>
+            <button type="button" class="login-switch" id="show-signup">CREATE ACCOUNT →</button>
+        </div>
+    </div>
+
+    <!-- SIGN UP VIEW -->
+    <div class="login-box hidden" id="signup-view">
+        <div class="login-corner tl"></div>
+        <div class="login-corner tr"></div>
+        <div class="login-corner bl"></div>
+        <div class="login-corner br"></div>
+        <div class="login-header">
+            <div class="login-kicker">NEW OPERATIVE</div>
+            <div class="login-stamp">REGISTER</div>
+        </div>
+        <div class="login-divider"></div>
+        <div class="login-title">JOIN</div>
+        <div class="login-subtitle">Create Your Account</div>
+        <div class="login-form">
+            <label class="login-label" for="signup-email">EMAIL</label>
+            <div class="login-input-wrap">
+                <input type="email" id="signup-email" class="login-input" placeholder="Email address" autocomplete="email" spellcheck="false">
+            </div>
+            <label class="login-label" for="signup-pw">PASSWORD</label>
+            <div class="login-input-wrap">
+                <input type="password" id="signup-pw" class="login-input" placeholder="Min 6 characters" autocomplete="new-password" spellcheck="false">
+            </div>
+            <label class="login-label" for="signup-pw2">CONFIRM PASSWORD</label>
+            <div class="login-input-wrap">
+                <input type="password" id="signup-pw2" class="login-input" placeholder="Repeat password" autocomplete="new-password" spellcheck="false">
+            </div>
+            <div class="login-actions">
+                <button type="button" id="signup-btn" class="login-submit">CREATE ACCOUNT</button>
+            </div>
+            <div class="login-error" id="signup-error"></div>
+        </div>
+        <div class="login-footer">
+            <span>ALREADY HAVE ACCESS?</span>
+            <button type="button" class="login-switch" id="show-login">← SIGN IN</button>
         </div>
     </div>
 </div>

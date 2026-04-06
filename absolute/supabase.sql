@@ -10,6 +10,11 @@ create table if not exists public.absolute_state (
 
 alter table public.absolute_state enable row level security;
 
+drop policy if exists "absolute_state_select_own" on public.absolute_state;
+drop policy if exists "absolute_state_insert_own" on public.absolute_state;
+drop policy if exists "absolute_state_update_own" on public.absolute_state;
+drop policy if exists "absolute_state_delete_own" on public.absolute_state;
+
 create policy "absolute_state_select_own"
 on public.absolute_state
 for select

@@ -85,12 +85,40 @@ function showLoginError(message) {
 
 /* ─── LOGIN UI ─── */
 const loginScreen = document.getElementById('login-screen');
+const loginView   = document.getElementById('login-view');
+const signupView  = document.getElementById('signup-view');
+const appEl       = document.getElementById('app');
+
+// Login elements
 const loginEmail  = document.getElementById('login-email');
 const loginPw     = document.getElementById('login-pw');
 const loginBtn    = document.getElementById('login-btn');
-const signupBtn   = document.getElementById('signup-btn');
 const loginError  = document.getElementById('login-error');
-const appEl       = document.getElementById('app');
+
+// Signup elements
+const signupEmail = document.getElementById('signup-email');
+const signupPw    = document.getElementById('signup-pw');
+const signupPw2   = document.getElementById('signup-pw2');
+const signupBtn   = document.getElementById('signup-btn');
+const signupError = document.getElementById('signup-error');
+
+function showSignupError(msg) {
+    signupError.textContent = msg;
+    signupError.classList.add('show');
+    setTimeout(() => signupError.classList.remove('show'), 3200);
+}
+
+// Toggle between views
+document.getElementById('show-signup').addEventListener('click', () => {
+    loginView.classList.add('hidden');
+    signupView.classList.remove('hidden');
+    signupEmail.focus();
+});
+document.getElementById('show-login').addEventListener('click', () => {
+    signupView.classList.add('hidden');
+    loginView.classList.remove('hidden');
+    loginEmail.focus();
+});
 
 async function showApp() {
     loginScreen.classList.add('hidden');
@@ -99,60 +127,83 @@ async function showApp() {
     renderAll();
 }
 
+// Sign In
 loginBtn.addEventListener('click', async () => {
     const email = normalizeEmail(loginEmail.value);
     const password = loginPw.value;
+    if (!email) { showLoginError('ENTER YOUR EMAIL'); loginEmail.focus(); return; }
+    if (!password) { showLoginError('ENTER YOUR PASSWORD'); loginPw.focus(); return; }
     if (!isAllowedEmail(email)) {
-        showLoginError('ACCESS DENIED — ONLY THE AUTHORIZED ACCOUNT IS ALLOWED');
+        showLoginError('ACCESS DENIED — UNAUTHORIZED ACCOUNT');
         loginEmail.focus();
         return;
     }
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'SIGNING IN...';
     const { error } = await supabase.auth.signInWithPassword({ email, password });
+    loginBtn.disabled = false;
+    loginBtn.textContent = 'SIGN IN';
     if (error) {
         loginPw.value = '';
         loginPw.focus();
-        showLoginError('ACCESS DENIED — UNAUTHORIZED ACCOUNT OR INVALID PASSWORD');
+        showLoginError('INVALID EMAIL OR PASSWORD');
         return;
     }
     currentUser = await getSessionUser();
     if (!currentUser) {
         loginPw.value = '';
-        showLoginError('ACCESS DENIED — ONLY THE AUTHORIZED ACCOUNT IS ALLOWED');
+        showLoginError('ACCESS DENIED — UNAUTHORIZED ACCOUNT');
         return;
     }
     await showApp();
 });
 
+// Sign Up
 signupBtn.addEventListener('click', async () => {
-    const email = normalizeEmail(loginEmail.value);
-    const password = loginPw.value;
+    const email = normalizeEmail(signupEmail.value);
+    const password = signupPw.value;
+    const password2 = signupPw2.value;
+    if (!email) { showSignupError('ENTER YOUR EMAIL'); signupEmail.focus(); return; }
     if (!isAllowedEmail(email)) {
-        showLoginError('ACCOUNT CREATION IS RESTRICTED TO THE AUTHORIZED EMAIL');
-        loginEmail.focus();
+        showSignupError('THIS EMAIL IS NOT AUTHORIZED');
+        signupEmail.focus();
         return;
     }
     if (!password || password.length < 6) {
-        showLoginError('PASSWORD MUST BE AT LEAST 6 CHARACTERS');
-        loginPw.focus();
+        showSignupError('PASSWORD MUST BE AT LEAST 6 CHARACTERS');
+        signupPw.focus();
         return;
     }
+    if (password !== password2) {
+        showSignupError('PASSWORDS DO NOT MATCH');
+        signupPw2.value = '';
+        signupPw2.focus();
+        return;
+    }
+    signupBtn.disabled = true;
+    signupBtn.textContent = 'CREATING...';
     const { data, error } = await supabase.auth.signUp({ email, password });
+    signupBtn.disabled = false;
+    signupBtn.textContent = 'CREATE ACCOUNT';
     if (error) {
-        showLoginError('ACCOUNT CREATION FAILED — ' + error.message.toUpperCase());
+        showSignupError(error.message.toUpperCase());
         return;
     }
     if (data.session?.user) {
         currentUser = data.session.user;
         await showApp();
-        toast('Account ready', 'success');
+        toast('Account created', 'success');
         return;
     }
-    showLoginError('ACCOUNT CREATED — CONFIRM EMAIL IF SUPABASE REQUIRES IT');
+    showSignupError('CHECK YOUR EMAIL TO CONFIRM YOUR ACCOUNT');
 });
 
+// Enter to submit
 [loginEmail, loginPw].forEach(el => el.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && e.shiftKey) signupBtn.click();
-    else if (e.key === 'Enter') loginBtn.click();
+    if (e.key === 'Enter') loginBtn.click();
+}));
+[signupEmail, signupPw, signupPw2].forEach(el => el.addEventListener('keydown', e => {
+    if (e.key === 'Enter') signupBtn.click();
 }));
 
 document.getElementById('logout-btn').addEventListener('click', async () => {
