@@ -459,6 +459,12 @@ const logo = document.querySelector('.logo-nav');
 function setMobileMenu(open) {
     burger.classList.toggle('active', open);
     overlay.classList.toggle('active', open);
+    if (open) {
+        navbar.classList.remove('inverted');
+        if (logo) logo.src = 'logo-small.png';
+    } else {
+        scheduleSidenavUpdate();
+    }
 }
 
 burger.addEventListener('click', () => {
@@ -474,7 +480,8 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         if (!target) return;
         setMobileMenu(false);
         document.body.style.overflow = 'auto';
-        window.scrollTo({ top: target.offsetTop, behavior: 'smooth' });
+        const navHeight = document.querySelector('.navbar')?.offsetHeight || 80;
+        window.scrollTo({ top: target.offsetTop - navHeight, behavior: 'smooth' });
     });
 });
 

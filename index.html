@@ -1,583 +1,574 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
-    <title>Absolute | Task Command Center</title>
-    <link rel="icon" href="/favicon.ico">
-    <link rel="icon" type="image/png" sizes="48x48" href="/logo-icon.png">
-    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700&family=Playfair+Display+SC:wght@400;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="style.css">
-</head>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+        <!-- SEO TITLE -->
+        <title>Myron Bedarev | Мирон Бедарев | Developer Portfolio</title>
+    
+        <!-- DESCRIPTION -->
+        <meta name="description" content="Myron Bedarev (Мирон Бедарев, Мирон Бедарёв, Мирон Бєдарьов) – developer portfolio. Projects, contact and work. Based at Newtown School, Waterford.">
+    
+        <!-- KEYWORDS (не сильно влияют, но пусть будут) -->
+        <meta name="keywords" content="Myron Bedarev, Myron Biedarov, Miron Bedarev, Мирон, Мирон Бедарев, Мирон Бедарёв, Мирон Бєдарьов, developer, portfolio, Newtown School, Waterford">
+    
+        <!-- AUTHOR -->
+        <meta name="author" content="Myron Bedarev">
+    
+        <!-- FAVICON -->
+        <link rel="icon" href="/favicon.ico">
+        <link rel="icon" type="image/png" sizes="48x48" href="logo-icon.png">
+        <link rel="apple-touch-icon" href="logo-icon.png">
+    
+        <!-- OPEN GRAPH (для соцсетей и Google) -->
+        <meta property="og:title" content="Myron Bedarev – Developer">
+        <meta property="og:description" content="Developer portfolio of Myron Bedarev (Мирон Бедарев). Projects and contact.">
+        <meta property="og:type" content="website">
+        <meta property="og:image" content="logo-large.png">
+    
+        <!-- GOOGLE FONTS -->
+        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@900&family=Unbounded:wght@400&family=Playfair+Display+SC:wght@400;700&family=Redacted+Script&display=swap" rel="stylesheet">
+    
+        <!-- CSS -->
+        <link rel="stylesheet" href="style.css">
+    </head>
 <body>
 
-<!-- ═══════════ LOGIN SCREEN ═══════════ -->
-<div id="login-screen" class="login-screen">
-    <div class="login-bg">
-        <div class="login-grid"></div>
-    </div>
-
-    <!-- SIGN IN VIEW -->
-    <div class="login-box" id="login-view">
-        <div class="login-corner tl"></div>
-        <div class="login-corner tr"></div>
-        <div class="login-corner bl"></div>
-        <div class="login-corner br"></div>
-        <div class="login-header">
-            <div class="login-kicker">ACCESS TERMINAL</div>
-            <div class="login-stamp">RESTRICTED</div>
-        </div>
-        <div class="login-divider"></div>
-        <div class="login-title">ABSOLUTE</div>
-        <div class="login-subtitle">Task Command Center</div>
-        <div class="login-form">
-            <label class="login-label" for="login-email">EMAIL</label>
-            <div class="login-input-wrap">
-                <input type="email" id="login-email" class="login-input" placeholder="Email address" autocomplete="email" spellcheck="false">
-            </div>
-            <label class="login-label" for="login-pw">PASSWORD</label>
-            <div class="login-input-wrap">
-                <input type="password" id="login-pw" class="login-input" placeholder="Enter password" autocomplete="current-password" spellcheck="false">
-            </div>
-            <div class="login-actions">
-                <button type="button" id="login-btn" class="login-submit">SIGN IN</button>
-            </div>
-            <div class="login-error" id="login-error"></div>
-        </div>
-        <div class="login-footer">
-            <span>AUTHORIZED ACCOUNTS ONLY</span>
-            <button type="button" class="login-switch" id="show-signup">CREATE ACCOUNT →</button>
-        </div>
-    </div>
-
-    <!-- SIGN UP VIEW -->
-    <div class="login-box hidden" id="signup-view">
-        <div class="login-corner tl"></div>
-        <div class="login-corner tr"></div>
-        <div class="login-corner bl"></div>
-        <div class="login-corner br"></div>
-        <div class="login-header">
-            <div class="login-kicker">NEW OPERATIVE</div>
-            <div class="login-stamp">REGISTER</div>
-        </div>
-        <div class="login-divider"></div>
-        <div class="login-title">JOIN</div>
-        <div class="login-subtitle">Create Your Account</div>
-        <div class="login-form">
-            <label class="login-label" for="signup-email">EMAIL</label>
-            <div class="login-input-wrap">
-                <input type="email" id="signup-email" class="login-input" placeholder="Email address" autocomplete="email" spellcheck="false">
-            </div>
-            <label class="login-label" for="signup-pw">PASSWORD</label>
-            <div class="login-input-wrap">
-                <input type="password" id="signup-pw" class="login-input" placeholder="Min 6 characters" autocomplete="new-password" spellcheck="false">
-            </div>
-            <label class="login-label" for="signup-pw2">CONFIRM PASSWORD</label>
-            <div class="login-input-wrap">
-                <input type="password" id="signup-pw2" class="login-input" placeholder="Repeat password" autocomplete="new-password" spellcheck="false">
-            </div>
-            <div class="login-actions">
-                <button type="button" id="signup-btn" class="login-submit">CREATE ACCOUNT</button>
-            </div>
-            <div class="login-error" id="signup-error"></div>
-        </div>
-        <div class="login-footer">
-            <span>ALREADY HAVE ACCESS?</span>
-            <button type="button" class="login-switch" id="show-login">← SIGN IN</button>
-        </div>
-    </div>
-</div>
-
-<!-- ═══════════ MAIN APP ═══════════ -->
-<div id="app" class="app hidden">
-
-    <!-- SIDEBAR -->
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-logo">
-            <a href="/" class="sidebar-logo-link">
-                <img src="/logo-small-black.png" alt="logo" class="sidebar-logo-img">
+<nav class="navbar">
+    <div class="nav-section left">
+        <div class="group group-left">
+            <a href="#contact" class="nav-item contact" id="nav-contact">Contact Me</a>
+            <a href="#languages" class="nav-item languages">
+                <span class="main-lang" id="nav-languages">Languages</span>
+                <span class="jp-lang">言語</span>
             </a>
         </div>
-        <nav class="sidebar-nav">
-            <button class="sidebar-btn active" data-view="dashboard" type="button">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-                <span>Dashboard</span>
-            </button>
-            <button class="sidebar-btn" data-view="tasks" type="button">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-                <span>Tasks</span>
-            </button>
-            <button class="sidebar-btn" data-view="projects" type="button">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
-                <span>Projects</span>
-            </button>
-            <button class="sidebar-btn" data-view="analytics" type="button">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-                <span>Analytics</span>
-            </button>
-            <button class="sidebar-btn" data-view="settings" type="button">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-                <span>Settings</span>
-            </button>
-        </nav>
-        <div class="sidebar-footer">
-            <button class="sidebar-btn logout-btn" id="logout-btn" type="button">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                <span>Logout</span>
-            </button>
-        </div>
-    </aside>
-
-    <!-- SIDEBAR BACKDROP (mobile) -->
-    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
-
-    <!-- MOBILE TOPBAR -->
-    <div class="topbar" id="topbar">
-        <button class="topbar-burger" id="topbar-burger" type="button">
-            <span></span><span></span><span></span>
-        </button>
-        <div class="topbar-title">ABSOLUTE</div>
-        <button class="topbar-add" id="topbar-add" type="button">+</button>
     </div>
 
-    <!-- MAIN CONTENT -->
-    <main class="main" id="main">
-
-        <!-- ── DASHBOARD VIEW ── -->
-        <section class="view active" id="view-dashboard">
-            <div class="view-header">
-                <div>
-                    <h1 class="view-title">Dashboard</h1>
-                    <div class="view-subtitle" id="dash-date"></div>
-                </div>
-                <button class="btn-primary" id="dash-add-btn" type="button">+ New Task</button>
+    <div class="nav-section center">
+        <div class="logo-wrapper">
+            <a href="#hero" class="logo-link">
+                <img src="logo-small.png" alt="Myron Bedarev logo" class="logo-nav">
+            </a>
+            <div class="lang-dropdown">
+                <div class="dropdown-item" data-lang="en">English</div>
+                <div class="dropdown-item" data-lang="ru">Русский</div>
+                <div class="dropdown-item" data-lang="uk">Українська</div>
+                <div class="dropdown-item" data-lang="de">Deutsch</div>
+                <div class="dropdown-item" data-lang="jp">日本語</div>
+                <div class="dropdown-divider" aria-hidden="true"></div>
+                <a href="absolute/" class="dropdown-absolute">Absolute</a>
             </div>
-
-            <div class="stats-row" id="stats-row">
-                <div class="stat-card">
-                    <div class="stat-kicker">Total Tasks</div>
-                    <div class="stat-value" id="stat-total">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-kicker">In Progress</div>
-                    <div class="stat-value" id="stat-progress">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-kicker">Completed</div>
-                    <div class="stat-value" id="stat-done">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-kicker">Overdue</div>
-                    <div class="stat-value stat-danger" id="stat-overdue">0</div>
-                </div>
-            </div>
-
-            <div class="dash-grid">
-                <div class="dash-panel">
-                    <div class="panel-head">
-                        <span class="panel-title">Today's Tasks</span>
-                        <span class="panel-badge" id="today-count">0</span>
-                    </div>
-                    <div class="panel-body" id="today-tasks"></div>
-                </div>
-                <div class="dash-panel">
-                    <div class="panel-head">
-                        <span class="panel-title">Weekly Overview</span>
-                    </div>
-                    <div class="panel-body chart-wrap">
-                        <canvas id="chart-weekly"></canvas>
-                    </div>
-                </div>
-                <div class="dash-panel">
-                    <div class="panel-head">
-                        <span class="panel-title">By Status</span>
-                    </div>
-                    <div class="panel-body chart-wrap">
-                        <canvas id="chart-status"></canvas>
-                    </div>
-                </div>
-                <div class="dash-panel">
-                    <div class="panel-head">
-                        <span class="panel-title">Recent Activity</span>
-                    </div>
-                    <div class="panel-body" id="recent-activity"></div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ── TASKS VIEW ── -->
-        <section class="view" id="view-tasks">
-            <div class="view-header">
-                <div>
-                    <h1 class="view-title">Tasks</h1>
-                    <div class="view-subtitle" id="tasks-count-label">0 tasks</div>
-                </div>
-                <button class="btn-primary" id="tasks-add-btn" type="button">+ New Task</button>
-            </div>
-
-            <div class="tasks-toolbar">
-                <input type="text" class="search-input" id="task-search" placeholder="Search tasks...">
-                <div class="filter-group">
-                    <select class="filter-select" id="filter-status">
-                        <option value="all">All Status</option>
-                        <option value="not_started">Not Started</option>
-                        <option value="in_progress">In Progress</option>
-                        <option value="done">Done</option>
-                    </select>
-                    <select class="filter-select" id="filter-priority">
-                        <option value="all">All Priority</option>
-                        <option value="urgent">Urgent</option>
-                        <option value="high">High</option>
-                        <option value="medium">Medium</option>
-                        <option value="low">Low</option>
-                    </select>
-                    <select class="filter-select" id="filter-project">
-                        <option value="all">All Projects</option>
-                    </select>
-                    <select class="filter-select" id="sort-by">
-                        <option value="created_desc">Newest First</option>
-                        <option value="created_asc">Oldest First</option>
-                        <option value="due_asc">Due Date ↑</option>
-                        <option value="due_desc">Due Date ↓</option>
-                        <option value="priority_desc">Priority ↓</option>
-                        <option value="priority_asc">Priority ↑</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="task-list" id="task-list"></div>
-        </section>
-
-        <!-- ── PROJECTS VIEW ── -->
-        <section class="view" id="view-projects">
-            <div class="view-header">
-                <div>
-                    <h1 class="view-title">Projects</h1>
-                    <div class="view-subtitle" id="projects-count-label">0 projects</div>
-                </div>
-                <button class="btn-primary" id="projects-add-btn" type="button">+ New Project</button>
-            </div>
-            <div class="projects-grid" id="projects-grid"></div>
-        </section>
-
-        <!-- ── ANALYTICS VIEW ── -->
-        <section class="view" id="view-analytics">
-            <div class="view-header">
-                <div>
-                    <h1 class="view-title">Analytics</h1>
-                    <div class="view-subtitle">Productivity insights</div>
-                </div>
-            </div>
-
-            <div class="analytics-tabs">
-                <button class="tab-btn active" data-period="day" type="button">Day</button>
-                <button class="tab-btn" data-period="week" type="button">Week</button>
-                <button class="tab-btn" data-period="month" type="button">Month</button>
-                <button class="tab-btn" data-period="year" type="button">Year</button>
-                <button class="tab-btn" data-period="custom" type="button">Custom</button>
-            </div>
-
-            <div class="custom-range hidden" id="custom-range">
-                <input type="date" id="range-from" class="date-input">
-                <span class="range-sep">—</span>
-                <input type="date" id="range-to" class="date-input">
-                <button class="btn-small" id="range-apply" type="button">Apply</button>
-            </div>
-
-            <div class="analytics-grid">
-                <div class="analytics-panel full">
-                    <div class="panel-head">
-                        <span class="panel-title">Completion Over Time</span>
-                        <span class="panel-badge" id="analytics-completed-count">0</span>
-                    </div>
-                    <div class="panel-body chart-wrap chart-large">
-                        <canvas id="chart-completion"></canvas>
-                    </div>
-                </div>
-                <div class="analytics-panel">
-                    <div class="panel-head">
-                        <span class="panel-title">By Priority</span>
-                    </div>
-                    <div class="panel-body chart-wrap">
-                        <canvas id="chart-priority"></canvas>
-                    </div>
-                </div>
-                <div class="analytics-panel">
-                    <div class="panel-head">
-                        <span class="panel-title">By Project</span>
-                    </div>
-                    <div class="panel-body chart-wrap">
-                        <canvas id="chart-project"></canvas>
-                    </div>
-                </div>
-                <div class="analytics-stats" id="analytics-stats">
-                    <div class="a-stat">
-                        <div class="a-stat-label">Tasks Created</div>
-                        <div class="a-stat-value" id="a-created">0</div>
-                    </div>
-                    <div class="a-stat">
-                        <div class="a-stat-label">Tasks Completed</div>
-                        <div class="a-stat-value" id="a-completed">0</div>
-                    </div>
-                    <div class="a-stat">
-                        <div class="a-stat-label">Completion Rate</div>
-                        <div class="a-stat-value" id="a-rate">0%</div>
-                    </div>
-                    <div class="a-stat">
-                        <div class="a-stat-label">Avg. Completion Time</div>
-                        <div class="a-stat-value" id="a-avg-time">—</div>
-                    </div>
-                    <div class="a-stat">
-                        <div class="a-stat-label">Most Productive Day</div>
-                        <div class="a-stat-value" id="a-best-day">—</div>
-                    </div>
-                    <div class="a-stat">
-                        <div class="a-stat-label">Current Streak</div>
-                        <div class="a-stat-value" id="a-streak">0 days</div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ── SETTINGS VIEW ── -->
-        <section class="view" id="view-settings">
-            <div class="view-header">
-                <div>
-                    <h1 class="view-title">Settings</h1>
-                    <div class="view-subtitle">Configuration & data</div>
-                </div>
-            </div>
-
-            <div class="settings-grid">
-                <div class="settings-panel">
-                    <div class="panel-head"><span class="panel-title">Display</span></div>
-                    <div class="panel-body">
-                        <div class="setting-row">
-                            <label>Default View</label>
-                            <select id="setting-default-view" class="filter-select">
-                                <option value="dashboard">Dashboard</option>
-                                <option value="tasks">Tasks</option>
-                            </select>
-                        </div>
-                        <div class="setting-row">
-                            <label>Compact Mode</label>
-                            <label class="toggle"><input type="checkbox" id="setting-compact"><span class="toggle-slider"></span></label>
-                        </div>
-                        <div class="setting-row">
-                            <label>Show Completed Tasks</label>
-                            <label class="toggle"><input type="checkbox" id="setting-show-done" checked><span class="toggle-slider"></span></label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="settings-panel">
-                    <div class="panel-head"><span class="panel-title">Notifications</span></div>
-                    <div class="panel-body">
-                        <div class="setting-row">
-                            <label>Due Date Reminders</label>
-                            <label class="toggle"><input type="checkbox" id="setting-reminders" checked><span class="toggle-slider"></span></label>
-                        </div>
-                        <div class="setting-row">
-                            <label>Sound Effects</label>
-                            <label class="toggle"><input type="checkbox" id="setting-sounds"><span class="toggle-slider"></span></label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="settings-panel">
-                    <div class="panel-head"><span class="panel-title">Data Management</span></div>
-                    <div class="panel-body">
-                        <div class="setting-row">
-                            <label>Export Data (JSON)</label>
-                            <button class="btn-small" id="export-btn" type="button">Export</button>
-                        </div>
-                        <div class="setting-row">
-                            <label>Import Data</label>
-                            <input type="file" id="import-file" accept=".json" class="file-input">
-                            <button class="btn-small" id="import-btn" type="button">Import</button>
-                        </div>
-                        <div class="setting-row danger-row">
-                            <label>Delete All Data</label>
-                            <button class="btn-danger" id="clear-btn" type="button">Clear Everything</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="settings-panel">
-                    <div class="panel-head"><span class="panel-title">Keyboard Shortcuts</span></div>
-                    <div class="panel-body shortcuts-body">
-                        <div class="shortcut-row"><kbd>Esc</kbd> <span>Close Modal / Blur</span></div>
-                        <div class="shortcut-row"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> <span>Save Form</span></div>
-                        <div class="shortcut-row"><kbd>N</kbd> <span>New Task</span></div>
-                        <div class="shortcut-row"><kbd>P</kbd> <span>New Project</span></div>
-                        <div class="shortcut-row"><kbd>/</kbd> <span>Search Tasks</span></div>
-                        <div class="shortcut-row"><kbd>1</kbd>–<kbd>5</kbd> <span>Navigate Views</span></div>
-                        <div class="shortcut-row"><kbd>1</kbd>–<kbd>4</kbd> <span>Priority (in modal)</span></div>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
-</div>
-
-<!-- ═══════════ TASK MODAL ═══════════ -->
-<div class="modal-overlay hidden" id="task-modal">
-    <div class="modal">
-        <div class="modal-header">
-            <div class="modal-header-left">
-                <div class="modal-kicker">TASK COMMAND CENTER</div>
-                <h2 class="modal-title" id="modal-title">New Task</h2>
-            </div>
-            <button class="modal-close" id="modal-close" type="button">&times;</button>
         </div>
+    </div>
 
-        <form id="task-form" class="modal-form">
-            <input type="hidden" id="task-id">
+    <div class="nav-section right">
+        <div class="group group-right">
+            <a href="#education" class="nav-item education" id="nav-education">Education</a>
+            <a href="#plans" class="nav-item plans" id="nav-plans">Plans</a>
+        </div>
+    </div>
 
-            <!-- Title — big and prominent -->
-            <div class="form-group">
-                <input type="text" id="task-title" class="form-input form-input-title" required placeholder="What needs to be done?" autofocus>
-            </div>
+    <div class="burger-menu" id="burger-menu">
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
 
-            <!-- Description — subtle -->
-            <div class="form-group">
-                <textarea id="task-desc" class="form-input form-textarea" placeholder="Add details or notes..."></textarea>
-            </div>
+</nav>
 
-            <div class="form-section-label">Status</div>
-            <div class="pill-group" id="status-pills">
-                <button type="button" class="pill pill-status active" data-value="not_started">
-                    <span class="pill-dot"></span>Not Started
-                </button>
-                <button type="button" class="pill pill-status" data-value="in_progress">
-                    <span class="pill-dot in-progress"></span>In Progress
-                </button>
-                <button type="button" class="pill pill-status" data-value="done">
-                    <span class="pill-dot done"></span>Done
-                </button>
-            </div>
-            <input type="hidden" id="task-status" value="not_started">
+<nav class="sidenav" aria-label="Section navigation">
+    <a class="sidenav-item active" href="#hero" data-sidenav="hero" aria-label="Go to Portfolio">
+        <span class="sidenav-mark" aria-hidden="true"></span>
+        <span class="sidenav-label">Portfolio</span>
+    </a>
+    <a class="sidenav-item" href="#contact" data-sidenav="contact" aria-label="Go to Contact">
+        <span class="sidenav-mark" aria-hidden="true"></span>
+        <span class="sidenav-label">Contact</span>
+    </a>
+    <a class="sidenav-item" href="#languages" data-sidenav="languages" aria-label="Go to Languages">
+        <span class="sidenav-mark" aria-hidden="true"></span>
+        <span class="sidenav-label">Languages</span>
+    </a>
+    <a class="sidenav-item" href="#education" data-sidenav="education" aria-label="Go to Education">
+        <span class="sidenav-mark" aria-hidden="true"></span>
+        <span class="sidenav-label">Education</span>
+    </a>
+    <a class="sidenav-item" href="#plans" data-sidenav="plans" aria-label="Go to Plans">
+        <span class="sidenav-mark" aria-hidden="true"></span>
+        <span class="sidenav-label">Plans</span>
+    </a>
+</nav>
 
-            <div class="form-section-label">Priority</div>
-            <div class="pill-group" id="priority-pills">
-                <button type="button" class="pill pill-priority" data-value="low">
-                    <span class="pill-bar low"></span>Low
-                </button>
-                <button type="button" class="pill pill-priority active" data-value="medium">
-                    <span class="pill-bar medium"></span>Medium
-                </button>
-                <button type="button" class="pill pill-priority" data-value="high">
-                    <span class="pill-bar high"></span>High
-                </button>
-                <button type="button" class="pill pill-priority" data-value="urgent">
-                    <span class="pill-bar urgent"></span>Urgent
-                </button>
-            </div>
-            <input type="hidden" id="task-priority" value="medium">
+<div class="mobile-overlay" id="mobile-overlay">
+    <div class="mobile-links-wrapper">
+        <a href="#hero" class="mobile-menu-logo-link">
+            <img src="logo-small.png" alt="logo" class="mobile-menu-logo">
+        </a>
+        <a href="#contact" class="mobile-nav-item" id="m-nav-contact">Contact Me</a>
+        <a href="#languages" class="mobile-nav-item" id="m-nav-languages">Languages</a>
+        <a href="#education" class="mobile-nav-item" id="m-nav-education">Education</a>
+        <a href="#plans" class="mobile-nav-item mobile-plans" id="m-nav-plans">Plans</a>
+        <div class="mobile-nav-divider" aria-hidden="true"></div>
+        <a href="absolute/" class="mobile-nav-item mobile-absolute">Absolute</a>
+    </div>
 
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="task-due">Due Date</label>
-                    <input type="date" id="task-due" class="form-input">
-                </div>
-                <div class="form-group">
-                    <label for="task-project">Project</label>
-                    <select id="task-project" class="form-input">
-                        <option value="">No Project</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="task-tags">Tags <span class="form-hint">(comma separated)</span></label>
-                <input type="text" id="task-tags" class="form-input" placeholder="design, review, frontend...">
-            </div>
-
-            <div class="form-group">
-                <label>Subtasks</label>
-                <div id="subtask-list" class="subtask-list"></div>
-                <div class="subtask-add-row">
-                    <input type="text" id="subtask-input" class="form-input subtask-input" placeholder="Add subtask...">
-                    <button type="button" class="btn-small" id="add-subtask-btn">+</button>
-                </div>
-            </div>
-
-            <div class="modal-actions">
-                <button type="button" class="btn-secondary" id="modal-cancel">Cancel</button>
-                <button type="button" class="btn-danger modal-delete hidden" id="modal-delete">Delete</button>
-                <button type="submit" class="btn-primary modal-save">Save Task</button>
-            </div>
-        </form>
+    <div class="mobile-lang-bar" aria-label="Language switcher">
+        <button class="mobile-lang-pill active" type="button" data-lang="en">EN</button>
+        <button class="mobile-lang-pill" type="button" data-lang="ru">RU</button>
+        <button class="mobile-lang-pill" type="button" data-lang="uk">UK</button>
+        <button class="mobile-lang-pill" type="button" data-lang="de">DE</button>
+        <button class="mobile-lang-pill" type="button" data-lang="jp">JP</button>
     </div>
 </div>
 
-<!-- ═══════════ PROJECT MODAL ═══════════ -->
-<div class="modal-overlay hidden" id="project-modal">
-    <div class="modal modal-sm">
-        <div class="modal-header">
-            <div class="modal-header-left">
-                <div class="modal-kicker">PROJECT</div>
-                <h2 class="modal-title" id="project-modal-title">New Project</h2>
+<section id="hero" class="hero">
+    <img src="logo-large.png" class="hero-logo" data-scroll="scale-up" data-scroll-delay="100">
+    <h1 class="portfolio-title portfolio-toggle" id="portfolio-title" role="button" tabindex="0" aria-controls="about-panel" aria-expanded="false" data-scroll="fade-up" data-scroll-delay="300">
+        <span class="portfolio-bracket" aria-hidden="true">&gt;</span>
+        <span class="portfolio-text" id="portfolio-text" data-i18n="hero.portfolio">Portfolio</span>
+        <span class="portfolio-bracket" aria-hidden="true">&lt;</span>
+    </h1>
+
+    <div class="about-panel" id="about-panel" aria-hidden="true" tabindex="-1">
+        <div class="about-title" data-i18n="about.title">About Me</div>
+        <div class="about-body" data-i18n="about.body">
+            My name is Myron Bedarev, a 16-year-old student currently based at Newtown School in Waterford, Ireland. Of Ukrainian descent, I have grown up navigating four languages—Russian, Ukrainian, English, and German—which has given me a unique global perspective and a natural ability to adapt to diverse environments. My academic focus is currently driven by a clear ambition: to study Management Science and Information Systems Studies (MSISS) at Trinity College Dublin. I am fascinated by the intersection of data, technology, and strategic decision-making, and I aim to leverage my multicultural background and analytical mindset to solve complex challenges in the world of modern business and systems.
+        </div>
+        <div class="about-foot">
+            <span data-i18n="about.foot">Scroll to the end to return</span>
+            <button class="about-end" id="about-end" type="button" aria-label="Return to portfolio view">[ END ]</button>
+        </div>
+    </div>
+</section>
+
+<section id="contact" class="contactme-section">
+    <div class="contact-bg" aria-hidden="true">
+        <div class="contact-gridlines"></div>
+    </div>
+
+    <div class="contact-shell" aria-label="Contact section">
+        <div class="contact-top">
+            <h2 class="contact-title" data-i18n="contact.title" data-scroll="clip-left">Contact</h2>
+            <div class="contact-top-meta" data-scroll-stagger>
+                <div class="contact-chip" data-i18n="contact.noForms">No forms</div>
+                <div class="contact-chip" data-i18n="contact.directLinks">Direct links</div>
+                <div class="contact-chip" data-i18n="contact.copy">Copy available</div>
             </div>
-            <button class="modal-close" id="project-modal-close" type="button">&times;</button>
         </div>
 
-        <form id="project-form" class="modal-form">
-            <input type="hidden" id="project-id">
-            <div class="form-group">
-                <input type="text" id="project-name" class="form-input form-input-title" required placeholder="Project name">
-            </div>
-            <div class="form-group">
-                <div class="form-section-label">Color</div>
-                <div class="color-picker" id="color-picker">
-                    <button type="button" class="color-swatch active" data-color="#000000" style="background:#000"></button>
-                    <button type="button" class="color-swatch" data-color="#555555" style="background:#555"></button>
-                    <button type="button" class="color-swatch" data-color="#888888" style="background:#888"></button>
-                    <button type="button" class="color-swatch" data-color="#1a1a2e" style="background:#1a1a2e"></button>
-                    <button type="button" class="color-swatch" data-color="#16213e" style="background:#16213e"></button>
-                    <button type="button" class="color-swatch" data-color="#0f3460" style="background:#0f3460"></button>
-                    <button type="button" class="color-swatch" data-color="#533483" style="background:#533483"></button>
-                    <button type="button" class="color-swatch" data-color="#e94560" style="background:#e94560"></button>
+        <div class="contact-panels" role="group" aria-label="Contact details">
+            <div class="contact-panel" data-panel="left" data-scroll="fade-up" data-scroll-delay="200">
+                <div class="contact-panel-head">
+                    <div class="contact-panel-kicker" data-i18n="contact.channel">Channel</div>
+                    <div class="contact-panel-title" data-i18n="contact.email">Email</div>
                 </div>
-                <input type="hidden" id="project-color-val" value="#000000">
+
+                <div class="contact-item">
+                    <div class="contact-item-label" data-i18n="contact.primary">Primary</div>
+                    <div class="contact-item-main">
+                        <a class="contact-link" href="mailto:me@bedarev.com">me@bedarev.com</a>
+                        <button class="contact-copy" type="button" data-copy="me@bedarev.com" aria-label="Copy email me@bedarev.com">Copy</button>
+                    </div>
+                </div>
+
+                <div class="contact-item">
+                    <div class="contact-item-label" data-i18n="contact.secondary">Secondary</div>
+                    <div class="contact-item-main">
+                        <a class="contact-link" href="mailto:myron@bedarev.com">myron@bedarev.com</a>
+                        <button class="contact-copy" type="button" data-copy="myron@bedarev.com" aria-label="Copy email myron@bedarev.com">Copy</button>
+                    </div>
+                </div>
             </div>
-            <div class="modal-actions">
-                <button type="button" class="btn-secondary" id="project-cancel">Cancel</button>
-                <button type="button" class="btn-danger modal-delete hidden" id="project-delete">Delete</button>
-                <button type="submit" class="btn-primary modal-save">Save Project</button>
+
+            <div class="contact-panel-divider" aria-hidden="true"></div>
+
+            <div class="contact-panel" data-panel="right" data-scroll="fade-up" data-scroll-delay="400">
+                <div class="contact-panel-head">
+                    <div class="contact-panel-kicker" data-i18n="contact.channel">Channel</div>
+                    <div class="contact-panel-title" data-i18n="contact.phone">Phone</div>
+                </div>
+
+                <div class="contact-item">
+                    <div class="contact-item-label" data-i18n="contact.call">Call</div>
+                    <div class="contact-item-main">
+                        <a class="contact-link" href="tel:+353873720687">+353 87 372 0687</a>
+                        <button class="contact-copy" type="button" data-copy="+353 87 372 0687" aria-label="Copy phone number +353 87 372 0687">Copy</button>
+                    </div>
+                </div>
+
+                <div class="contact-item">
+                    <div class="contact-item-label" data-i18n="contact.sms">SMS</div>
+                    <div class="contact-item-main">
+                        <a class="contact-link" href="sms:+353873720687">+353 87 372 0687</a>
+                        <button class="contact-copy" type="button" data-copy="+353 87 372 0687" aria-label="Copy phone number +353 87 372 0687">Copy</button>
+                    </div>
+                </div>
             </div>
-        </form>
-    </div>
-</div>
-
-<!-- ═══════════ CONFIRM MODAL ═══════════ -->
-<div class="modal-overlay hidden" id="confirm-modal">
-    <div class="modal modal-sm modal-confirm">
-        <div class="modal-header">
-            <h2 class="modal-title" id="confirm-title">Confirm</h2>
-            <button class="modal-close" id="confirm-close" type="button">&times;</button>
         </div>
-        <div class="confirm-body" id="confirm-body"></div>
-        <div class="modal-actions">
-            <button type="button" class="btn-secondary" id="confirm-no">Cancel</button>
-            <button type="button" class="btn-danger" id="confirm-yes">Confirm</button>
+
+        <div class="contact-bottom" data-scroll="fade-up" data-scroll-delay="500">
+            <div class="contact-bottom-left" data-i18n="contact.bottom">Click links to open. Use Copy to grab text.</div>
+            <div class="contact-bottom-right">MAILTO / TEL / SMS</div>
         </div>
     </div>
-</div>
+</section>
 
-<!-- TOAST -->
-<div class="toast-container" id="toast-container"></div>
+<section id="languages" class="languages-section">
+    <div class="lang-bg" aria-hidden="true">
+        <div class="lang-grid"></div>
+        <div class="lang-axis"></div>
+    </div>
 
-<!-- AESTHETIC CURSOR -->
+    <div class="lang-shell" aria-label="Languages section">
+        <div class="lang-top">
+            <h2 class="lang-title" data-i18n="languages.title" data-scroll="clip-left">Languages</h2>
+            <div class="lang-top-meta" data-scroll-stagger>
+                <div class="lang-chip" data-i18n="lang.chipFocus">Click to focus</div>
+                <div class="lang-chip" data-i18n="lang.chipHold">Hold to reveal "future"</div>
+                <div class="lang-chip" data-i18n="lang.chipScale">CEFR scale</div>
+            </div>
+        </div>
+
+        <div class="lang-layout" role="group" aria-label="Language selector and details">
+            <nav class="lang-nav" aria-label="Language list" data-scroll="fade-left" data-scroll-delay="200">
+                <button class="lang-btn active" type="button" data-lang="ru" aria-pressed="true">
+                    <span class="lang-btn-name">Русский</span>
+                    <span class="lang-btn-meta">Native</span>
+                </button>
+                <button class="lang-btn" type="button" data-lang="en" aria-pressed="false">
+                    <span class="lang-btn-name">English</span>
+                    <span class="lang-btn-meta">B2</span>
+                </button>
+                <button class="lang-btn" type="button" data-lang="uk" aria-pressed="false">
+                    <span class="lang-btn-name">Українська</span>
+                    <span class="lang-btn-meta">C2</span>
+                </button>
+                <button class="lang-btn" type="button" data-lang="de" aria-pressed="false">
+                    <span class="lang-btn-name">Deutsch</span>
+                    <span class="lang-btn-meta">A2</span>
+                </button>
+
+                <button class="lang-btn secret" type="button" data-lang="jp" aria-pressed="false" aria-label="Japanese (classified, future)">
+                    <span class="lang-btn-name">日本語</span>
+                    <span class="lang-btn-meta">CLASSIFIED</span>
+                </button>
+
+                <div class="lang-nav-footer" aria-hidden="true">
+                    <div class="lang-nav-footer-row">
+                        <span>Scale</span><span>A1 · A2 · B1 · B2 · C1 · C2</span>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="lang-divider" aria-hidden="true"></div>
+
+            <div class="lang-details" data-scroll="fade-right" data-scroll-delay="300">
+                <article class="lang-card active" id="lang-ru" data-lang-card="ru" aria-label="Russian details">
+                    <div class="lang-card-head">
+                        <div class="lang-kicker">Language</div>
+                        <div class="lang-stamp" aria-hidden="true">VERIFIED</div>
+                    </div>
+                    <div class="lang-name">Русский</div>
+                    <div class="lang-level">Native</div>
+                    <div class="lang-meter" style="--lvl:6" aria-label="Proficiency meter">
+                        <span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+                    </div>
+                    <div class="lang-notes">
+                        <div class="lang-note-row"><span>Mode</span><span>Full professional</span></div>
+                        <div class="lang-note-row"><span>Use</span><span>Docs · Writing · Negotiation</span></div>
+                    </div>
+                </article>
+
+                <article class="lang-card" id="lang-en" data-lang-card="en" aria-label="English details">
+                    <div class="lang-card-head">
+                        <div class="lang-kicker">Language</div>
+                        <div class="lang-stamp" aria-hidden="true">OPERATIONAL</div>
+                    </div>
+                    <div class="lang-name">English</div>
+                    <div class="lang-level">B2</div>
+                    <div class="lang-meter" style="--lvl:4" aria-label="Proficiency meter">
+                        <span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+                    </div>
+                    <div class="lang-notes">
+                        <div class="lang-note-row"><span>Mode</span><span>Work-ready</span></div>
+                        <div class="lang-note-row"><span>Use</span><span>Tech talks · Documentation</span></div>
+                    </div>
+                </article>
+
+                <article class="lang-card" id="lang-uk" data-lang-card="uk" aria-label="Ukrainian details">
+                    <div class="lang-card-head">
+                        <div class="lang-kicker">Language</div>
+                        <div class="lang-stamp" aria-hidden="true">VERIFIED</div>
+                    </div>
+                    <div class="lang-name">Українська</div>
+                    <div class="lang-level">C2</div>
+                    <div class="lang-meter" style="--lvl:6" aria-label="Proficiency meter">
+                        <span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+                    </div>
+                    <div class="lang-notes">
+                        <div class="lang-note-row"><span>Mode</span><span>Native-level</span></div>
+                        <div class="lang-note-row"><span>Use</span><span>Writing · Formal communication</span></div>
+                    </div>
+                </article>
+
+                <article class="lang-card" id="lang-de" data-lang-card="de" aria-label="German details">
+                    <div class="lang-card-head">
+                        <div class="lang-kicker">Language</div>
+                        <div class="lang-stamp" aria-hidden="true">FOUNDATION</div>
+                    </div>
+                    <div class="lang-name">Deutsch</div>
+                    <div class="lang-level">A2</div>
+                    <div class="lang-meter" style="--lvl:2" aria-label="Proficiency meter">
+                        <span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+                    </div>
+                    <div class="lang-notes">
+                        <div class="lang-note-row"><span>Mode</span><span>Conversational</span></div>
+                        <div class="lang-note-row"><span>Use</span><span>Reading · Everyday topics</span></div>
+                    </div>
+                </article>
+
+                <article class="lang-card secret" id="lang-jp" data-lang-card="jp" aria-label="Japanese details (classified)">
+                    <div class="lang-card-head">
+                        <div class="lang-kicker">Language</div>
+                        <div class="lang-stamp">CLASSIFIED</div>
+                    </div>
+                    <div class="lang-name">日本語</div>
+                    <div class="lang-level blur">Future slot</div>
+                    <div class="lang-meter blur" style="--lvl:1" aria-label="Proficiency meter">
+                        <span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+                    </div>
+                    <div class="lang-notes">
+                        <div class="lang-note-row"><span>Status</span><span class="blur">Planned</span></div>
+                        <div class="lang-note-row"><span>Trigger</span><span class="blur">When time permits</span></div>
+                    </div>
+                    <div class="lang-reveal-hint">HOLD / HOVER TO REVEAL</div>
+                </article>
+            </div>
+        </div>
+
+        <div class="lang-bottom" data-scroll="fade-up" data-scroll-delay="500">
+            <div class="lang-bottom-left" data-i18n="lang.bottom">Fast scan. Clear levels. No fluff.</div>
+            <div class="lang-bottom-right">RU · EN · UK · DE · JP</div>
+        </div>
+    </div>
+</section>
+<section id="education" class="education-section">
+    <div class="edu-bg" aria-hidden="true">
+        <div class="edu-gridlines"></div>
+    </div>
+
+    <div class="edu-shell" aria-label="Education section">
+        <div class="edu-header">
+            <h2 class="edu-title" data-i18n="education.title" data-scroll="clip-left">Education</h2>
+            <div class="edu-header-meta" data-scroll-stagger>
+                <div class="edu-chip" data-i18n="edu.chipYear">Year 5</div>
+                <div class="edu-chip" data-i18n="edu.chipLevel">Higher Level</div>
+                <div class="edu-chip" data-i18n="edu.chipInteractive">Interactive</div>
+            </div>
+        </div>
+
+        <div class="edu-layout" role="group" aria-label="Education details">
+            <div class="edu-col-left" data-scroll="fade-left" data-scroll-delay="200">
+                <div class="edu-panel-head">
+                    <div class="edu-panel-kicker" data-i18n="education.kicker">Institution</div>
+                    <div class="edu-panel-title" data-i18n="edu.school">School</div>
+                </div>
+                <div class="edu-inst-name">Newtown School</div>
+                <div class="edu-inst-location">Waterford, Ireland</div>
+                <div class="edu-inst-rule" aria-hidden="true"></div>
+                <div class="edu-status-row">
+                    <span class="edu-pulse" aria-hidden="true"></span>
+                    <span data-i18n="education.year">Year 5 — Active</span>
+                </div>
+            </div>
+
+            <div class="edu-divider" aria-hidden="true"></div>
+
+            <div class="edu-col-right" data-scroll="fade-right" data-scroll-delay="300">
+                <div class="edu-panel-head">
+                    <div class="edu-panel-kicker" data-i18n="education.sub">Academic Focus</div>
+                    <div class="edu-panel-title" data-i18n="edu.subjects">Subjects</div>
+                </div>
+
+                <div class="edu-focus-list" role="listbox" aria-label="Subject focus selector">
+                    <button class="edu-focus-btn active" type="button" data-edu="hmath" data-desc="Proof, rigor, structure. Higher Level mathematics — the foundation of analytical thinking." aria-selected="true">
+                        <span class="edu-focus-name">Higher Math</span>
+                        <span class="edu-focus-level">Higher</span>
+                    </button>
+                    <button class="edu-focus-btn" type="button" data-edu="amath" data-desc="Mechanics, differential equations, mathematical modelling. The bridge between pure theory and the physical world." aria-selected="false">
+                        <span class="edu-focus-name">Applied Math</span>
+                        <span class="edu-focus-level">Higher</span>
+                    </button>
+                    <button class="edu-focus-btn" type="button" data-edu="phys" data-desc="Electromagnetism, optics, quantum phenomena. Understanding matter and energy at every scale." aria-selected="false">
+                        <span class="edu-focus-name">Physics</span>
+                        <span class="edu-focus-level">Higher</span>
+                    </button>
+                </div>
+
+                <div class="edu-detail">
+                    <article class="edu-detail-card active" data-edu-card="hmath">
+                        <div class="edu-detail-title">Higher Mathematics</div>
+                        <div class="edu-detail-desc" id="edu-desc">Proof, rigor, structure. Higher Level mathematics — the foundation of analytical thinking.</div>
+                        <div class="edu-detail-row">
+                            <span class="edu-detail-label">Level</span>
+                            <span class="edu-detail-value">Higher · LC</span>
+                        </div>
+                        <div class="edu-detail-row">
+                            <span class="edu-detail-label">Method</span>
+                            <span class="edu-detail-value">Proof-driven</span>
+                        </div>
+                    </article>
+                    <article class="edu-detail-card" data-edu-card="amath">
+                        <div class="edu-detail-title">Applied Mathematics</div>
+                        <div class="edu-detail-desc">Mechanics, differential equations, mathematical modelling. The bridge between pure theory and the physical world.</div>
+                        <div class="edu-detail-row">
+                            <span class="edu-detail-label">Level</span>
+                            <span class="edu-detail-value">Higher · LC</span>
+                        </div>
+                        <div class="edu-detail-row">
+                            <span class="edu-detail-label">Method</span>
+                            <span class="edu-detail-value">Model-based</span>
+                        </div>
+                    </article>
+                    <article class="edu-detail-card" data-edu-card="phys">
+                        <div class="edu-detail-title">Physics</div>
+                        <div class="edu-detail-desc">Electromagnetism, optics, quantum phenomena. Understanding matter and energy at every scale.</div>
+                        <div class="edu-detail-row">
+                            <span class="edu-detail-label">Level</span>
+                            <span class="edu-detail-value">Higher · LC</span>
+                        </div>
+                        <div class="edu-detail-row">
+                            <span class="edu-detail-label">Method</span>
+                            <span class="edu-detail-value">Experimental</span>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </div>
+
+        <div class="edu-footer" data-scroll="fade-up" data-scroll-delay="500">
+            <div class="edu-footer-left" data-i18n="edu.footerLeft">Structured layout. Clear hierarchy. Subject-led focus.</div>
+            <div class="edu-footer-right">NEWTOWN · HIGHER MATH · APPLIED MATH · PHYSICS</div>
+        </div>
+    </div>
+</section>
+<section id="plans" class="plans-section">
+    <div class="plans-bg" aria-hidden="true">
+        <div class="plans-grid"></div>
+        <div class="plans-vignette"></div>
+        <div class="plans-scanline"></div>
+    </div>
+
+    <div class="plans-shell" aria-label="Plans section">
+        <div class="plans-topmark" aria-hidden="true" data-scroll="tracking-in">
+            <span class="plans-scribble">PLANS</span>
+            <span class="plans-topmark-label">MISSION DIRECTIVE</span>
+        </div>
+
+        <div class="plans-rule" aria-hidden="true" data-scroll="draw-line" data-scroll-delay="200"></div>
+
+        <article class="dossier" id="dossier" aria-label="Secret plan dossier" data-scroll="scale-up" data-scroll-delay="300">
+            <div class="dossier-corner top-left" aria-hidden="true"></div>
+            <div class="dossier-corner top-right" aria-hidden="true"></div>
+            <div class="dossier-corner bottom-left" aria-hidden="true"></div>
+            <div class="dossier-corner bottom-right" aria-hidden="true"></div>
+
+            <div class="dossier-header" data-scroll="fade-down" data-scroll-delay="400">
+                <div class="dossier-meta">
+                    <div class="meta-block">
+                        <div class="meta-kicker">Document classification</div>
+                        <div class="meta-value">LEVEL 5 · EYES ONLY</div>
+                    </div>
+                    <div class="meta-block meta-block-right">
+                        <div class="meta-kicker">Case</div>
+                        <div class="meta-value">BEDAREV / IRL / EDU</div>
+                    </div>
+                </div>
+
+                <div class="stamp" aria-hidden="true">
+                    <div class="stamp-text">TOP SECRET</div>
+                </div>
+            </div>
+
+            <div class="dossier-divider" aria-hidden="true"></div>
+
+            <div class="dossier-body" data-scroll="blur-in" data-scroll-delay="500">
+                <div class="section-kicker" data-i18n="plans.objective">Primary objective</div>
+                <h3 class="objective-title">MSISS @ TRINITY</h3>
+                <div class="objective-subtitle">College Dublin</div>
+
+                <div class="dossier-divider thin" aria-hidden="true"></div>
+
+                <div class="section-kicker" data-i18n="plans.progress">Mission progress</div>
+                <div class="progress">
+                    <div class="progress-labels">
+                        <span>START</span>
+                        <span class="progress-mid">NOW</span>
+                        <span>TARGET</span>
+                    </div>
+                    <div class="progress-track" role="progressbar" aria-label="Mission progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="43">
+                        <div class="progress-fill" style="--p:43%"></div>
+                        <div class="progress-tick now" aria-hidden="true"></div>
+                    </div>
+                </div>
+
+                <div class="dossier-divider thin" aria-hidden="true"></div>
+
+                <div class="section-kicker" data-i18n="plans.intel">Additional intel</div>
+                <div class="intel" data-reveal="hover" aria-label="Sensitive information (blurred). Hover or hold to reveal." data-scroll="flip-up" data-scroll-delay="600">
+                    <div class="intel-row">
+                        <div class="intel-label">Timeline</div>
+                        <div class="intel-value blur">2026 intake · preparation & documents</div>
+                    </div>
+                    <div class="intel-row">
+                        <div class="intel-label">Focus</div>
+                        <div class="intel-value blur">Security · Systems · Research mindset</div>
+                    </div>
+                    <div class="intel-row">
+                        <div class="intel-label">Constraint</div>
+                        <div class="intel-value blur">No noise. Only proof-of-work.</div>
+                    </div>
+                    <div class="intel-hint">HOLD / HOVER TO REVEAL</div>
+                </div>
+            </div>
+
+            <div class="dossier-footer" data-scroll="fade-up" data-scroll-delay="700">
+                <div class="footer-left">ACCESS LOG: <span class="mono" id="access-count">0001</span></div>
+                <div class="footer-right">DO NOT DISTRIBUTE</div>
+            </div>
+        </article>
+    </div>
+</section>
+
 <div id="aesthetic-cursor" aria-hidden="true">
     <div class="ac-ring"></div>
     <div class="ac-cross"></div>
     <div class="ac-label">VIEW</div>
 </div>
 
-<script src="app.js"></script>
+<div class="ptr" id="ptr" aria-hidden="true">
+    <div class="ptr-frame" aria-hidden="true">
+        <div class="ptr-corners"></div>
+        <div class="ptr-axis"></div>
+        <div class="ptr-rail">
+            <div class="ptr-progress" id="ptr-progress"></div>
+        </div>
+    </div>
+    <div class="ptr-head">
+        <div class="ptr-index" aria-hidden="true">01</div>
+        <div class="ptr-mark-wrap" aria-hidden="true">
+            <div class="ptr-mark"></div>
+        </div>
+        <div class="ptr-copy">
+            <div class="ptr-text" id="ptr-text">PULL</div>
+            <div class="ptr-sub" id="ptr-sub">TO REFRESH</div>
+        </div>
+        <div class="ptr-ratio" id="ptr-ratio" aria-hidden="true">00%</div>
+    </div>
+</div>
+
+<script src="script.js"></script>
 </body>
 </html>
