@@ -11,7 +11,7 @@
     set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* storage blocked */ } },
     del: k => { try { localStorage.removeItem(k); } catch (e) { /* storage blocked */ } },
   };
-  const lang = () => (store.get('bm_lang') === 'en' ? 'en' : 'ru');
+  const lang = () => (store.get('bm_lang') === 'ru' ? 'ru' : 'en');
   const RANK = { none: 0, free: 1, pro: 2, max: 3 };
   let session = null, plan = 'none';
   const subs = [];

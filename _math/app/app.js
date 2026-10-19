@@ -12,7 +12,7 @@
   const today = () => dayOf(Date.now());
   const dateOfDay = d => { const t = d * DAY; return new Date(t + new Date(t).getTimezoneOffset() * 6e4); };
   // language: the UI is written in Russian; in English mode the translator at the end of this file rewrites the page
-  const LANG = () => { try { return S.settings.lang || 'ru'; } catch (e) { return 'ru'; } };
+  const LANG = () => { try { return S.settings.lang || 'en'; } catch (e) { return 'en'; } };
   const EN = () => LANG() === 'en';
   const LOC = () => (EN() ? 'en-GB' : 'ru-RU');
   const fmtDay = d => dateOfDay(d).toLocaleDateString(LOC(), { day: 'numeric', month: 'short' });
@@ -124,7 +124,7 @@
 
   /* ---------- persistent state ---------- */
   const KEY = 'lcm_state_v1';
-  const DEF_SETTINGS = { iv: { 1: 1, 2: 2, 3: 4, 4: 7, 5: 14 }, goal: 5, theme: 'auto', imgw: 880, newPerDay: 5, accent: 'blue', bg: 'grid', motion: 'full', lang: (() => { try { return localStorage.getItem('bm_lang') || 'ru'; } catch (e) { return 'ru'; } })() };
+  const DEF_SETTINGS = { iv: { 1: 1, 2: 2, 3: 4, 4: 7, 5: 14 }, goal: 5, theme: 'auto', imgw: 880, newPerDay: 5, accent: 'blue', bg: 'grid', motion: 'full', lang: (() => { try { return localStorage.getItem('bm_lang') || 'en'; } catch (e) { return 'en'; } })() };
   function fresh() { return { version: 1, attempts: [], stars: {}, notes: {}, tags: {}, settings: JSON.parse(JSON.stringify(DEF_SETTINGS)), session: null, lastExport: null, created: Date.now(), challenges: {}, sessions: {}, flags: {}, ach: {}, study: {} }; }
   function load() {
     try {

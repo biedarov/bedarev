@@ -68,7 +68,7 @@
   };
   const RU0 = {};
   $$('[data-t]').forEach(el => { RU0[el.dataset.t] = el.innerHTML; });
-  let LANG = store.get('bm_lang') || (() => { try { const s = JSON.parse(localStorage.getItem('lcm_state_v1')); if (s && s.settings && s.settings.lang) return s.settings.lang; } catch (e) { /* none */ } return /^ru|^uk|^be|^kk/i.test(navigator.language || '') ? 'ru' : 'en'; })();
+  let LANG = store.get('bm_lang') || (() => { try { const s = JSON.parse(localStorage.getItem('lcm_state_v1')); if (s && s.settings && s.settings.lang) return s.settings.lang; } catch (e) { /* none */ } return 'en'; })(); // English unless the visitor chose Russian
   const T = (ru, en) => (LANG === 'en' ? en : ru);
   const appEn = s => (LANG === 'en' && APP_EN[s]) || s;
   const plural = (n, a, b, c) => { if (LANG === 'en') return n === 1 ? a : c; const m10 = n % 10, m100 = n % 100; return m10 === 1 && m100 !== 11 ? a : m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20) ? b : c; };
