@@ -1,0 +1,26 @@
+/* legal pages: plain, readable, same look as the landing */
+:root{--bg:#07070a;--panel:#101014;--border:#24242b;--line:rgba(255,255,255,.07);--text:#ededf0;--muted:#8f8f9b;--accent:hsl(228 88% 68%);
+  --fd:"Unbounded","Onest",system-ui,sans-serif;--fb:"Onest",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;color:var(--text);font:16px/1.7 var(--fb);-webkit-font-smoothing:antialiased;background:radial-gradient(70% 40% at 50% 0%,hsl(228 60% 14% / .6),transparent 70%),var(--bg)}
+a{color:var(--accent)}
+.top{max-width:820px;margin:0 auto;padding:22px 24px;display:flex;justify-content:space-between;align-items:center}
+.brand{display:inline-flex;align-items:baseline;gap:7px;text-decoration:none;color:var(--text);font-family:var(--fd);letter-spacing:-.03em}
+.logo{display:inline-block;width:100px;height:20px;background:#fff;-webkit-mask:url("../app/brand/logo.png") no-repeat left center/contain;mask:url("../app/brand/logo.png") no-repeat left center/contain;align-self:center}
+.spark{color:var(--accent);font-size:.72rem}.math{font-weight:300;color:#b9b9c4}
+.lang{display:flex;gap:6px;border:1px solid var(--border);background:var(--panel);border-radius:10px;padding:6px 10px;font-family:var(--fd);font-size:.66rem;color:#5d5d68;cursor:pointer}
+html[data-lang="ru"] .lang b[data-l="ru"],html[data-lang="en"] .lang b[data-l="en"]{color:var(--text)}
+main{max-width:820px;margin:0 auto;padding:30px 24px 80px}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:34px}
+.tabs a{padding:.45rem .9rem;border-radius:99px;border:1px solid var(--border);background:var(--panel);color:var(--muted);text-decoration:none;font-size:.86rem;font-weight:600}
+.tabs a.on{background:var(--text);color:#07070a;border-color:var(--text)}
+h1{font-family:var(--fd);font-size:clamp(1.8rem,4vw,2.6rem);letter-spacing:-.04em;line-height:1.1;margin:0 0 8px}
+.upd{color:var(--muted);font-size:.86rem;margin-bottom:30px}
+h2{font-family:var(--fd);font-size:1.05rem;letter-spacing:-.02em;margin:34px 0 10px}
+p,li{color:#c4c4ce}
+ul{padding-left:20px}
+.note{padding:14px 16px;border-radius:14px;border:1px solid var(--border);background:var(--panel);color:var(--muted);font-size:.9rem}
+html[data-lang="ru"] [lang="en"],html[data-lang="en"] [lang="ru"]{display:none}
+footer{max-width:820px;margin:0 auto;padding:24px;border-top:1px solid var(--line);color:#4f4f5a;font-size:.78rem}
+footer a{color:#5d5d68}

@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="ru" data-lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>bedarev math — Leaving Cert Maths как игра</title>
+<meta name="description" content="Все экзамены Leaving Cert Higher Level 2015–2026 и учебники Text & Tests — в одном пути из 22 глав с боссами, рангами и честным отсчётом до экзамена.">
+<meta name="theme-color" content="#07070a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2307070a'/%3E%3Cpath d='M32 10l6 15h16l-13 10 5 16-14-10-14 10 5-16-13-10h16z' fill='%236b8cf5'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="landing/art.css?v=1">
+<link rel="stylesheet" href="landing/landing.css?v=5">
+<script>/* ?shot=1: everything visible at once, for full-page screenshots while developing */ if (/[?&]shot=1/.test(location.search)) document.documentElement.classList.add('shot');</script>
+</head>
+<body>
+<div class="bg" aria-hidden="true"><div class="bg-grid"></div><div class="bg-glow g1"></div><div class="bg-glow g2"></div><div class="spot"></div></div>
+<div class="progress" aria-hidden="true"><i id="scrollbar"></i></div>
+
+<!-- ============ NAV ============ -->
+<header class="nav" id="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="#top" aria-label="bedarev math"><span class="logo"></span><span class="spark">✦</span><span class="math">math</span></a>
+    <nav class="links">
+      <a href="#how" data-t="nav_how">Как это работает</a>
+      <a href="#path" data-t="nav_path">Путь</a>
+      <a href="#bosses" data-t="nav_bosses">Боссы</a>
+      <a href="#pricing" data-t="nav_pricing">Цены</a>
+      <a href="#faq" data-t="nav_faq">FAQ</a>
+    </nav>
+    <div class="nav-r">
+      <button class="lang" id="langBtn" type="button" aria-label="Language"><b data-l="ru">RU</b><i></i><b data-l="en">EN</b></button>
+      <span class="guest"><button class="btn ghost sm" data-open="login" data-t="nav_login">Войти</button>
+      <button class="btn pri sm" data-open="register" data-t="nav_start">Начать</button></span>
+      <span class="user"><a class="btn pri sm" href="app/index.html" data-t="nav_app">Открыть приложение</a>
+      <button class="avatar" id="avatar" type="button"><span>·</span></button></span>
+      <button class="burger" id="burger" type="button" aria-label="Menu"><i></i><i></i></button>
+    </div>
+  </div>
+  <div class="usermenu" id="usermenu"><div class="um-h"><span class="avatar"><span>·</span></span><div><b id="umName">—</b><small id="umPlan">Free</small></div></div>
+    <a href="app/index.html" data-t="um_app">Открыть приложение</a><a href="#pricing" id="umBilling" data-t="um_plans">Выбрать тариф</a><button type="button" id="logout" data-t="um_logout">Выйти</button></div>
+  <div class="mobmenu" id="mobmenu">
+    <a href="#how" data-t="nav_how2">Как это работает</a><a href="#path" data-t="nav_path2">Путь</a><a href="#bosses" data-t="nav_bosses2">Боссы</a><a href="#pricing" data-t="nav_pricing2">Цены</a><a href="#faq">FAQ</a>
+    <div class="mob-cta"><button class="btn ghost" data-open="login" data-t="mm_login">Войти</button><button class="btn pri" data-open="register" data-t="mm_start">Начать</button></div>
+  </div>
+</header>
+
+<main id="top">
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="wrap hero-in">
+    <div class="hero-l">
+      <a class="pill-beta" href="#pricing" data-reveal><span class="dot"></span><span data-t="hero_beta">Закрытая бета · Leaving Cert 2027</span><span class="arr">→</span></a>
+      <h1 class="h-hero" data-reveal style="--d:.05s"><span data-t="hero_h1">Математика Leaving&nbsp;Cert</span><br><span class="grad" data-t="hero_h2">как игра.</span></h1>
+      <p class="lead" data-reveal style="--d:.12s" data-t="hero_lead">Все экзамены Higher Level 2015–2026 и обе книги Text&nbsp;&amp;&nbsp;Tests — в одном пути из 22&nbsp;глав. В&nbsp;конце каждой ждёт босс, а его здоровье — настоящие экзаменационные вопросы.</p>
+      <div class="cta-row" data-reveal style="--d:.18s">
+        <button class="btn pri lg shine" data-open="register"><span data-t="hero_cta">Начать бесплатно</span><span class="arr">→</span></button>
+        <a class="btn ghost lg" href="#how"><span class="play">▶</span><span data-t="hero_cta2">Как это работает</span></a>
+      </div>
+      <div class="hero-meta" data-reveal style="--d:.24s">
+        <div class="countchip"><span class="cd-l" data-t="hero_until">до Paper 1</span><b class="cd" data-cd="short">—</b></div>
+        <div class="trust"><span><b>228</b> <span data-t="hero_t1">вопросов экзаменов</span></span><span><b>3 009</b> <span data-t="hero_t2">задач из книг</span></span><span><b>152</b> <span data-t="hero_t3">темы</span></span></div>
+      </div>
+    </div>
+    <div class="hero-r" id="heroStage" data-reveal style="--d:.1s">
+      <div class="ring-years" aria-hidden="true"><svg viewBox="0 0 600 600"><defs><path id="ryc" d="M300,300 m-270,0 a270,270 0 1,1 540,0 a270,270 0 1,1 -540,0"/></defs><text><textPath href="#ryc">2015 · 2016 · 2017 · 2018 · 2019 · 2020 · 2021 · 2022 · 2023 · 2024 · 2025 · 2026 · PAPER 1 · PAPER 2 · MARKING SCHEME ·</textPath></text></svg></div>
+      <div class="phone hero-phone" data-par="12"><div class="screen"><img class="scroller" data-shot="m_path" alt="" loading="eager"><div class="notch"></div></div></div>
+      <div class="float f-boss" data-par="28"><div class="fb-art" id="heroBoss"></div><div><small data-t="hf_boss">босс главы 3 · раскрыт</small><b data-t="hf_boss_n">Синусоидный Змей</b><div class="hp-mini"><i></i><i></i><i></i><i class="off"></i><i class="off"></i></div></div></div>
+      <div class="float f-rank" data-par="-22"><div id="heroRank"></div><div><small data-t="hf_rank">новый ранг</small><b data-t="hf_rank_n">Бесконечность</b></div></div>
+      <div class="float f-chip c-gold" data-par="18">★ <span data-t="hf_full">Тема пройдена полностью</span></div>
+      <div class="float f-chip c-hp" data-par="-30">−2 HP</div>
+      <div class="float f-chip c-rep" data-par="10">↻ <span data-t="hf_rep">повтор через 2 недели</span></div>
+    </div>
+  </div>
+  <a class="scrollcue" href="#how" aria-label="scroll"><i></i></a>
+</section>
+
+<!-- ============ MARQUEE ============ -->
+<div class="marquee" aria-hidden="true">
+  <div class="mq-row"><div class="mq-track" id="mqYears"></div></div>
+  <div class="mq-row rev"><div class="mq-track" id="mqTopics"></div></div>
+</div>
+
+<!-- ============ NUMBERS ============ -->
+<section class="numbers wrap">
+  <div class="num" data-reveal><b data-count="228">0</b><span data-t="n1">вопросов с экзаменов 2015–2026</span></div>
+  <div class="num" data-reveal style="--d:.05s"><b data-count="3009">0</b><span data-t="n2">задач из Text &amp; Tests 4 и 5</span></div>
+  <div class="num" data-reveal style="--d:.1s"><b data-count="152">0</b><span data-t="n3">темы, у каждой свой прогресс</span></div>
+  <div class="num" data-reveal style="--d:.15s"><b data-count="22">0</b><span data-t="n4">главы и 22 босса</span></div>
+  <div class="num" data-reveal style="--d:.2s"><b data-count="32">0</b><span data-t="n5">ранга — от Графита до Бесконечности</span></div>
+  <div class="num" data-reveal style="--d:.25s"><b data-count="1">0</b><span data-t="n6">финальный босс, которого нельзя победить</span></div>
+</section>
+
+<!-- ============ HOW ============ -->
+<section class="sec" id="how">
+  <div class="wrap">
+    <div class="sec-h" data-reveal><span class="kick" data-t="how_k">как это работает</span><h2 data-t="how_h">Три шага. Каждый день.</h2><p data-t="how_p">Никаких «прочитай главу и надейся». Каждая тема проходит одинаково: учишься, проверяешь себя настоящим экзаменом, побеждаешь.</p></div>
+    <div class="steps">
+      <div class="step" data-reveal>
+        <div class="st-n">01</div>
+        <div class="st-vis vis-ladder"><span class="lv l1">●○○</span><span class="lv l2">●●○</span><span class="lv l3">●●●</span><div class="lv-dot"></div></div>
+        <h3 data-t="s1_h">Изучаешь тему</h3>
+        <p data-t="s1_p">Режим изучения начинает с самой простой задачи каждого типа и усложняет только после твоих успехов. Ошибся — шаг назад. Тема изучена, когда освоены упражнения.</p>
+      </div>
+      <div class="step" data-reveal style="--d:.08s">
+        <div class="st-n">02</div>
+        <div class="st-vis vis-conf"><div class="paper-mini"><i></i><i></i><i class="s"></i><i></i></div><div class="cbtns"><span>1</span><span>2</span><span>3</span><span>4</span><span class="on">5</span></div></div>
+        <h3 data-t="s2_h">Проверяешь экзаменом</h3>
+        <p data-t="s2_p">Настоящие вопросы Paper 1 и Paper 2 по этой теме, с marking scheme. Оцениваешь уверенность от 1 до 5 — и приложение само планирует повторения.</p>
+      </div>
+      <div class="step" data-reveal style="--d:.16s">
+        <div class="st-n">03</div>
+        <div class="st-vis vis-hp"><div class="hpbar"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span class="dmg">−1 HP</span></div>
+        <h3 data-t="s3_h">Побеждаешь босса</h3>
+        <p data-t="s3_p">Здоровье босса главы — её экзаменационные вопросы. Каждый, решённый на 4–5, наносит урон. Ноль HP и все темы изучены — босс повержен.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PATH / TIERS ============ -->
+<section class="sec" id="path">
+  <div class="wrap split">
+    <div class="split-l" data-reveal>
+      <span class="kick" data-t="path_k">путь</span>
+      <h2 data-t="path_h">22 главы.<br>У каждой — пять состояний.</h2>
+      <p data-t="path_p">Карточка главы растёт вместе с тобой: сначала серая и закрытая, потом цветная, потом с поверженным боссом на фоне. Золото и багровый — для тех, кто решил всё.</p>
+      <div class="tier-tabs" id="tierTabs" role="tablist">
+        <button data-tier="0" data-t="tt0">Скрыт</button><button data-tier="1" data-t="tt1">Раскрыт</button><button data-tier="2" data-t="tt2">Повержен</button><button data-tier="3" data-t="tt3">Золото</button><button data-tier="4" data-t="tt4">Багровая</button>
+      </div>
+      <p class="tier-desc" id="tierDesc"></p>
+    </div>
+    <div class="split-r" data-reveal style="--d:.1s">
+      <div class="cc-demo" id="ccDemo"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ BOSSES ============ -->
+<section class="sec bosses" id="bosses">
+  <div class="wrap"><div class="sec-h" data-reveal><span class="kick red" data-t="b_k">боссы</span><h2 data-t="b_h">22 босса. Каждый — со своей историей.</h2><p data-t="b_p">Полиморф носит все многочлены сразу. Нулевую Гипотезу нельзя доказать — только отвергнуть. Кто ждёт в конце скрытых глав — узнаешь, когда изучишь одну тему. <b>Нажми на «?»</b>.</p></div></div>
+  <div class="boss-strip" id="bossStrip"></div>
+</section>
+
+<!-- ============ STUDY DEMO ============ -->
+<section class="sec" id="study">
+  <div class="wrap split rev">
+    <div class="split-l" data-reveal>
+      <span class="kick green" data-t="d_k">попробуй прямо здесь</span>
+      <h2 data-t="d_h">Ты отвечаешь честно.<br>Приложение делает остальное.</h2>
+      <p data-t="d_p">Оцени, насколько уверенно ты решил задачу. От ответа зависит, какой будет следующая задача и когда эта вернётся на повторение.</p>
+      <ul class="ticks">
+        <li data-t="d_l1">Сложность растёт только после успеха</li>
+        <li data-t="d_l2">Ошибки возвращаются в конце темы</li>
+        <li data-t="d_l3">Интервалы повторения растут, пока ты помнишь</li>
+      </ul>
+    </div>
+    <div class="split-r" data-reveal style="--d:.1s">
+      <div class="demo-card" id="demo">
+        <div class="dc-top"><span class="chip" data-t="dc_chip">Изучение · 1.5 Binomial expansions</span><span class="diff"><span data-t="dc_diff">сложность</span> <b id="dDiff">●○○</b></span></div>
+        <div class="dc-q" id="dQ"></div>
+        <div class="dc-ask" data-t="dc_ask">Насколько уверенно решил?</div>
+        <div class="dc-btns" id="dBtns">
+          <button data-c="1"><b>1</b><small data-t="c1">Не решил</small></button><button data-c="2"><b>2</b><small data-t="c2">С решением</small></button><button data-c="3"><b>3</b><small data-t="c3">Частично</small></button><button data-c="4"><b>4</b><small data-t="c4">Решил</small></button><button data-c="5"><b>5</b><small data-t="c5">Уверенно</small></button>
+        </div>
+        <div class="dc-out" id="dOut"><span data-t="dc_hint">Выбери ответ — увидишь, что будет дальше.</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FEATURES GRID ============ -->
+<section class="sec" id="features">
+  <div class="wrap">
+    <div class="sec-h" data-reveal><span class="kick" data-t="f_k">внутри</span><h2 data-t="f_h">Всё, что нужно до июня. Ничего лишнего.</h2></div>
+    <div class="fgrid">
+      <div class="feat" data-reveal><div class="fi">↻</div><h3 data-t="f1_h">Интервальные повторения</h3><p data-t="f1_p">Каждый вопрос возвращается ровно тогда, когда ты начинаешь его забывать.</p></div>
+      <div class="feat" data-reveal style="--d:.04s"><div class="fi">◎</div><h3 data-t="f2_h">Адаптивное изучение</h3><p data-t="f2_p">Типы задач в порядке книги, сложность по твоим ответам.</p></div>
+      <div class="feat" data-reveal style="--d:.08s"><div class="fi">✓</div><h3 data-t="f3_h">Marking schemes</h3><p data-t="f3_p">Официальная схема оценивания рядом с каждым вопросом экзамена.</p></div>
+      <div class="feat" data-reveal style="--d:.12s"><div class="fi">✍</div><h3 data-t="f4_h">Решения доказательств</h3><p data-t="f4_p">Пошаговые решения к задачам «докажите», которых нет в ответах книги.</p></div>
+      <div class="feat" data-reveal style="--d:.16s"><div class="fi">▦</div><h3 data-t="f5_h">Статистика</h3><p data-t="f5_p">Календарь занятий, уверенность по неделям, слабые темы, готовность к экзамену.</p></div>
+      <div class="feat" data-reveal style="--d:.2s"><div class="fi">⧗</div><h3 data-t="f6_h">Отсчёт</h3><p data-t="f6_p">Темп с первого дня подготовки и честный прогноз — успеваешь или нет.</p></div>
+      <div class="feat" data-reveal style="--d:.24s"><div class="fi">✶</div><h3 data-t="f7_h">История</h3><p data-t="f7_p">Каждая изученная тема, каждый босс и ранг — в хронике по дням.</p></div>
+      <div class="feat" data-reveal style="--d:.28s"><div class="fi">◬</div><h3 data-t="f8_h">Лор</h3><p data-t="f8_p">22 записки, которые открываются по мере прохождения. Некоторые зашифрованы.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ RANKS ============ -->
+<section class="sec" id="ranks">
+  <div class="wrap split">
+    <div class="split-l" data-reveal>
+      <span class="kick gold" data-t="r_k">ранги</span>
+      <h2 data-t="r_h">32 ранга.<br>Каждый безумнее прошлого.</h2>
+      <p data-t="r_p">Опыт идёт за каждую решённую задачу, изученную тему, побеждённого босса и достижения. Эмблема меняется вместе с тобой — от простой звезды до Бесконечности.</p>
+      <div class="rk-ctl"><input type="range" min="0" max="11" value="0" id="rkRange" aria-label="rank"><div class="rk-dots" id="rkDots"></div></div>
+    </div>
+    <div class="split-r rk-stage" data-reveal style="--d:.1s">
+      <div class="rk-glow" id="rkGlow"></div>
+      <div id="rkEmb"></div>
+      <div class="rk-name" id="rkName">—</div>
+      <div class="rk-xp" id="rkXp">0 XP</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TOUR ============ -->
+<section class="sec" id="tour">
+  <div class="wrap">
+    <div class="sec-h" data-reveal><span class="kick" data-t="t_k">экскурсия</span><h2 data-t="t_h">Посмотри, как это выглядит.</h2><p data-t="t_p">Настоящие экраны приложения с демо-прогрессом.</p></div>
+    <div class="tour-tabs" id="tourTabs" data-reveal>
+      <button data-shot="home" data-t="tour1">Главная</button><button data-shot="path" data-t="tour2">Путь</button><button data-shot="practice" data-t="tour3">Тренировка</button><button data-shot="stats" data-t="tour4">Статистика</button><button data-shot="doom" data-t="tour5">Отсчёт</button><button data-shot="final" data-t="tour6">Финал</button>
+    </div>
+    <div class="laptop" data-reveal style="--d:.08s"><div class="lp-bar"><i></i><i></i><i></i><span>localhost · bedarev math</span></div><div class="lp-screen" id="tourScreen"><img alt="" id="tourImg" data-shot="home"></div></div>
+  </div>
+</section>
+
+<!-- ============ COUNTDOWN ============ -->
+<section class="sec doom-sec" id="countdown">
+  <div class="wrap">
+    <div class="doom-box" data-reveal>
+      <span class="kick red" data-t="c_k">отсчёт</span>
+      <h2 data-t="c_h">До экзамена осталось</h2>
+      <div class="bigclock" data-cd="long">—</div>
+      <p data-t="c_p">Каждый день отсчёт честно показывает, успеваешь ли ты: твой темп с первого дня подготовки, дни впустую и прогноз, сколько тем ты увидишь впервые прямо на экзамене.</p>
+      <div class="doom-tiles">
+        <div><b class="red">7</b><span data-t="dt1">дней впустую</span></div>
+        <div><b>0.44</b><span data-t="dt2">тем в день нужно</span></div>
+        <div><b class="green">1.11</b><span data-t="dt3">твой темп</span></div>
+      </div>
+      <small class="demo-note" data-t="c_note">цифры — пример из демо-профиля</small>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FINAL BOSS ============ -->
+<section class="final-sec" id="final">
+  <div class="final-bg" aria-hidden="true"></div>
+  <div class="wrap final-in">
+    <div class="final-art" id="finalArt" data-reveal></div>
+    <div class="final-txt" data-reveal style="--d:.12s">
+      <span class="kick red" data-t="fb_k">финал · за последней страницей</span>
+      <h2 class="glitch" data-text="Экзаменатор" data-t="fb_h">Экзаменатор</h2>
+      <p data-t="fb_p">Сделай все 22 главы багровыми — и он проснётся. Его нельзя победить. Только запечатать, до полуночи. Каждый день, до самого июня.</p>
+      <div class="seal-row"><span class="seal-chip" data-t="fb_c1">3 вопроса экзамена</span><span class="seal-chip" data-t="fb_c2">5 самых сложных задач ●●●</span><span class="seal-chip gold" data-t="fb_c3">6 ударов — печать</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LORE ============ -->
+<section class="sec" id="lore">
+  <div class="wrap lore-wrap">
+    <div class="lore-paper" data-reveal>
+      <div class="lp-cap">◬ <span data-t="lore_cap">записка 3 / 22</span></div>
+      <p data-t="lore_1">Я записал, что они шепчут, когда падают, —</p>
+      <p data-t="lore_2">так, чтобы прочёл только тот, кто отступит на три шага назад.</p>
+      <p class="cipher" data-t="lore_3">СРЛ РЗ ЪЦЖСЕЛЬГ. СРЛ ЦЪЗРЛНЛ.</p>
+      <p class="sig" data-t="lore_sig">— Н.</p>
+    </div>
+    <div class="lore-txt" data-reveal style="--d:.1s"><span class="kick gold" data-t="lr_k">лор</span><h2 data-t="lr_h">22 записки.<br>Одна история.</h2><p data-t="lr_p">Кто-то прошёл этот путь до тебя и оставил записки. Они появляются по одной — после побеждённых боссов. Некоторые зашифрованы. Сможешь прочитать эту?</p></div>
+  </div>
+</section>
+
+<!-- ============ PRICING ============ -->
+<section class="sec" id="pricing">
+  <div class="wrap">
+    <div class="sec-h" data-reveal><span class="kick" data-t="p_k">тарифы</span><h2 data-t="p_h">Начни бесплатно. Расти, когда захочешь.</h2>
+      <div class="billing" id="billing"><button class="on" data-b="m" data-t="p_m">Месяц</button><button data-b="y"><span data-t="p_y">Год</span> <em>−32%</em></button></div></div>
+    <div class="plans">
+      <div class="plan" data-reveal>
+        <div class="pl-h"><b>Free</b><span data-t="pf_s">чтобы начать</span></div>
+        <div class="price"><b>€0</b><span data-t="per_forever">навсегда</span></div>
+        <div class="yearnote">&nbsp;</div>
+        <ul>
+          <li data-t="pf1">Книга 1 — все 12 глав с ответами</li>
+          <li data-t="pf2">Экзамены 2015–2016 с marking schemes</li>
+          <li data-t="pf3">Режим изучения и интервальные повторения</li>
+          <li data-t="pf4">Статистика, ранги и бои с боссами</li>
+          <li class="no" data-t="pf5">Книга 2 и экзамены 2017–2026</li>
+        </ul>
+        <button class="btn ghost full" data-plan="free"><span data-t="pf_b">Начать бесплатно</span><span class="in" data-t="pf_in">Открыть приложение</span></button>
+      </div>
+      <div class="plan pro" data-reveal style="--d:.06s">
+        <div class="badge" data-t="pp_badge">выбор большинства</div>
+        <div class="pl-h"><b>Pro</b><span data-t="pp_s">всё для экзамена</span></div>
+        <div class="price"><b data-price="5.99|49">€5.99</b><span data-per>/мес</span></div>
+        <div class="yearnote" data-t="pp_y">€49 в год — экономия 32%</div>
+        <ul>
+          <li data-t="pp1">Обе книги — все 22 главы</li>
+          <li data-t="pp2">Все 228 вопросов 2015–2026 + marking schemes</li>
+          <li data-t="pp3">Решения 252 задач на доказательство</li>
+          <li data-t="pp4">Победа над всеми 22 боссами</li>
+          <li data-t="pp5">Все новые задачи и разборы</li>
+          <li data-t="pp6">Отмена в любой момент</li>
+        </ul>
+        <button class="btn pri full shine" data-plan="pro"><span data-t="pp_b">Выбрать Pro</span><span class="cur" data-t="p_cur">Ваш тариф</span></button>
+      </div>
+      <div class="plan max" data-reveal style="--d:.12s">
+        <div class="pl-h"><b>Max</b><span data-t="pm_s">для тех, кто идёт до конца</span></div>
+        <div class="price"><b data-price="11.99|99">€11.99</b><span data-per>/мес</span></div>
+        <div class="yearnote" data-t="pm_y">€99 в год — экономия 31%</div>
+        <ul>
+          <li data-t="pm1">Всё из Pro</li>
+          <li data-t="pm2">Финальный босс — Экзаменатор</li>
+          <li data-t="pm3">Все 22 записки лора</li>
+          <li data-t="pm4">Синхронизация прогресса между устройствами</li>
+          <li data-t="pm5">Пробные экзамены с таймером</li>
+          <li data-t="pm6">Ранний доступ к новому</li>
+        </ul>
+        <button class="btn crim full" data-plan="max"><span data-t="pm_b">Выбрать Max</span><span class="cur" data-t="p_cur2">Ваш тариф</span></button>
+      </div>
+    </div>
+    <p class="fine" data-reveal><span data-t="p_fine">Оплата через Stripe. Подписка продлевается автоматически и отменяется в любой момент в аккаунте — доступ остаётся до конца оплаченного периода.</span>
+      <span class="testnote" data-t="p_test">Тестовый режим: деньги не списываются. Для проверки — карта 4242 4242 4242 4242, любая будущая дата и любой CVC.</span></p>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section class="sec" id="faq">
+  <div class="wrap faq-wrap">
+    <div class="sec-h left" data-reveal><span class="kick" data-t="q_k">вопросы</span><h2 data-t="q_h">Частые вопросы</h2></div>
+    <div class="faq" data-reveal style="--d:.06s">
+      <details><summary data-t="q1">Что такое bedarev math?</summary><p data-t="a1">Тренажёр для Leaving Certificate Higher Level Maths. Все экзамены 2015–2026 и задачи из Text &amp; Tests 4 и 5 собраны в один путь по темам — с повторениями, статистикой и игровой системой, которая не даёт бросить.</p></details>
+      <details><summary data-t="q2">Откуда вопросы?</summary><p data-t="a2">Из официальных экзаменационных работ Paper 1 и Paper 2 за 2015–2026 годы с их marking schemes, а также из упражнений и повторения глав учебников Text &amp; Tests 4 и 5. Каждый вопрос размечен по темам.</p></details>
+      <details><summary data-t="q3">Когда тема считается изученной?</summary><p data-t="a3">Когда освоены её упражнения: пройден режим изучения или 60% задач решены на 4–5. Если ещё решить на 4–5 все задачи темы и все экзаменационные вопросы по ней — тема «★ пройдена полностью».</p></details>
+      <details><summary data-t="q4">Где хранится мой прогресс?</summary><p data-t="a4">Прогресс занятий — в твоём браузере; с тарифом Max он ещё и синхронизируется между устройствами. Аккаунт (почта и подписка) хранится в Supabase в Лондоне. Выгрузить или удалить всё можно в настройках приложения.</p></details>
+      <details><summary data-t="q5">Это официальный продукт SEC?</summary><p data-t="a5">Нет. bedarev math — независимый проект и не связан с State Examinations Commission или издателями учебников.</p></details>
+      <details><summary data-t="q6">Можно на английском?</summary><p data-t="a6">Да. И сайт, и приложение переключаются между русским и английским одной кнопкой.</p></details>
+      <details><summary data-t="q7">Как отменить подписку?</summary><p data-t="a7">В любой момент: Настройки → «Управлять подпиской». Доступ остаётся до конца оплаченного периода, новых списаний не будет. В течение 14 дней после первой оплаты можно вернуть деньги — напиши нам.</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FINAL CTA ============ -->
+<section class="sec cta-sec">
+  <div class="wrap cta-box" data-reveal>
+    <div class="cta-glow" aria-hidden="true"></div>
+    <h2 data-t="z_h">Пустой день остаётся пустым навсегда.</h2>
+    <p><span data-t="z_p">До экзамена</span> <b class="cd" data-cd="days">—</b>. <span data-t="z_p2">Начни сегодня.</span></p>
+    <button class="btn pri lg shine" data-open="register"><span data-t="z_b">Начать бесплатно</span><span class="arr">→</span></button>
+  </div>
+</section>
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="foot">
+  <div class="wrap foot-in">
+    <div class="f-brand"><a class="brand" href="#top"><span class="logo"></span><span class="spark">✦</span><span class="math">math</span></a><p data-t="ft_p">Leaving Cert Higher Level Maths — как игра. Сделано студентом для студентов.</p></div>
+    <div class="f-col"><b data-t="ft_c1">Продукт</b><a href="#how" data-t="ft_l1">Как это работает</a><a href="#path" data-t="ft_l2">Путь</a><a href="#pricing" data-t="ft_l3">Цены</a><a href="#faq">FAQ</a></div>
+    <div class="f-col"><b data-t="ft_c2">Аккаунт</b><a href="#login" data-open="login" data-t="ft_l4">Войти</a><a href="#register" data-open="register" data-t="ft_l5">Регистрация</a><a href="app/index.html" data-t="ft_l6">Приложение</a></div>
+  </div>
+  <div class="wrap legal">
+    <span>© 2026 bedarev math</span>
+    <a href="legal/privacy.html" data-t="lg1">Конфиденциальность</a>
+    <a href="legal/terms.html" data-t="lg2">Условия использования</a>
+    <a href="legal/cookies.html" data-t="lg3">Cookies</a>
+    <a href="legal/terms.html#disclaimer" data-t="lg4">Отказ от ответственности</a>
+    <span class="disc" data-t="lg5">Не связано с State Examinations Commission и издателями учебников. Экзаменационные материалы © State Examinations Commission.</span>
+  </div>
+</footer>
+
+<!-- ============ AUTH MODAL ============ -->
+<div class="modal" id="auth" aria-hidden="true">
+  <div class="m-back" data-close></div>
+  <div class="m-box" role="dialog" aria-modal="true">
+    <button class="m-x" data-close aria-label="close">✕</button>
+    <div class="m-brand"><span class="logo"></span><span class="spark">✦</span><span class="math">math</span></div>
+    <div class="m-tabs"><button data-tab="login" data-t="m_login">Вход</button><button data-tab="register" data-t="m_reg">Регистрация</button><i class="m-ind"></i></div>
+    <form class="m-pane" id="loginForm" data-pane="login" autocomplete="on">
+      <p class="m-sub" data-t="m_lsub">Войди, чтобы продолжить путь.</p>
+      <label><span data-t="m_email1">Почта</span><input name="email" type="email" autocomplete="email" required></label>
+      <label><span data-t="m_pass">Пароль</span><span class="pw"><input name="pass" type="password" autocomplete="current-password" required><button type="button" class="eye" aria-label="show">◉</button></span></label>
+      <div class="m-row"><span></span><a href="#" data-tab-go="reset" data-t="m_forgot">Забыли пароль?</a></div>
+      <div class="m-err" id="loginErr"></div>
+      <button class="btn pri full lg" type="submit"><span data-t="m_go">Войти</span></button>
+    </form>
+    <form class="m-pane" id="regForm" data-pane="register" autocomplete="on">
+      <p class="m-sub" data-t="m_rsub">Аккаунт бесплатный: Книга 1 и экзамены 2015–2016 открыты сразу.</p>
+      <label><span data-t="m_email">Почта</span><input name="email" type="email" autocomplete="email" required></label>
+      <label><span data-t="m_pass2">Пароль — от 8 символов</span><span class="pw"><input name="pass" type="password" autocomplete="new-password" minlength="8" required><button type="button" class="eye" aria-label="show">◉</button></span></label>
+      <label class="chk"><input type="checkbox" name="age" required><span data-t="m_age">Мне 16 лет или больше</span></label>
+      <label class="chk"><input type="checkbox" name="agree" required><span data-t="m_agree">Я принимаю <a href="legal/terms.html" target="_blank">условия</a> и <a href="legal/privacy.html" target="_blank">политику конфиденциальности</a></span></label>
+      <div class="m-err" id="regErr"></div>
+      <div class="m-ok" id="regOk"></div>
+      <button class="btn pri full lg" type="submit"><span data-t="m_rgo">Создать аккаунт</span></button>
+    </form>
+    <form class="m-pane" id="resetForm" data-pane="reset">
+      <p class="m-sub" data-t="m_xsub">Пришлём на почту ссылку, по которой можно задать новый пароль.</p>
+      <label><span data-t="m_email2">Почта</span><input name="email" type="email" autocomplete="email" required></label>
+      <div class="m-err" id="resetErr"></div>
+      <div class="m-ok" id="resetOk"></div>
+      <button class="btn pri full lg" type="submit"><span data-t="m_xgo">Отправить ссылку</span></button>
+      <a href="#" class="m-link" data-tab-go="login" data-t="m_back">← Ко входу</a>
+    </form>
+    <form class="m-pane" id="newpassForm" data-pane="newpass">
+      <p class="m-sub" data-t="m_nsub">Придумай новый пароль для аккаунта.</p>
+      <label><span data-t="m_pass3">Новый пароль — от 8 символов</span><span class="pw"><input name="pass" type="password" autocomplete="new-password" minlength="8" required><button type="button" class="eye" aria-label="show">◉</button></span></label>
+      <div class="m-err" id="newErr"></div>
+      <button class="btn pri full lg" type="submit"><span data-t="m_ngo">Сохранить пароль</span></button>
+    </form>
+    <div class="m-success" id="mSuccess"><div class="ms-ring"></div><b data-t="m_welcome">С возвращением</b><span id="msUser"></span></div>
+  </div>
+</div>
+
+<div class="cookie" id="cookie"><p data-t="ck_p">Никаких рекламных и аналитических cookies — только необходимое: вход в аккаунт и твой прогресс в браузере.</p><div><a href="legal/cookies.html" data-t="ck_more">Подробнее</a><button class="btn sm pri" id="cookieOk" data-t="ck_ok">Понятно</button></div></div>
+<div class="toast" id="toast"></div>
+<div class="wipe" id="wipe"></div>
+
+<script src="app/i18n.js"></script>
+<script src="landing/art.js?v=1"></script>
+<script src="assets/supabase.js"></script>
+<script src="assets/config.js?v=1"></script>
+<script src="assets/account.js?v=1"></script>
+<script src="landing/landing.js?v=5"></script>
+</body>
+</html>
