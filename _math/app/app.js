@@ -83,13 +83,30 @@
   const myPlan = () => (ACC ? ACC.plan : 'max');
   const hasPlan = need => PLAN_RANK[myPlan()] >= PLAN_RANK[need];
   const SYNC = { at: 0, err: null, busy: false, t: null }; // MAX: progress sync between devices (see syncNow)
-  // book 1 and the 2015–2016 papers are free, everything else Pro
-  const tierOf = path => (/^book\/(q|a|ax)\/1\//.test(path) || /^(q|ms)\/(2015|2016)_/.test(path) ? 'free' : 'pro');
+  // the textbooks and the 2015–2016 papers are free; the other papers are Pro
+  const tierOf = path => (/^book\//.test(path) || /^(q|ms)\/(2015|2016)_/.test(path) ? 'free' : 'pro');
   const canSee = path => !path || hasPlan(tierOf(path));
   const itemTier = id => { const it = itemOf(id); return it ? tierOf(it.img) : 'free'; };
   const lockBox = (tier, what) => `<div class="lockbox"><span class="lk">🔒</span><b>${what || L('Этот материал', 'This material')} — ${L('в тарифе', 'in the plan')} ${PLAN_LABEL[tier]}</b>
-    <span class="small muted">${tier === 'max' ? L('Max: всё из Pro, финальный босс, все записки лора, пробные экзамены и синхронизация между устройствами.', 'Max: everything in Pro, the final boss, all lore notes, mock exams and sync between devices.') : L('Pro: обе книги, все экзамены 2015–2026 с marking schemes и решения задач на доказательство.', 'Pro: both books, every paper 2015–2026 with marking schemes and worked solutions to proofs.')}</span>
+    <span class="small muted">${tier === 'max' ? L('Max: всё из Pro, финальный босс, все записки лора, пробные экзамены и синхронизация между устройствами.', 'Max: everything in Pro, the final boss, all lore notes, mock exams and sync between devices.') : L('Pro: адаптивный режим изучения, вся статистика, ранги и достижения, история и Отсчёт, все экзамены 2015–2026 с marking schemes и решения задач на доказательство.', 'Pro: the adaptive study mode, all statistics, ranks and achievements, history and the Countdown, every paper 2015–2026 with marking schemes and worked solutions to proofs.')}</span>
     <a class="btn pri sm" href="../index.html#pricing">${L('Посмотреть тарифы', 'See the plans')}</a></div>`;
+  // a free account sees what these Pro pages give instead of the page itself (the sessions list stays open)
+  const PRO_PAGES = {
+    stats: () => [L('Статистика', 'Statistics'), [L('обзор прогресса по учебникам и экзаменам', 'progress across the textbooks and the papers'), L('темы и главы: что изучено и что подтянуть', 'topics and chapters: what is studied and what needs work'), L('календарь занятий, уверенность по неделям, журнал попыток', 'practice calendar, confidence by week, the log of attempts'), L('карта экзаменов: какие темы чаще всего на Paper 1 и 2', 'the exam map: which topics come up most on Paper 1 and 2'), L('ранги и достижения', 'ranks and achievements')]],
+    history: () => [L('История', 'History'), [L('хроника по дням: темы, боссы, ранги', 'a day-by-day chronicle: topics, bosses, ranks'), L('вехи подготовки на одной ленте', 'the milestones of your preparation on one timeline')]],
+    doom: () => [L('Отсчёт', 'Countdown'), [L('сколько дней осталось и сколько ушло впустую', 'how many days are left and how many went to waste'), L('твой темп и прогноз к экзамену', 'your pace and the forecast for the exam'), L('учебный год по дням и задачи по неделям', 'the school year by day and questions by week')]],
+  };
+  function proPage(v) {
+    if (hasPlan('pro') || !PRO_PAGES[v] || (v === 'stats' && statsTab === 'sessions')) return '';
+    const [name, list] = PRO_PAGES[v]();
+    return `<div class="pagehead"><div><div class="eyebrow">pro</div><h1>${name}</h1></div></div>
+      <div class="propage">${lockBox('pro', name)}<ul class="prolist">${list.map(x => `<li>${x}</li>`).join('')}</ul></div>`;
+  }
+  // the free plan's home: what Pro adds, where the rank card would be
+  const proPitch = () => `<a class="propitch" href="../index.html#pricing"><div class="eyebrow">pro</div><b>${L('Всё, что превращает задачи в подготовку', 'Everything that turns questions into preparation')}</b>
+    <ul>${[L('Адаптивный режим изучения каждой темы', 'Adaptive study of every topic'), L('Статистика, прогноз и Отсчёт', 'Statistics, forecast and the Countdown'), L('Ранги и достижения', 'Ranks and achievements'), L('Все экзамены 2015–2026 с marking schemes', 'Every paper 2015–2026 with marking schemes')].map(x => `<li>${x}</li>`).join('')}</ul>
+    <span class="btn pri sm">${L('Посмотреть тарифы', 'See the plans')}</span></a>`;
+  const kpiLock = name => `<a class="kpi kpilock" href="../index.html#pricing"><b>🔒</b><span>${name} — Pro</span></a>`;
   function upsell(tier, what) { openModal(`<div class="box narrow">${lockBox(tier, what)}<div class="row" style="justify-content:center;margin-top:12px"><button class="btn sm ghost" data-a="closeModal">${L('Закрыть', 'Close')}</button></div></div>`); }
   // worked solutions written by Claude for questions whose book answer is only "Proof" or missing (Pro);
   // which questions have one is public (sol_ids.js), the texts are loaded for Pro
@@ -253,6 +270,7 @@
     $('#nav [data-v="book"]').innerHTML = 'Путь' + (bdue ? `<span class="badge">${bdue}</span>` : '');
     $('#nav [data-v="bank"]').innerHTML = 'Хранилище' + (edue ? `<span class="badge">${edue}</span>` : '');
     $('#tab-practice').classList.toggle('hidden', !S.session);
+    ['stats', 'history', 'doom'].forEach(v => { const b = $(`#nav [data-v="${v}"]`); if (b) b.classList.toggle('pro', !hasPlan('pro')); });
     headerRight();
     // on phones the tabs are one swipeable row: keep the open one in sight
     const nv = $('#nav'), on = nv && nv.querySelector('.tab.on');
@@ -271,7 +289,7 @@
       setTimeout(run, 350);
       return;
     }
-    main.innerHTML = VIEWS[view]();
+    main.innerHTML = proPage(view) || VIEWS[view]();
     main.classList.toggle('enter', entering && !motionOff());
     (AFTER[view] || (() => { }))();
     document.querySelectorAll('[data-ks]').forEach(e => { if (keep[e.dataset.ks]) e.scrollTop = keep[e.dataset.ks]; });
@@ -358,7 +376,7 @@
         <div class="hero-books">${TT.books.map(b => { const codes = b.chapters.flatMap(chTopics), s = topicSum(codes); return `<div><div class="tiny muted">${esc(b.title)} · ${esc(b.name)}</div><div class="row" style="gap:8px;flex-wrap:nowrap"><b class="mono small">${s.done}/${s.total}${s.full ? ` <span class="tfull-n">★${s.full}</span>` : ''}</b><div style="flex:1">${topicBar(codes, { label: false })}</div></div></div>`; }).join('')}</div>
         <div class="row" style="margin-top:20px">${ntBtn(nt, 'btn pri lg')}<button class="btn lg" data-a="startDueAll" ${due.length ? '' : 'disabled'}>↻ Повторение <span class="badge">${due.length}</span></button></div>
       </div>
-      <div class="hero-r">${rankCard()}</div>
+      <div class="hero-r">${hasPlan('pro') ? rankCard() : proPitch()}</div>
       ${heroDeco()}
     </section>`;
     if (cur && cs) {
@@ -378,10 +396,10 @@
     h += `<div class="kpis" style="margin-top:14px">
       <div class="kpi">${ring(todayN / goal)}<b><span data-count="${todayN}">${todayN}</span> / ${goal}</b><span>сегодня решено / цель</span></div>
       <div class="kpi"><b data-count="${due.length}">${due.length}</b><span>пора повторить · учебник ${bdue} · экзамены ${edue}</span></div>
-      <div class="kpi"><b>${st.streak} <small class="muted">${plural(st.streak, 'день', 'дня', 'дней')}</small></b><span>серия занятий · рекорд ${st.bestStreak}</span></div>
+      ${hasPlan('pro') ? `<div class="kpi"><b>${st.streak} <small class="muted">${plural(st.streak, 'день', 'дня', 'дней')}</small></b><span>серия занятий · рекорд ${st.bestStreak}</span></div>` : kpiLock(L('Серия занятий', 'Study streak'))}
       <div class="kpi"><b><span data-count="${bk.done}">${bk.done}</span><small class="muted"> / ${bk.total}</small></b><span>задач учебников решено</span></div>
       <div class="kpi"><b><span data-count="${exDone}">${exDone}</span><small class="muted"> / ${Q.length}</small></b><span>вопросов exam papers решено</span></div>
-      <div class="kpi"><b><span data-count="${st.readiness}">${st.readiness}</span>%</b><span>готовность к экзамену*</span></div>
+      ${hasPlan('pro') ? `<div class="kpi"><b><span data-count="${st.readiness}">${st.readiness}</span>%</b><span>готовность к экзамену*</span></div>` : kpiLock(L('Готовность к экзамену', 'Exam readiness'))}
     </div>`;
     h += `<div class="section-title"><h2>Другие режимы</h2></div><div class="big-actions">
       <button class="big" data-a="startWeak"><span class="n">${st.weakQ}</span><b>Слабые места</b><span class="muted small">задачи с последней оценкой 1–2 и вопросы самых «приоритетных» тем</span></button>
@@ -391,11 +409,11 @@
     h += `<div class="grid g2" style="margin-top:16px">
       <div class="card"><div class="row"><h2 class="grow">Что подтянуть</h2><button class="btn sm ghost" data-a="statsGo" data-v="topics">Все темы →</button></div>
         <p class="muted small" style="margin-top:0">Темы, которые чаще всего встречаются на экзамене и которые вы пока знаете хуже всего — учебник и экзаменационные вопросы вместе.</p>
-        ${prioList(st.prio.slice(0, 6))}</div>
+        ${hasPlan('pro') ? prioList(st.prio.slice(0, 6)) : lockBox('pro', L('Подбор слабых тем', 'Picking the weak topics'))}</div>
       <div class="card"><h2>Повторения на 2 недели</h2>${forecastChart(Object.values(C), 14)}
         <h3 style="margin-top:14px">Последние решения</h3>${recentList(7)}</div>
     </div>
-    <p class="muted tiny" style="margin-top:12px">* Готовность — насколько изучены темы (учебник и экзаменационные вопросы поровну), с весом по частоте темы в работах 2015–2026.</p>`;
+    <p class="muted tiny ${hasPlan('pro') ? '' : 'hidden'}" style="margin-top:12px">* Готовность — насколько изучены темы (учебник и экзаменационные вопросы поровну), с весом по частоте темы в работах 2015–2026.</p>`;
     return h;
   };
   function prioList(prio) {
@@ -1109,7 +1127,7 @@
     const line = sub ? (sub.status === 'past_due' ? L('Платёж не прошёл — обновите карту, иначе доступ закроется.', 'The payment failed — update your card or access will close.')
       : sub.cancel_at_period_end ? L(`Подписка отменена, доступ до ${until}.`, `Cancelled, access until ${until}.`)
       : L(`${sub.billing_interval === 'year' ? 'Годовая' : 'Месячная'} подписка, следующее списание ${until}.`, `${sub.billing_interval === 'year' ? 'Yearly' : 'Monthly'} subscription, next payment on ${until}.`))
-      : myPlan() === 'max' && !sub ? L('Полный доступ.', 'Full access.') : L('Бесплатный тариф: Книга 1 и экзамены 2015–2016.', 'Free plan: Book 1 and the 2015–2016 papers.');
+      : myPlan() === 'max' && !sub ? L('Полный доступ.', 'Full access.') : L('Бесплатный тариф: обе книги и экзамены 2015–2016. Режим изучения, статистика и ранги — в Pro.', 'Free plan: both books and the 2015–2016 papers. Study mode, statistics and ranks come with Pro.');
     return `<div class="card acctcard" style="margin-bottom:14px"><div class="row" style="align-items:flex-start;gap:16px;flex-wrap:wrap">
       <div class="grow" style="min-width:240px"><h2 style="margin:0 0 6px">${L('Тариф', 'Plan')} <span class="planchip ${myPlan()}">${PLAN_LABEL[myPlan()]}</span></h2><div class="small muted">${line}</div>
         ${hasPlan('max') && !ACC.demo ? `<div class="small" style="margin-top:8px">${L('Синхронизация между устройствами', 'Sync between devices')}: <b>${SYNC.err ? L('ошибка', 'error') : SYNC.at ? L('включена', 'on') + ' · ' + fmtDate(SYNC.at) : L('включена', 'on')}</b> <button class="btn sm ghost" data-a="syncNow">↻ ${L('Сейчас', 'Now')}</button></div>` : ''}</div>
@@ -1211,13 +1229,19 @@
       for (let k = 0; k < TOPICS.length; k++) {
         const t = TOPICS[(start + k) % TOPICS.length], s = topicState(t.code);
         if (s.status === 'done') continue;
-        const gid = t.groups.find(g => STUDY[g] && !groupMastery(g).done);
-        if (gid) return { t, gid, label: `${S.study[gid] ? 'Продолжить' : 'Изучить'}: ${t.s.n} ${t.s.name}` };
+        // Pro: the adaptive study run; free: the topic's exercises in order
+        if (hasPlan('pro')) {
+          const gid = t.groups.find(g => STUDY_IDS.has(g) && !groupMastery(g).done);
+          if (gid) return { t, gid, label: `${S.study[gid] ? 'Продолжить' : 'Изучить'}: ${t.s.n} ${t.s.name}` };
+        } else {
+          const g = t.groups.find(x => !groupMastery(x).done);
+          if (g) return { t, g, m: gIds(g).some(id => !C[id]) ? 'cont' : 'weak', label: `Решать: ${t.s.n} ${t.s.name}` };
+        }
       }
       return null;
     });
   }
-  const ntBtn = (nt, cls = 'btn pri') => nt ? `<button class="${cls}" ${nt.gid ? `data-a="study" data-g="${nt.gid}"` : `data-a="startCode" data-code="${nt.t.code}"`}>▶ ${esc(nt.label)}</button>` : '';
+  const ntBtn = (nt, cls = 'btn pri') => nt ? `<button class="${cls}" ${nt.gid ? `data-a="study" data-g="${nt.gid}"` : nt.g ? `data-a="gStart" data-g="${nt.g}" data-m="${nt.m}"` : `data-a="startCode" data-code="${nt.t.code}"`}>▶ ${esc(nt.label)}</button>` : '';
   VIEWS.book = () => {
     if (!TI.length) return '<div class="card empty">Не найден файл book.js с вопросами учебников.</div>';
     if (bookSub === 'final') return finalView();
@@ -1268,7 +1292,7 @@
             return `<div class="tiny muted" style="margin-top:8px">${esc(groupTitle(g))}${g.part ? ' (' + esc(g.part) + ')' : ''} · ${gi.length} ${plural(gi.length, 'вопрос', 'вопроса', 'вопросов')} · решено ${gp.done}${gp.avg != null ? ' · уверенность ' + gp.avg.toFixed(1) : ''} ${studyBadge(gid)}</div>
               ${pills(gi)}
               <div class="row" style="margin-top:7px">
-                ${STUDY[gid] ? `<button class="btn sm pri" data-a="study" data-g="${gid}" ${stu && stu.finished ? 'data-restart="1"' : ''} title="Адаптивно: следующая задача зависит от того, как вы решили предыдущую">🎯 ${stu ? (stu.finished ? 'Изучить заново' : 'Продолжить изучение') : 'Изучить тему'}</button>` : ''}
+                ${!STUDY_IDS.has(gid) ? '' : !hasPlan('pro') ? `<button class="btn sm" data-a="study" data-g="${gid}">🎯 Изучить тему <span class="planchip pro">Pro</span></button>` : `<button class="btn sm pri" data-a="study" data-g="${gid}" ${stu && stu.finished ? 'data-restart="1"' : ''} title="Адаптивно: следующая задача зависит от того, как вы решили предыдущую">🎯 ${stu ? (stu.finished ? 'Изучить заново' : 'Продолжить изучение') : 'Изучить тему'}</button>`}
                 ${nx ? `<button class="btn sm" data-a="gStart" data-g="${gid}" data-m="cont">${gp.done ? 'Все подряд: продолжить' : 'Все подряд'}</button>` : `<button class="btn sm" data-a="gStart" data-g="${gid}" data-m="weak">Повторить слабые</button>`}
                 <button class="btn sm" data-a="gStart" data-g="${gid}" data-m="rand">Случайные 5</button>
                 ${g.ansAll ? `<button class="btn sm ghost" data-a="ansAll" data-g="${gid}">Ответы</button>` : ''}
@@ -1422,6 +1446,8 @@
   // Failed questions come back once at the end. State is replayed from the attempts of the topic's
   // study sessions, so an excluded or deleted session also rolls the topic back.
   const STUDY = window.TT_STUDY || {};
+  // which exercises have a study run is public; their types and difficulties (STUDY) are loaded for Pro
+  const STUDY_IDS = new Set(window.TT_STUDY_IDS || Object.keys(STUDY));
   const DOTS = d => '●'.repeat(d) + '○'.repeat(3 - d);
   function studySpec(gid) {
     const raw = STUDY[gid]; if (!raw) return null;
@@ -1945,12 +1971,12 @@
       if (e.k === 'reveal') bossReveal(TCH[e.ch]);
       if (['boss', 'gold', 'red'].includes(e.k) && !up.has(e.ch)) { up.add(e.ch); chUp(TCH[e.ch]); }
     });
-    if (now.r > old.r) rankUp(RANKS[now.r]);
+    if (now.r > old.r && hasPlan('pro')) rankUp(RANKS[now.r]);
     if (ev.some(e => e.k === 'final')) showOverlay(() => finalOverlay('open'), 'final');
   }
   // what a finished session brought: a quiet list on its summary instead of a pile of pop-ups
   function sessEvents(s) {
-    const ev = (S.events || []).filter(e => e.t >= s.started);
+    const ev = (S.events || []).filter(e => e.t >= s.started && (hasPlan('pro') || !['rank', 'ach'].includes(e.k)));
     if (!ev.length) return '';
     const seen = new Set(), rows = ev.filter(e => { const k = e.k + (e.ch || e.code || e.r || e.n); if (seen.has(k)) return false; seen.add(k); return true; });
     return `<div class="sessev"><div class="sessev-h">за эту сессию</div>${rows.map(evLine).join('')}</div>`;
@@ -2757,7 +2783,9 @@
     const ts = topicSum(ALL_TOPICS), tt = $('#topTopics');
     if (tt) tt.innerHTML = `<a class="ttop" href="#book" title="Изучено тем: ${ts.done} из ${ts.total}, в процессе ${ts.prog}"><span>темы</span><b>${ts.done}/${ts.total}</b><span class="tbar-t">${topicTrack(ts)}</span></a>`;
     const ri = rankInfo(), tr_ = $('#topRank');
-    if (tr_ && hdrRank !== ri.r.i) { hdrRank = ri.r.i; tr_.innerHTML = `<a class="rchip" href="#stats" data-a="statsGo" data-v="ranks" title="${ri.xp} XP">${emblem(ri.r, 28, true)}<span>${esc(rankName(ri.r))}</span></a>`; }
+    // ranks are Pro: a free account sees the way to the plans instead
+    if (tr_ && !hasPlan('pro')) { if (hdrRank !== 'up' + EN()) { hdrRank = 'up' + EN(); tr_.innerHTML = `<a class="upchip" href="../index.html#pricing">★ ${L('Перейти на Pro', 'Go Pro')}</a>`; } }
+    else if (tr_ && hdrRank !== ri.r.i) { hdrRank = ri.r.i; tr_.innerHTML = `<a class="rchip" href="#stats" data-a="statsGo" data-v="ranks" title="${ri.xp} XP">${emblem(ri.r, 28, true)}<span>${esc(rankName(ri.r))}</span></a>`; }
     const lb = $('#langBtn'); if (lb) lb.innerHTML = `<b class="${EN() ? '' : 'on'}">RU</b><i></i><b class="${EN() ? 'on' : ''}">EN</b>`;
   }
   Object.assign(ACT, {
@@ -2817,6 +2845,8 @@
     conf: el => { R.conf = +el.dataset.v; R.confManual = true; R.iv = undefined; if (R.conf === 5) { const r = el.getBoundingClientRect(); burst(r.left + r.width / 2, r.top + r.height / 2); } render(); },
     study: el => {
       const gid = el.dataset.g;
+      if (!hasPlan('pro')) { upsell('pro', L('Адаптивный режим изучения', 'The adaptive study mode')); return; }
+      if (!STUDY[gid]) { toast(L('Загружаем режим изучения…', 'Loading the study mode…')); loadPaid().then(() => { if (STUDY[gid]) ACT.study(el); }); return; }
       if (el.dataset.restart || !S.study[gid]) {
         if (el.dataset.restart && !ask('Начать изучение темы заново? Прошлые попытки останутся в статистике.')) return;
         S.study[gid] = { t0: Date.now(), skips: [] };
@@ -2880,6 +2910,11 @@
   // paid texts that live in Supabase: solutions (Pro) and lore (MAX), loaded once the plan allows
   async function loadPaid() {
     if (!ACC || !CLOUD) return;
+    if (hasPlan('pro') && !Object.keys(STUDY).length) {
+      const { data } = await ACC.sb.from('study_specs').select('gid, spec');
+      (data || []).forEach(r => { STUDY[r.gid] = r.spec; });
+      if (data && data.length) { MEMO = {}; render(); }
+    }
     if (hasPlan('pro') && !Object.keys(SOL).length) {
       const { data } = await ACC.sb.from('solutions').select('id, body');
       (data || []).forEach(r => { SOL[r.id] = r.body; });
@@ -2895,7 +2930,7 @@
     document.documentElement.classList.toggle('cloud', CLOUD);
     ACC.on(ev => {
       if (ev === 'SIGNED_OUT') { location.replace('../index.html#login'); return; }
-      if (ev === 'plan' || ev === 'INITIAL_SESSION') { SUBS = null; loadPaid(); syncNow(); render(); }
+      if (ev === 'plan' || ev === 'INITIAL_SESSION') { SUBS = null; MEMO = {}; hdrRank = -1; loadPaid(); syncNow(); render(); }
     });
     ACC.ready.then(sess => { if (!sess) location.replace('../index.html#login'); });
     ACC.afterCheckout((st, plan) => { SUBS = null; render(); toast(st === 'success' ? L(`Оплата прошла — тариф ${PLAN_LABEL[plan]} активен.`, `Payment done — ${PLAN_LABEL[plan]} is active.`) : L('Оплата отменена — ничего не списано.', 'Checkout cancelled — nothing was charged.')); });

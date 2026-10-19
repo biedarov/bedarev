@@ -56,8 +56,8 @@
 
   // screenshots and local demos only: on this machine the seed page can open the app without an account
   if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && store.get('bm_demo') === '1') {
-    const user = { id: 'demo', email: 'demo@localhost' };
-    window.BM = { sb, demo: true, ready: Promise.resolve({ user }), root: ROOT, test: !!C.test, cloud: false, session: { user }, user, plan: 'max', has: () => true, on: () => { }, refreshPlan: async () => 'max',
+    const user = { id: 'demo', email: 'demo@localhost' }, dp = store.get('bm_demo_plan') || 'max'; // bm_demo_plan: preview another plan
+    window.BM = { sb, demo: true, ready: Promise.resolve({ user }), root: ROOT, test: !!C.test, cloud: false, session: { user }, user, plan: dp, has: need => RANK[dp] >= RANK[need], on: () => { }, refreshPlan: async () => dp,
       signOut: async () => store.del('bm_demo'), subscriptions: async () => [], accountData: async () => ({ account: user }), afterCheckout: () => { },
       portal: async () => { }, checkout: async () => { }, syncBilling: async () => 'max', deleteAccount: async () => store.del('bm_demo') };
     return;

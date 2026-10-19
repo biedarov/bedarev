@@ -1,0 +1,19 @@
+# math.bedarev.com (Netlify) publishes only the _math folder of this repo.
+# GitHub Pages (bedarev.com, the portfolio) skips folders that start with "_", so the site is not served twice.
+# Leave "Base directory" empty in the Netlify settings: this file then applies as written.
+[build]
+  publish = "_math"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
+    Strict-Transport-Security = "max-age=31536000"
+
+[[headers]]
+  for = "/assets/fonts/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
