@@ -19,14 +19,16 @@
   // the last known plan, so the page does not flash "free" while the real one loads
   const cachedPlan = uid => { try { const c = JSON.parse(store.get('bm_plan')); return c && c.uid === uid ? c.plan : 'free'; } catch (e) { return 'free'; } };
   // a saved session means a known user: start from their cached plan before Supabase restores the session
-  try { const t = JSON.parse(store.get('sb-' + new URL(C.url).hostname.split('.')[0] + '-auth-token')); if (t && t.user) plan = cachedPlan(t.user.id); } catch (e) { /* no saved session */ }
+  let uidHint = null, planKnown = false;
+  try { const t = JSON.parse(store.get('sb-' + new URL(C.url).hostname.split('.')[0] + '-auth-token')); if (t && t.user) { uidHint = t.user.id; plan = cachedPlan(t.user.id); } } catch (e) { /* no saved session */ }
 
   async function refreshPlan() {
     if (!session) { plan = 'none'; return plan; }
     const { data, error } = await sb.rpc('my_plan');
     if (error || !data) return plan;
     store.set('bm_plan', JSON.stringify({ uid: session.user.id, plan: data }));
-    if (data !== plan) { plan = data; emit('plan'); }
+    // the first answer always reaches the page: until then the plan is only the cached guess
+    if (data !== plan || !planKnown) { plan = data; planKnown = true; emit('plan'); }
     return plan;
   }
 
@@ -34,7 +36,7 @@
     sb.auth.onAuthStateChange((event, s) => {
       const was = session ? session.user.id : null;
       session = s || null;
-      if (!session) { plan = 'none'; if (event === 'SIGNED_OUT') store.del('bm_plan'); }
+      if (!session) { plan = 'none'; if (event === 'SIGNED_OUT') { store.del('bm_plan'); store.del('bm_study_cache'); } }
       else if (was !== session.user.id) plan = cachedPlan(session.user.id);
       if (event === 'INITIAL_SESSION') resolve(session);
       // Supabase asks not to await other calls inside this callback
@@ -65,6 +67,8 @@
   window.BM = {
     sb, ready, root: ROOT, test: !!C.test, cloud: !!C.cloud,
     get session() { return session; },
+    get uidHint() { return session ? session.user.id : uidHint; },
+    get planKnown() { return planKnown; },
     get user() { return session ? session.user : null; },
     get plan() { return plan; },
     has: need => RANK[plan] >= RANK[need],

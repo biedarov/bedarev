@@ -84,7 +84,22 @@
   const hasPlan = need => PLAN_RANK[myPlan()] >= PLAN_RANK[need];
   const SYNC = { at: 0, err: null, busy: false, t: null }; // MAX: progress sync between devices (see syncNow)
   // the textbooks and the 2015–2016 papers are free; the other papers are Pro
-  const tierOf = path => (/^book\//.test(path) || /^(q|ms)\/(2015|2016)_/.test(path) ? 'free' : 'pro');
+  const tierOf = path => (/^book\//.test(path) || /^(q|ms)\/(2015|2016)_/.test(path) || /^qc\/(2015|2016)-/.test(path) ? 'free' : 'pro');
+  /* ---------- exam questions cut to the parts of a topic (tools/cutparts.py) ----------
+     On the Path (a topic's exam questions, a boss fight) a question shows only the parts of that topic or chapter;
+     the Vault always shows it whole. A note gives what a kept part needs from a cut one. */
+  const CUTS = window.LC_CUTS || {};
+  function cutFor(q, ctx) {
+    const c = CUTS[q.id]; if (!c || !ctx) return null;
+    const ch = String(ctx).startsWith('ch:') ? TCH[String(ctx).slice(3)] : null;
+    const codes = ch ? ch.sections.map(x => x.code) : [ctx];
+    const keep = q.parts.filter(p => p.codes.some(x => codes.includes(x))).map(p => p.p);
+    if (!keep.length || keep.length === q.parts.length) return null;
+    const e = c[keep.join('+')];
+    return e ? Object.assign({ keep, chapter: !!ch }, e) : null;
+  }
+  const partName = k => k.split('.').map(x => `(${x})`).join('');
+  const cutNote = (cut, full, act, id) => `<div class="cutnote"><div class="row"><span class="grow small">${full ? L('Показан весь вопрос.', 'Showing the whole question.') : cut.chapter ? L(`Только части этой главы: ${cut.keep.map(partName).join(', ')}.`, `Only the parts on this chapter: ${cut.keep.map(partName).join(', ')}.`) : L(`Только части этой темы: ${cut.keep.map(partName).join(', ')}.`, `Only the parts on this topic: ${cut.keep.map(partName).join(', ')}.`)}</span><button class="btn sm ghost" data-a="${act}" data-id="${id}">${full ? L('Только части темы', 'Only the topic parts') : L('Весь вопрос', 'Whole question')}</button></div>${!full && cut.given ? `<div class="given" data-notr>${esc(EN() ? cut.given.en : cut.given.ru)}</div>` : ''}</div>`;
   const canSee = path => !path || hasPlan(tierOf(path));
   const itemTier = id => { const it = itemOf(id); return it ? tierOf(it.img) : 'free'; };
   const lockBox = (tier, what) => `<div class="lockbox"><span class="lk">🔒</span><b>${what || L('Этот материал', 'This material')} — ${L('в тарифе', 'in the plan')} ${PLAN_LABEL[tier]}</b>
@@ -134,6 +149,12 @@
     return fresh();
   }
   let S = load();
+  (() => {
+    if (!S.events) return;
+    const seen = new Set(), n = S.events.length;
+    S.events = S.events.filter(e => { if (!['topic', 'tfull', 'reveal', 'rank'].includes(e.k)) return true; const k = e.k + ':' + (e.code || e.ch || e.r); if (seen.has(k)) return false; seen.add(k); return true; });
+    if (S.events.length !== n) localStorage.setItem(KEY, JSON.stringify(S));
+  })();
   function saveLocal() { MEMO = {}; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { toast('Не удалось сохранить прогресс в браузере'); } }
   function save() { saveLocal(); syncSoon(); }
 
@@ -662,7 +683,8 @@
       <div>
         ${s.boss ? bossPanel(s) : s.final ? finalPanel(s) : exam ? (s.study ? examFinalPanel(it) : '') : studyPanel(it)}
         <div class="card" style="margin-bottom:12px">${exam ? examHead(q) : bookHead(it)}</div>
-        <div class="paper" id="paper">${imgTag(it.img, it.size, it.title, it.kind === 'book' ? BOOK_SCALE : 0)}</div>
+        ${(() => { const cut = exam ? cutFor(q, s.ctx) : null, full = !!R.fullQ;
+          return (cut ? cutNote(cut, full, 'cutToggle', it.id) : '') + `<div class="paper" id="paper">${cut && !full ? imgTag(cut.img, cut.size, it.title) : imgTag(it.img, it.size, it.title, it.kind === 'book' ? BOOK_SCALE : 0)}</div>`; })()}
         <div class="row" style="margin:12px 0">${solBtn}<span class="grow"></span>${links}</div>
         ${R.showMs && it.sol ? `<div class="paper" id="ms">${it.approx ? `<div class="approx">Точное место ответа на №${it.t.n} не распознано — показан блок ответов с соседними номерами, найдите в нём №${it.t.n}.</div>` : ''}${imgTag(it.sol, it.solSize, it.solName, it.kind === 'book' ? BOOK_SCALE : 0)}</div>` : ''}
         ${R.showCs && it.csol ? csolBox(it.id) : ''}
@@ -1446,6 +1468,7 @@
   // Failed questions come back once at the end. State is replayed from the attempts of the topic's
   // study sessions, so an excluded or deleted session also rolls the topic back.
   const STUDY = window.TT_STUDY || {};
+  let paidReady = !CLOUD; // see progressCheck
   // which exercises have a study run is public; their types and difficulties (STUDY) are loaded for Pro
   const STUDY_IDS = new Set(window.TT_STUDY_IDS || Object.keys(STUDY));
   const DOTS = d => '●'.repeat(d) + '○'.repeat(3 - d);
@@ -1512,6 +1535,7 @@
     return null;
   }
   function studySummary(st) {
+    if (!st) return { total: 0, done: 0, weak: 0, types: 0, stillBad: [], finished: false, perfect: false };
     const total = st.cls.reduce((x, c) => x + c.items.length, 0);
     const done = st.cls.filter(c => c.status === 'done').length, weak = st.cls.filter(c => c.status === 'weak').length;
     const stillBad = Object.keys(st.failed).filter(id => (st.reviewed[id] || 0) < 4);
@@ -1960,6 +1984,9 @@
     rebuild();
   }
   function progressCheck() {
+    // on the site the study data arrives a moment after the page: checking before that would record
+    // studied topics as lost and then as newly studied again (with rank-ups)
+    if (!paidReady) return;
     if (!S.snap) { backfillHistory(); S.snap = snapNow(); save(); return; }
     const now = snapNow(), old = S.snap;
     if (JSON.stringify(now) === JSON.stringify(old)) return;
@@ -2577,7 +2604,7 @@
   }
 
   /* ================= PREVIEW MODAL ================= */
-  let pvTab = 'q', pvCtx = null;
+  let pvTab = 'q', pvCtx = null, pvFull = false;
   function preview(id) {
     const q = QBY[id]; if (!q) return;
     const c = C[id];
@@ -2591,7 +2618,8 @@
       <div class="grid" style="grid-template-columns:minmax(0,1fr) 300px;gap:16px;margin-top:12px" id="pvgrid">
         <div>
           <div class="seg" style="margin-bottom:8px"><button class="${pvTab === 'q' ? 'on' : ''}" data-a="pvTab" data-v="q" data-id="${id}">Вопрос</button>${q.ms ? `<button class="${pvTab === 'ms' ? 'on' : ''}" data-a="pvTab" data-v="ms" data-id="${id}">Решение</button>` : ''}</div>
-          <div class="paper">${pvTab === 'ms' && q.ms ? imgTag(q.ms, q.msSize, 'Marking scheme') : imgTag(q.img, q.size, qTitle(q))}</div>
+          ${(() => { const cut = pvTab === 'ms' ? null : cutFor(q, pvCtx);
+            return (cut ? cutNote(cut, pvFull, 'pvCut', id) : '') + `<div class="paper">${pvTab === 'ms' && q.ms ? imgTag(q.ms, q.msSize, 'Marking scheme') : cut && !pvFull ? imgTag(cut.img, cut.size, qTitle(q)) : imgTag(q.img, q.size, qTitle(q))}</div>`; })()}
         </div>
         <div>
           ${(() => { const ctx = pvCtx || (qTopics(q).length === 1 ? qTopics(q)[0] : null), lbl = !ctx ? '' : ctx.startsWith('ch:') ? ` · бой с боссом главы ${TCH[ctx.slice(3)] ? TCH[ctx.slice(3)].n : ''}` : ` · в теме ${SEC[ctx] ? SEC[ctx].n : ctx}`;
@@ -2652,7 +2680,9 @@
   const ACT = {
     go: el => { closeModalSilently(); go(el.dataset.v); },
     star: (el, e) => { e.stopPropagation(); const id = el.dataset.id; if (S.stars[id]) delete S.stars[id]; else S.stars[id] = 1; save(); document.querySelectorAll(`.starbtn[data-id="${id}"]`).forEach(b => b.classList.toggle('on', !!S.stars[id])); },
-    preview: (el, e) => { e.preventDefault(); pvTab = 'q'; pvCtx = el.dataset.ctx || null; (TBY[el.dataset.id] ? previewBook : preview)(el.dataset.id); },
+    preview: (el, e) => { e.preventDefault(); pvTab = 'q'; pvFull = false; pvCtx = el.dataset.ctx || null; (TBY[el.dataset.id] ? previewBook : preview)(el.dataset.id); },
+    pvCut: el => { pvFull = !pvFull; preview(el.dataset.id); },
+    cutToggle: () => { R.fullQ = !R.fullQ; render(); },
     pvTab: el => { pvTab = el.dataset.v; (TBY[el.dataset.id] ? previewBook : preview)(el.dataset.id); },
     ansAll: el => ansAllModal(el.dataset.g),
     gStart: el => { const g = TG[el.dataset.g]; groupSession(gIds(g.id), el.dataset.m, groupTitle(g)); },
@@ -2910,11 +2940,16 @@
   // paid texts that live in Supabase: solutions (Pro) and lore (MAX), loaded once the plan allows
   async function loadPaid() {
     if (!ACC || !CLOUD) return;
+    if (!hasPlan('pro')) { try { localStorage.removeItem('bm_study_cache'); } catch (e) { /* ignore */ } Object.keys(STUDY).forEach(k => delete STUDY[k]); }
     if (hasPlan('pro') && !Object.keys(STUDY).length) {
       const { data } = await ACC.sb.from('study_specs').select('gid, spec');
       (data || []).forEach(r => { STUDY[r.gid] = r.spec; });
-      if (data && data.length) { MEMO = {}; render(); }
+      if (data && data.length) {
+        MEMO = {}; render();
+        try { localStorage.setItem('bm_study_cache', JSON.stringify({ uid: ACC.uidHint, data: STUDY })); } catch (e) { /* storage full */ }
+      }
     }
+    if (ACC.planKnown && !paidReady) { paidReady = true; MEMO = {}; render(); }
     if (hasPlan('pro') && !Object.keys(SOL).length) {
       const { data } = await ACC.sb.from('solutions').select('id, body');
       (data || []).forEach(r => { SOL[r.id] = r.body; });
@@ -2928,6 +2963,8 @@
   }
   if (ACC) {
     document.documentElement.classList.toggle('cloud', CLOUD);
+    // a subscriber's study data from the last visit, so the page is right from the first paint
+    if (CLOUD && hasPlan('pro')) { try { const c = JSON.parse(localStorage.getItem('bm_study_cache')); if (c && c.uid && c.uid === ACC.uidHint) Object.assign(STUDY, c.data); } catch (e) { /* none */ } }
     ACC.on(ev => {
       if (ev === 'SIGNED_OUT') { location.replace('../index.html#login'); return; }
       if (ev === 'plan' || ev === 'INITIAL_SESSION') { SUBS = null; MEMO = {}; hdrRank = -1; loadPaid(); syncNow(); render(); }
