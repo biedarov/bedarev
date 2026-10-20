@@ -96,10 +96,19 @@
     const keep = q.parts.filter(p => p.codes.some(x => codes.includes(x))).map(p => p.p);
     if (!keep.length || keep.length === q.parts.length) return null;
     const e = c[keep.join('+')];
-    return e ? Object.assign({ keep, chapter: !!ch }, e) : null;
+    const given = ((window.LC_CUT_NOTES || {})[q.id] || {})[keep.join('+')] || null;
+    return e ? Object.assign({ keep, chapter: !!ch, given }, e) : null;
   }
   const partName = k => k.split('.').map(x => `(${x})`).join('');
-  const cutNote = (cut, full, act, id) => `<div class="cutnote"><div class="row"><span class="grow small">${full ? L('Показан весь вопрос.', 'Showing the whole question.') : cut.chapter ? L(`Только части этой главы: ${cut.keep.map(partName).join(', ')}.`, `Only the parts on this chapter: ${cut.keep.map(partName).join(', ')}.`) : L(`Только части этой темы: ${cut.keep.map(partName).join(', ')}.`, `Only the parts on this topic: ${cut.keep.map(partName).join(', ')}.`)}</span><button class="btn sm ghost" data-a="${act}" data-id="${id}">${full ? L('Только части темы', 'Only the topic parts') : L('Весь вопрос', 'Whole question')}</button></div>${!full && cut.given ? `<div class="given" data-notr>${esc(EN() ? cut.given.en : cut.given.ru)}</div>` : ''}</div>`;
+  const cutBar = (cut, full, act, id) => `<div class="cutbar"><span class="cb-ic">✂</span><span class="cb-l">${full ? L('Показан весь вопрос', 'Showing the whole question') : `${L('Показаны только', 'Showing only')} <b>${cut.keep.map(partName).join(' ')}</b> — ${cut.chapter ? L('части этой главы', 'the parts on this chapter') : L('части этой темы', 'the parts on this topic')}`}</span><button class="btn sm ghost" data-a="${act}" data-id="${id}">${full ? L('Только нужные части', 'Only the needed parts') : L('Весь вопрос', 'Whole question')}</button></div>`;
+  // what a kept part needs from a cut one, typeset on the paper above the question (rendered by tools/cutnotes.js)
+  const givenSheet = cut => {
+    if (!cut.given) return '';
+    const from = esc(cut.given.from), keep = cut.keep.map(partName).join(' ');
+    return `<div class="given-sheet" data-notr style="max-width:${S.settings.imgw}px"><div class="gs-h"><span class="gs-tag">${L('Дано', 'Given')}</span><span class="gs-t">${L('Ответ части', 'The answer to part')} ${from}</span></div>
+      <div class="gs-why">${L(`Часть ${from} — из другой темы, поэтому скрыта. Её результат нужен для ${keep}: просто используй его.`, `Part ${from} is on another topic, so it is hidden. ${keep} builds on its result: just use it.`)}</div>
+      <div class="gs-b">${EN() ? cut.given.en : cut.given.ru}</div></div>`;
+  };
   const canSee = path => !path || hasPlan(tierOf(path));
   const itemTier = id => { const it = itemOf(id); return it ? tierOf(it.img) : 'free'; };
   const lockBox = (tier, what) => `<div class="lockbox"><span class="lk">🔒</span><b>${what || L('Этот материал', 'This material')} — ${L('в тарифе', 'in the plan')} ${PLAN_LABEL[tier]}</b>
@@ -684,7 +693,7 @@
         ${s.boss ? bossPanel(s) : s.final ? finalPanel(s) : exam ? (s.study ? examFinalPanel(it) : '') : studyPanel(it)}
         <div class="card" style="margin-bottom:12px">${exam ? examHead(q) : bookHead(it)}</div>
         ${(() => { const cut = exam ? cutFor(q, s.ctx) : null, full = !!R.fullQ;
-          return (cut ? cutNote(cut, full, 'cutToggle', it.id) : '') + `<div class="paper" id="paper">${cut && !full ? imgTag(cut.img, cut.size, it.title) : imgTag(it.img, it.size, it.title, it.kind === 'book' ? BOOK_SCALE : 0)}</div>`; })()}
+          return (cut ? cutBar(cut, full, 'cutToggle', it.id) : '') + `<div class="paper" id="paper">${cut && !full ? givenSheet(cut) + imgTag(cut.img, cut.size, it.title) : imgTag(it.img, it.size, it.title, it.kind === 'book' ? BOOK_SCALE : 0)}</div>`; })()}
         <div class="row" style="margin:12px 0">${solBtn}<span class="grow"></span>${links}</div>
         ${R.showMs && it.sol ? `<div class="paper" id="ms">${it.approx ? `<div class="approx">Точное место ответа на №${it.t.n} не распознано — показан блок ответов с соседними номерами, найдите в нём №${it.t.n}.</div>` : ''}${imgTag(it.sol, it.solSize, it.solName, it.kind === 'book' ? BOOK_SCALE : 0)}</div>` : ''}
         ${R.showCs && it.csol ? csolBox(it.id) : ''}
@@ -2619,7 +2628,7 @@
         <div>
           <div class="seg" style="margin-bottom:8px"><button class="${pvTab === 'q' ? 'on' : ''}" data-a="pvTab" data-v="q" data-id="${id}">Вопрос</button>${q.ms ? `<button class="${pvTab === 'ms' ? 'on' : ''}" data-a="pvTab" data-v="ms" data-id="${id}">Решение</button>` : ''}</div>
           ${(() => { const cut = pvTab === 'ms' ? null : cutFor(q, pvCtx);
-            return (cut ? cutNote(cut, pvFull, 'pvCut', id) : '') + `<div class="paper">${pvTab === 'ms' && q.ms ? imgTag(q.ms, q.msSize, 'Marking scheme') : cut && !pvFull ? imgTag(cut.img, cut.size, qTitle(q)) : imgTag(q.img, q.size, qTitle(q))}</div>`; })()}
+            return (cut ? cutBar(cut, pvFull, 'pvCut', id) : '') + `<div class="paper">${pvTab === 'ms' && q.ms ? imgTag(q.ms, q.msSize, 'Marking scheme') : cut && !pvFull ? givenSheet(cut) + imgTag(cut.img, cut.size, qTitle(q)) : imgTag(q.img, q.size, qTitle(q))}</div>`; })()}
         </div>
         <div>
           ${(() => { const ctx = pvCtx || (qTopics(q).length === 1 ? qTopics(q)[0] : null), lbl = !ctx ? '' : ctx.startsWith('ch:') ? ` · бой с боссом главы ${TCH[ctx.slice(3)] ? TCH[ctx.slice(3)].n : ''}` : ` · в теме ${SEC[ctx] ? SEC[ctx].n : ctx}`;
