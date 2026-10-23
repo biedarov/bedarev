@@ -1204,7 +1204,7 @@
     if (data.final) { const F = finalOf(); Object.assign(F.seals, data.final.seals || {}); if (data.final.opened && (!F.opened || data.final.opened < F.opened)) F.opened = data.final.opened; }
     if (data.events && !data.r16) data.events = rank16(data.events);
     if ((+data.rankHi || 0) > (+S.rankHi || 0)) S.rankHi = +data.rankHi;
-    if (data.events) { const held = Math.max(+S.rankHi || 0, +data.rankHi || 0); data.events = data.events.filter(e => e.k !== 'rank' || e.r <= held); }
+    if (data.events) { const held = Math.max(+S.rankHi || 0, +data.rankHi || 0); data.events = data.events.filter(e => e.k !== 'rank' || (S.rankReplay !== 1 && e.r <= held)); } // rank events are rebuilt here from the attempts
     if (data.events) { const seen = new Set((S.events || []).map(e => e.t + e.k + (e.n || ''))); (S.events || (S.events = [])).push(...data.events.filter(e => !seen.has(e.t + e.k + (e.n || '')))); S.events.sort((a, b) => a.t - b.t); }
     if (data.settings && data.settings.startDate && !S.settings.startDate) S.settings.startDate = data.settings.startDate;
   }
@@ -2174,11 +2174,39 @@
     } finally { RANK_FLOOR = true; }
     rebuild();
   }
+  // Rank events are rebuilt from the attempts themselves: the move from 32 steps to 16 and old tabs writing
+  // old numbers left wrong ranks and dates. Each new rank is dated by the attempt that first reached it.
+  function rankReplay() {
+    const att = S.attempts.filter(a => (QBY[a.q] || TBY[a.q]) && !sessOff(a.sess)).sort((a, b) => a.t - b.t);
+    const ev = [];
+    let have = 0;
+    const rankAt = t => { rebuild(t); return rankInfo().live; };
+    RANK_FLOOR = false;
+    try {
+      [...new Set(att.map(a => dayOf(a.t)))].sort((a, b) => a - b).forEach(d => {
+        const day = att.filter(a => dayOf(a.t) === d);
+        let top = rankAt(day[day.length - 1].t + 1);
+        while (top > have) {
+          // the first attempt of the day after which the next rank was held
+          let lo = 0, hi = day.length - 1;
+          while (lo < hi) { const m = (lo + hi) >> 1; if (rankAt(day[m].t + 1) > have) hi = m; else lo = m + 1; }
+          const now = rankAt(day[lo].t + 1);
+          for (let r = have + 1; r <= now; r++) ev.push({ t: day[lo].t, k: 'rank', r });
+          have = now;
+          top = rankAt(day[day.length - 1].t + 1);
+        }
+      });
+    } finally { RANK_FLOOR = true; rebuild(); }
+    S.events = (S.events || []).filter(e => e.k !== 'rank').concat(ev).sort((a, b) => a.t - b.t);
+    S.rankHi = have;
+    if (S.snap) S.snap.r = have;
+  }
   function progressCheck() {
     // on the site the study data arrives a moment after the page: checking before that would record
     // studied topics as lost and then as newly studied again (with rank-ups)
     if (!paidReady) return;
     // a rank once reached is kept
+    if (S.rankReplay !== 1) { rankReplay(); S.rankReplay = 1; save(); setTimeout(render); }
     const li = rankInfo().live; if (li > (+S.rankHi || 0)) { S.rankHi = li; MEMO = {}; save(); }
     // A tab still running the old 32-step code (or an old synced copy) can write old rank numbers back:
     // old step 12 read as rank 12 showed up as a false "Eclipse". No event may name a rank above the one held.
