@@ -1896,7 +1896,7 @@
     const x = rankInfo(), when = rankDates();
     // the twelve regular ranks are short cards; the four legendary ones, which list milestones, get a row of their own
     const card = r => {
-      const got = r.i <= x.r.i, cur = r.i === x.r.i, hide = !got && (r.skin || r.i !== x.r.i + 1);
+      const got = r.i <= x.r.i, cur = r.i === x.r.i, hide = !got;
       const req = r.i ? rankReqs(r, x.F, x.xp, RANKS[r.i - 1].xp || 0) : [];
       // one row per requirement: the label, then a thin bar with the count, the same in every card
       const reqs = req.length ? `<div class="lreq">${req.map(q => `<div class="lr${q.ok ? ' ok' : ''}"><span>${q.ok ? '✓ ' : ''}${esc(q.l)}</span>${q.k === 'xp' || q.ok ? '' : `<div class="lr-b"><i style="width:${Math.round(q.frac * 100)}%"></i></div><b>${q.v}/${q.n}</b>`}</div>`).join('')}</div>` : '';
@@ -1948,7 +1948,7 @@
     let sp = ''; for (let j = 0; j < (r.skin ? 90 : 46); j++) sp += `<i style="--a:${Math.round(Math.random() * 360)}deg;--d:${Math.round(150 + Math.random() * (r.skin ? 480 : 320))}px;--s:${(0.4 + Math.random()).toFixed(2)};animation-delay:${(Math.random() * (r.skin ? 1.2 : 0.35)).toFixed(2)}s${cols ? `;background:${cols[j % cols.length]}` : ''}"></i>`;
     const fx = { eclipse: '<div class="ru-corona"></div><div class="ru-flash"></div>', nova: '<div class="ru-flash"></div><div class="ru-shock"></div><div class="ru-shock" style="animation-delay:.3s"></div><div class="ru-shock" style="animation-delay:.6s"></div>', sing: '<div class="ru-disk"></div><div class="ru-disk r2"></div>', inf: `<div class="ru-aurora"></div><svg class="ru-lemni" viewBox="0 0 120 120" aria-hidden="true"><path d="${lemni(54)}" pathLength="100"/></svg><div class="ru-flash"></div>` }[r.skin] || '';
     const nx = RANKS[r.i + 1], x = rankInfo();
-    const sub = r.skin ? legendText(r.skin) : nx ? `${L('Следующий', 'Next')} — «${esc(nx.skin ? '???' : rankName(nx))}»${x.nx === nx && x.req.length ? ': ' + esc(reqText(x.req)) : ''}` : '';
+    const sub = r.skin ? legendText(r.skin) : nx ? `${L('Следующий', 'Next')} — «${'???'}»${x.nx === nx && x.req.length ? ': ' + esc(reqText(x.req)) : ''}` : '';
     el.innerHTML = `${fx}<div class="ru-rays"></div><div class="ru-sp">${sp}</div><div class="ru-in"><div class="ru-cap">${r.skin ? L('легендарный ранг', 'legendary rank') : L('новый ранг', 'new rank')} · ${r.i + 1}/${RANKS.length}</div>${emblem(r, 230)}<div class="ru-name rn t${r.i + 1}">${esc(rankName(r))}</div><div class="ru-sub">${sub}</div>${r.skin ? `<div class="ru-note">${L('Интерфейс изменился. Вернуть прежний вид можно в настройках.', 'The interface has changed. You can switch back in settings.')}</div>` : ''}<button class="btn pri lg">${L('Продолжить', 'Continue')}</button></div>`;
     document.body.appendChild(el);
     el.addEventListener('click', () => closeOverlay(el));
@@ -2122,7 +2122,8 @@
   function rankUnknown(size = 64) {
     return `<span class="embw lock unknown" style="width:${size}px;height:${size}px"><svg class="emb" viewBox="0 0 120 120" width="${size}" height="${size}" aria-hidden="true"><path d="${polyPath(6, 52)}" fill="#0c0c10" stroke="#3a3a46" stroke-width="1"/><path d="${polyPath(6, 40)}" fill="none" stroke="#2a2a33" stroke-dasharray="2 4"/><text x="60" y="76" text-anchor="middle" font-size="46" font-weight="800" fill="#2a2a33" font-family="Unbounded,sans-serif">?</text></svg></span>`;
   }
-  const nextRankName = x => (!x.nx ? '' : x.nx.skin ? '???' : rankName(x.nx));
+  // the next rank stays a secret until it is reached
+  const nextRankName = x => (!x.nx ? '' : '???');
   function bossReveal(ch) {
     showOverlay(() => {
       const B = BOSS[ch.key], el = document.createElement('div');
