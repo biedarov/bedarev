@@ -1897,7 +1897,8 @@
     return `<div class="ladder">${RANKS.map(r => {
       const got = r.i <= x.r.i, cur = r.i === x.r.i, hide = !got && (r.skin || r.i !== x.r.i + 1);
       const req = r.i ? rankReqs(r, x.F, x.xp, RANKS[r.i - 1].xp || 0) : [];
-      const reqs = req.length ? `<div class="lreq">${req.map(q => `<span class="${q.ok ? 'ok' : ''}">${q.ok ? '✓ ' : ''}${esc(q.l)}${!q.ok && q.k !== 'xp' ? ` <b>${q.v}/${q.n}</b>` : ''}</span>`).join('')}</div>` : '';
+      // one row per requirement: the label, then a thin bar with the count, the same in every card
+      const reqs = req.length ? `<div class="lreq">${req.map(q => `<div class="lr${q.ok ? ' ok' : ''}"><span>${q.ok ? '✓ ' : ''}${esc(q.l)}</span>${q.k === 'xp' || q.ok ? '' : `<div class="lr-b"><i style="width:${Math.round(q.frac * 100)}%"></i></div><b>${q.v}/${q.n}</b>`}</div>`).join('')}</div>` : '';
       if (hide) return `<div class="lstep lock unknown${r.skin ? ' legend-q' : ''}">${rankUnknown(84)}<b>???</b>${r.skin ? `<div class="lcap">${L('легендарный ранг', 'legendary rank')} · ${r.i + 1}</div>` : ''}${reqs}</div>`;
       return `<div class="lstep t${r.i + 1}${legendCls(r)} ${got ? 'got' : 'lock'} ${cur ? 'cur' : ''}" data-here="${L('вы здесь', 'you are here')}" style="${rankStyle(r)}">${emblem(r, 84, false, !got)}<b class="rn t${r.i + 1}">${esc(rankName(r))}</b>${got && when[r.i] ? `<div class="lcap">${fmtDate(when[r.i])}</div>` : ''}${got ? '' : reqs}</div>`; }).join('')}</div>`;
   }

@@ -246,8 +246,15 @@ button.chip{cursor:pointer}
 .rhint:hover{border-color:var(--accent3);background:var(--panel2)}
 .rh-ic{width:30px;height:30px;flex:none;display:grid;place-items:center;border-radius:9px;background:var(--panel2);font-size:1rem}
 .rhint>b{font-family:var(--fd);font-size:.74rem;font-weight:600;color:var(--accent);white-space:nowrap}
-.lreq{display:flex;flex-direction:column;gap:1px;font-size:.68rem;line-height:1.35;color:var(--muted)}
-.lreq .ok{color:var(--c5)} .lstep .lreq b{font:inherit;font-weight:700;color:var(--text)}
+.lreq{display:flex;flex-direction:column;gap:7px;width:100%;margin-top:auto;padding-top:4px;font-size:.68rem;line-height:1.3;color:var(--muted)}
+.lr{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:3px 8px;text-align:left}
+.lr>span{grid-column:1/-1}
+.lr:not(:has(.lr-b))>span{text-align:center}
+.lr.ok{color:var(--c5)}
+.lr-b{height:4px;border-radius:99px;background:color-mix(in srgb,var(--text) 10%,transparent);overflow:hidden}
+.lr-b i{display:block;height:100%;border-radius:99px;background:#b9a8ff}
+.lstep .lr b{font:inherit;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+.lstep>.embw,.lstep>b{flex:none}
 .lcap{font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 .lstep.legend-q{background:radial-gradient(circle at 50% 30%,#1c1830,#0b0a10 70%);border-color:#2c2742}
 .lstep.legend-q .lcap{color:#b9a8ff}.lstep.legend-q .lreq{color:#8d88a6}.lstep.legend-q .lreq b{color:#e9e6f5}
@@ -1334,6 +1341,6 @@ body.focus #top *,body.focus #top *::before,body.focus #top *::after{animation-p
 <script src="study_ids.js?v=1"></script>
 <script src="sol_ids.js?v=1"></script>
 <script src="i18n.js?v=20261040"></script>
-<script src="app.js?v=20261050"></script>
+<script src="app.js?v=20261051"></script>
 </body>
 </html>
