@@ -1741,6 +1741,7 @@
   // the milestones of the legendary ranks: [what, how many] (ach = a share of all achievement steps)
   const TRIALS = { 12: [['boss', 22]], 13: [['gold', 22]], 14: [['red', 11], ['ach', 0.75]], 15: [['red', 22], ['ach', 0.9]] };
   const rankName = r => L(r.n, r.en);
+  const ROMAN = ['', 'I', 'II', 'III']; // the acts of the Path
   const fmtN = v => Math.round(v).toLocaleString(LOC());
   // achievement steps ever reached (a record that later fell back still counts)
   function achSteps() {
