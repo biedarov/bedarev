@@ -148,8 +148,19 @@
 
   /* ---------- persistent state ---------- */
   const KEY = 'lcm_state_v1';
-  const DEF_SETTINGS = { iv: { 1: 1, 2: 2, 3: 4, 4: 7, 5: 14 }, goal: 5, theme: 'auto', imgw: 880, newPerDay: 5, accent: 'blue', bg: 'grid', motion: 'full', lang: (() => { try { return localStorage.getItem('bm_lang') || 'en'; } catch (e) { return 'en'; } })() };
-  function fresh() { return { version: 1, attempts: [], stars: {}, notes: {}, tags: {}, settings: JSON.parse(JSON.stringify(DEF_SETTINGS)), session: null, lastExport: null, created: Date.now(), challenges: {}, sessions: {}, flags: {}, ach: {}, study: {} }; }
+  const DEF_SETTINGS = { iv: { 1: 1, 2: 2, 3: 4, 4: 7, 5: 14 }, goal: 5, theme: 'auto', imgw: 880, newPerDay: 5, accent: 'blue', bg: 'grid', motion: 'full', rankSkin: 'auto', lang: (() => { try { return localStorage.getItem('bm_lang') || 'en'; } catch (e) { return 'en'; } })() };
+  function fresh() { return { version: 1, attempts: [], stars: {}, notes: {}, tags: {}, settings: JSON.parse(JSON.stringify(DEF_SETTINGS)), session: null, lastExport: null, created: Date.now(), challenges: {}, sessions: {}, flags: {}, ach: {}, study: {}, r16: 1 }; }
+  // Ranks went from 32 steps to 16 (October 2026): old rank events move onto the new ladder by their XP.
+  function rank16(events) {
+    const OLD = [0, 80, 200, 380, 600, 880, 1200, 1600, 2050, 2600, 3200, 3900, 4700, 5600, 6600, 7700, 8900, 10200, 11600, 13100, 14700, 16400, 18200, 20100, 22200, 24500, 27000, 30000, 33000, 36000, 40000, 48000];
+    const NEW = [0, 250, 800, 1800, 3300, 5400, 8200, 12000, 17000, 23500, 31500, 40000];
+    const seen = new Set();
+    return events.filter(e => {
+      if (e.k !== 'rank') return true;
+      const xp = OLD[e.r] || 0; let r = 0; NEW.forEach((x, i) => { if (xp >= x) r = i; });
+      if (!r || seen.has(r)) return false; seen.add(r); e.r = r; return true;
+    });
+  }
   function load() {
     try {
       const s = JSON.parse(localStorage.getItem(KEY));
@@ -159,6 +170,11 @@
   }
   let S = load();
   (() => {
+    if (!S.r16) {
+      if (S.events) S.events = rank16(S.events);
+      if (S.snap) S.snap.r = Math.max(0, ...(S.events || []).filter(e => e.k === 'rank').map(e => e.r));
+      S.r16 = 1; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* ignore */ }
+    }
     if (!S.events) return;
     const seen = new Set(), n = S.events.length;
     S.events = S.events.filter(e => { if (!['topic', 'tfull', 'reveal', 'rank'].includes(e.k)) return true; const k = e.k + ':' + (e.code || e.ch || e.r); if (seen.has(k)) return false; seen.add(k); return true; });
@@ -962,11 +978,14 @@
   function ranksTab() {
     const x = rankInfo(), p = xpParts();
     const parts = [['задачи', p.tasks], ['боссы и главы', p.bosses], ['достижения', p.ach], ['испытания глав', p.chal]];
+    const hints = x.nx ? rankHints() : [];
     return `<div class="card rankhero">${rankCard({ size: 150 })}
-        <div><div class="eyebrow">откуда опыт</div>${parts.map(([l, v]) => `<div class="kv"><span>${l}</span><b>${v} XP</b></div>`).join('')}
+        <div><div class="eyebrow">откуда опыт</div>${parts.map(([l, v]) => `<div class="kv"><span>${l}</span><b>${fmtN(v)} XP</b></div>`).join('')}
           <p class="tiny muted">Опыт: каждая решённая задача (больше — за уверенность, экзаменационные и задачи повторения), поверженные боссы (+300), золотые (+500) и багровые (+900) главы, звёзды испытаний и ступени достижений. На выбор задач и интервалы не влияет.</p>
+          <p class="tiny muted">${L('Ранг не теряется. Последние четыре ранга — легендарные: кроме опыта им нужны вехи, а каждый из них меняет вид интерфейса.', 'A rank is never lost. The last four ranks are legendary: besides XP they ask for milestones, and each one changes how the interface looks.')}</p>
 </div></div>
-      <div class="section-title"><span class="idx">12 рангов · 32 ступени</span><h2>Лестница</h2></div>${rankLadder()}`;
+      ${hints.length ? `<div class="card rhints"><h2>${L('Быстрее всего к следующему рангу', 'Quickest way to the next rank')}</h2>${hints.map(([ic, t, left, xp, href]) => `<a class="rhint" href="${href}"><span class="rh-ic">${ic}</span><span class="grow" style="min-width:0">${t}<span class="tiny muted"> · ${esc(left)}</span></span><b>${xp}</b></a>`).join('')}</div>` : ''}
+      <div class="section-title"><span class="idx">${L(`${RANKS.length} рангов · 4 легендарных`, `${RANKS.length} ranks · 4 legendary`)}</span><h2>Лестница</h2></div>${rankLadder()}`;
   }
   function activityTab(st) {
     const td = today(), daysArr = []; for (let d = td - 29; d <= td; d++) daysArr.push(d);
@@ -1124,6 +1143,7 @@
       <div class="setrow"><span>Акцент</span><div class="swatches">${ACCENTS.map(([k, hh, ss, ll, n]) => `<button class="sw ${s.accent === k ? 'on' : ''}" data-a="setOpt" data-k="accent" data-v="${k}" title="${n}" style="background:hsl(${hh} ${ss}% ${ll}%)"></button>`).join('')}</div></div>
       <div class="setrow"><span>Фон</span>${seg('bg', [['grid', 'Сетка'], ['dots', 'Точки'], ['plain', 'Чистый']])}</div>
       <div class="setrow"><span>Анимации</span>${seg('motion', [['full', 'Все'], ['reduced', 'Минимум']])}</div>
+      ${(() => { const earned = hasPlan('pro') ? RANKS.filter(r => r.skin && r.i <= rankInfo().r.i) : []; return earned.length ? `<div class="setrow"><span>${L('Оформление ранга', 'Rank styling')}</span>${seg('rankSkin', [['auto', L('По рангу', 'By rank')], ...earned.map(r => [r.skin, esc(rankName(r))]), ['off', L('Выключено', 'Off')]]).replace('class="seg"', 'class="seg wrap"')}</div>` : ''; })()}
       <div class="setrow"><span>Язык</span>${seg('lang', [['ru', 'Русский'], ['en', 'English']])}</div>
       <div class="prevstrip"><button class="btn pri">Кнопка</button><span class="chip on">выбрано</span><span class="tchip prog">в процессе</span><div style="flex:1;min-width:120px">${bar(0.62)}</div>${emblem(rankInfo().r, 46, true)}</div>
       <h2 style="margin-top:22px">Цели</h2>
@@ -1182,6 +1202,8 @@
     Object.entries(data.challenges || {}).forEach(([k, list]) => { const cur = S.challenges[k] || (S.challenges[k] = []); (list || []).forEach(r => { if (!cur.some(x => x.sess === r.sess)) cur.push(r); }); });
     if (data.lore && data.lore.v === 2) { const f = loreOf().found; Object.entries(data.lore.found || {}).forEach(([n, t]) => { if (!f[n] || t < f[n]) f[n] = t; }); }
     if (data.final) { const F = finalOf(); Object.assign(F.seals, data.final.seals || {}); if (data.final.opened && (!F.opened || data.final.opened < F.opened)) F.opened = data.final.opened; }
+    if (data.events && !data.r16) data.events = rank16(data.events);
+    if ((+data.rankHi || 0) > (+S.rankHi || 0)) S.rankHi = +data.rankHi;
     if (data.events) { const seen = new Set((S.events || []).map(e => e.t + e.k + (e.n || ''))); (S.events || (S.events = [])).push(...data.events.filter(e => !seen.has(e.t + e.k + (e.n || '')))); S.events.sort((a, b) => a.t - b.t); }
     if (data.settings && data.settings.startDate && !S.settings.startDate) S.settings.startDate = data.settings.startDate;
   }
@@ -1692,31 +1714,71 @@
   const chBadge = st => (st.state === 'none' ? '' : `<span class="chbadge ${st.state}">${st.state === 'boss' ? '☠ ' : st.state === 'gold' ? '◆ ' : '✶ '}${CH_STATE[st.state]}</span>`);
 
   /* ================= RANKS ================= */
-  // ranks only display experience (XP); they never change which questions are shown
-  const RANK_TIERS = [
-    { n: 'Графит', c: ['#c3c8cf', '#5c6169'], g: '#8a9099', ink: '#6b7179' },
-    { n: 'Бронза', c: ['#f3c09a', '#93481f'], g: '#d0844f', ink: '#b8642f' },
-    { n: 'Серебро', c: ['#ffffff', '#8f9aa6'], g: '#c9d2dc', ink: '#7f8b97' },
-    { n: 'Золото', c: ['#ffeaa6', '#d49300'], g: '#ffc531', ink: '#c98a00' },
-    { n: 'Платина', c: ['#e8fdff', '#4fb0c4'], g: '#7fe3f2', ink: '#2f9db3' },
-    { n: 'Изумруд', c: ['#b5f9d6', '#0a8551'], g: '#2ee59d', ink: '#11a866' },
-    { n: 'Алмаз', c: ['#f2f9ff', '#4a86ff'], g: '#8fc1ff', ink: '#3b7bff' },
-    { n: 'Мастер', c: ['#f3d2ff', '#7417cf'], g: '#c06cff', ink: '#9b3cf0' },
-    { n: 'Грандмастер', c: ['#ffbdb0', '#b80f2b'], g: '#ff4d5e', ink: '#e0283e' },
-    { n: 'Легенда', c: ['#fff1ad', '#ff5f33'], g: '#ffb340', ink: '#ff7a2e' },
-    { n: 'Миф', c: ['#fff7cf', '#a87a07'], g: '#ffd76a', ink: '#c99a16' },
-    { n: 'Бесконечность', c: ['#ffffff', '#c9d3ff'], g: '#ffffff', ink: '#8a5cff' },
+  // 16 ranks. XP alone opens the first twelve. The last four are legendary: each also asks for a milestone,
+  // and the sixteenth is nothing but one — every chapter crimson and 90% of the achievement steps. A rank once
+  // reached is kept (the Examiner's fights bring chapters back below crimson). Ranks never change which
+  // questions are shown; the legendary ones restyle part of the interface (settings can switch that off).
+  const RANK_DEF = [
+    // ru, en, XP, [light, dark], glow, ink, legendary skin
+    ['Графит', 'Graphite', 0, ['#c3c8cf', '#5c6169'], '#8a9099', '#6b7179'],
+    ['Бронза', 'Bronze', 250, ['#f3c09a', '#93481f'], '#d0844f', '#b8642f'],
+    ['Серебро', 'Silver', 800, ['#ffffff', '#8f9aa6'], '#c9d2dc', '#7f8b97'],
+    ['Золото', 'Gold', 1800, ['#ffeaa6', '#d49300'], '#ffc531', '#c98a00'],
+    ['Платина', 'Platinum', 3300, ['#e8fdff', '#4fb0c4'], '#7fe3f2', '#2f9db3'],
+    ['Изумруд', 'Emerald', 5400, ['#b5f9d6', '#0a8551'], '#2ee59d', '#11a866'],
+    ['Сапфир', 'Sapphire', 8200, ['#d6e2ff', '#1c36b0'], '#5b82ff', '#2d55e6'],
+    ['Алмаз', 'Diamond', 12000, ['#ffffff', '#7fc8f0'], '#c8ecff', '#2f97d6'],
+    ['Мастер', 'Master', 17000, ['#f3d2ff', '#7417cf'], '#c06cff', '#9b3cf0'],
+    ['Грандмастер', 'Grandmaster', 23500, ['#ffbdb0', '#b80f2b'], '#ff4d5e', '#e0283e'],
+    ['Легенда', 'Legend', 31500, ['#fff1ad', '#ff5f33'], '#ffb340', '#ff7a2e'],
+    ['Миф', 'Myth', 40000, ['#fff7cf', '#a87a07'], '#ffd76a', '#c99a16'],
+    ['Затмение', 'Eclipse', 48000, ['#fff3d1', '#3a2a08'], '#ffcf6a', '#c8952c', 'eclipse'],
+    ['Сверхновая', 'Supernova', 62000, ['#fff4e8', '#ff2d6f'], '#ff7a3d', '#ff4d6d', 'nova'],
+    ['Сингулярность', 'Singularity', 80000, ['#efe6ff', '#2a0a5e'], '#a46bff', '#8f5cff', 'sing'],
+    ['Бесконечность', 'Infinity', null, ['#ffffff', '#c9d3ff'], '#ffffff', '#8a5cff', 'inf'],
   ];
-  const RANK_XP = [0, 80, 200, 380, 600, 880, 1200, 1600, 2050, 2600, 3200, 3900, 4700, 5600, 6600, 7700, 8900, 10200, 11600, 13100, 14700, 16400, 18200, 20100, 22200, 24500, 27000, 30000, 33000, 36000, 40000, 48000];
-  const RANKS = RANK_XP.map((xp, i) => { const tier = i < 30 ? Math.floor(i / 3) : i === 30 ? 10 : 11; return { i, xp, tier, div: i < 30 ? i % 3 + 1 : 0, T: RANK_TIERS[tier] }; });
-  const ROMAN = ['', 'I', 'II', 'III'];
-  const rankName = r => r.T.n + (r.div ? ' ' + ROMAN[r.div] : '');
+  const RANKS = RANK_DEF.map(([n, en, xp, c, g, ink, skin], i) => ({ i, n, en, xp, skin: skin || null, tier: i, T: { n, c, g, ink } }));
+  // the milestones of the legendary ranks: [what, how many] (ach = a share of all achievement steps)
+  const TRIALS = { 12: [['boss', 22]], 13: [['gold', 22]], 14: [['red', 11], ['ach', 0.75]], 15: [['red', 22], ['ach', 0.9]] };
+  const rankName = r => L(r.n, r.en);
+  const fmtN = v => Math.round(v).toLocaleString(LOC());
+  // achievement steps ever reached (a record that later fell back still counts)
+  function achSteps() {
+    return memo('achSteps', () => { const st = awardStats(); let got = 0, all = 0; ACH.forEach(a => { const v = a.v(st); got += Math.max(a.t.filter(x => v >= x).length, (S.ach[a.id] || {}).tier || 0); all += a.t.length; }); return { got, all }; });
+  }
+  function rankFacts() {
+    return memo('rankFacts', () => {
+      const chs = CHS.map(chState);
+      return { boss: chs.filter(s => s.state !== 'none').length, gold: chs.filter(s => s.state === 'gold' || s.state === 'red').length, red: finalOpen() ? CHS.length : chs.filter(s => s.state === 'red').length, ach: achSteps() };
+    });
+  }
+  const TRIAL_L = {
+    boss: () => L('Все 22 босса повержены', 'All 22 bosses beaten'),
+    gold: () => L('Все 22 главы золотые', 'All 22 chapters gold'),
+    red: n => (n >= 22 ? L('Все 22 главы багровые', 'All 22 chapters crimson') : L(`${n} багровых глав`, `${n} crimson chapters`)),
+    ach: n => L(`${Math.round(n * 100)}% ступеней достижений`, `${Math.round(n * 100)}% of achievement steps`),
+  };
+  // what a rank asks for; from = the XP of the rank below (the XP share is counted from there)
+  function rankReqs(r, F, xp, from = 0) {
+    const out = [];
+    if (r.xp != null) out.push({ k: 'xp', ok: xp >= r.xp, l: `${fmtN(r.xp)} XP`, v: xp, n: r.xp, frac: Math.max(0, Math.min(1, (xp - from) / Math.max(1, r.xp - from))) });
+    (TRIALS[r.i] || []).forEach(([k, n]) => {
+      const have = k === 'ach' ? F.ach.got : F[k], need = k === 'ach' ? Math.ceil(n * F.ach.all) : n;
+      out.push({ k, ok: have >= need, l: TRIAL_L[k](n), v: Math.min(have, need), n: need, frac: Math.min(1, have / need) });
+    });
+    return out;
+  }
+  const reqText = req => req.filter(q => !q.ok).map(q => (q.k === 'xp' ? L(`ещё ${fmtN(q.n - q.v)} XP`, `${fmtN(q.n - q.v)} XP to go`) : `${q.l} ${q.v}/${q.n}`)).join(' · ');
+  let RANK_FLOOR = true; // off while the history is rebuilt from the attempts
   function rankInfo() {
     return memo('rank', () => {
-      const xp = xpTotal(); let i = 0;
-      while (i + 1 < RANKS.length && xp >= RANKS[i + 1].xp) i++;
-      const r = RANKS[i], nx = RANKS[i + 1] || null;
-      return { xp, r, nx, p: nx ? (xp - r.xp) / (nx.xp - r.xp) : 1 };
+      const xp = xpTotal(), F = rankFacts();
+      let live = 0; RANKS.forEach(r => { if (rankReqs(r, F, xp).every(q => q.ok)) live = r.i; });
+      let i = RANK_FLOOR ? Math.max(live, Math.min(+S.rankHi || 0, RANKS.length - 1)) : live;
+      // local demo only: preview any rank (bm_demo_rank = 0…15)
+      if (ACC && ACC.demo) { let d = null; try { d = localStorage.getItem('bm_demo_rank'); } catch (e) { /* ignore */ } if (d && RANKS[+d]) i = +d; }
+      const r = RANKS[i], nx = RANKS[i + 1] || null, req = nx ? rankReqs(nx, F, xp, r.xp || 0) : [];
+      return { xp, r, nx, live, req, F, p: nx ? Math.min(...req.map(q => (q.ok ? 1 : q.frac))) : 1 };
     });
   }
   let EMB = 0;
@@ -1725,9 +1787,67 @@
   function polyPath(n, R, rot = -90, cx = 60, cy = 60) { let d = ''; for (let j = 0; j < n; j++) { const a = (rot + j * 360 / n) * Math.PI / 180; d += (j ? 'L' : 'M') + f2(cx + R * Math.cos(a)) + ',' + f2(cy + R * Math.sin(a)); } return d + 'Z'; }
   const radial = (n, r1, r2, col, w, off = 0, op = 1) => { let s = ''; for (let j = 0; j < n; j++) { const a = (off + j * 360 / n) * Math.PI / 180; s += `<line x1="${f2(60 + r1 * Math.cos(a))}" y1="${f2(60 + r1 * Math.sin(a))}" x2="${f2(60 + r2 * Math.cos(a))}" y2="${f2(60 + r2 * Math.sin(a))}"/>`; } return `<g stroke="${col}" stroke-width="${w}" opacity="${op}">${s}</g>`; };
   const orbit = (R, rad, col, dur, rev) => `<g class="sp ${rev ? 'rk-spinr' : 'rk-spin'}" style="animation-duration:${dur}s"><circle cx="60" cy="${60 - R}" r="${rad}" fill="${col}"/></g>`;
-  // rank emblem: the higher the tier, the more layers and motion
+  const prng = j => { const x = Math.sin(j * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+  // Bernoulli's lemniscate — the ∞ of the last rank
+  function lemni(a = 46, cx = 60, cy = 60) { let d = ''; for (let j = 0; j <= 96; j++) { const t = j / 96 * 2 * Math.PI, s = Math.sin(t), q = 1 + s * s; d += (j ? 'L' : 'M') + f2(cx + a * Math.cos(t) / q) + ',' + f2(cy + a * s * Math.cos(t) / q); } return d + 'Z'; }
+  const RAINBOW = ['#ff3d6e', '#ffb340', '#ffe14d', '#4dff9f', '#4dd2ff', '#8a5cff'];
+  const stops = cols => cols.map((c, j) => `<stop offset="${f2(j / (cols.length - 1))}" stop-color="${c}"/>`).join('');
+  // the four legendary emblems are drawn each in its own way, not as a star with layers
+  function legendArt(r, id, mini) {
+    const P = (ang, rr, c = 60) => { const t = ang * Math.PI / 180; return f2(c + rr * Math.cos(t)) + ',' + f2(c + rr * Math.sin(t)); };
+    if (r.skin === 'eclipse') {
+      let rays = ''; const n = mini ? 14 : 24;
+      for (let j = 0; j < n; j++) { const a = j * 360 / n + prng(j) * 8, len = 40 + prng(j + 9) * 18, w = 2.2 + prng(j + 3) * 2.4; rays += `<path d="M${P(a - w, 29)} L${P(a, len)} L${P(a + w, 29)}Z"/>`; }
+      return `<defs><radialGradient id="${id}k"><stop offset=".45" stop-color="#fff6dc"/><stop offset=".52" stop-color="#ffcf6a" stop-opacity=".85"/><stop offset=".74" stop-color="#ff9d2e" stop-opacity=".22"/><stop offset="1" stop-color="#ff9d2e" stop-opacity="0"/></radialGradient>
+        <linearGradient id="${id}m" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2c2516"/><stop offset=".6" stop-color="#07060a"/></linearGradient></defs>
+        <circle cx="60" cy="60" r="58" fill="url(#${id}k)"/>
+        <g class="sp rk-spin" style="animation-duration:90s" fill="#ffe3a0" opacity=".6">${rays}</g>
+        ${mini ? '' : `<g class="sp rk-spinr" style="animation-duration:150s" fill="#fff1c9" opacity=".3" transform="rotate(7 60 60)">${rays}</g><circle class="sp rk-spin" style="animation-duration:60s" cx="60" cy="60" r="55.5" fill="none" stroke="#ffcf6a" stroke-width=".6" stroke-dasharray="1 5"/>`}
+        <circle cx="60" cy="60" r="29.5" fill="url(#${id}m)" stroke="#fff3cf" stroke-width="1.5"/>
+        <path d="M41 75 A24 24 0 0 0 76 79" fill="none" stroke="#6a5630" stroke-width=".8" opacity=".7"/>
+        <g class="rk-bead"><path d="${starPath(4, mini ? 7 : 10, 1.4, -90, 81, 39)}" fill="#fff"/><circle cx="81" cy="39" r="2.8" fill="#fff"/></g>`;
+    }
+    if (r.skin === 'nova') {
+      let deb = ''; for (let j = 0; j < (mini ? 10 : 24); j++) { const a = prng(j) * 360, rr = 22 + prng(j + 5) * 34; deb += `<circle cx="${P(a, rr).split(',')[0]}" cy="${P(a, rr).split(',')[1]}" r="${f2(0.5 + prng(j + 2) * 1.3)}" fill="${['#fff', '#ffd36e', '#ff7ad9', '#4dd2ff'][j % 4]}"/>`; }
+      return `<defs><radialGradient id="${id}c"><stop offset="0" stop-color="#fff"/><stop offset=".25" stop-color="#fff4e8"/><stop offset=".5" stop-color="#ffb36b"/><stop offset=".78" stop-color="#ff2d6f" stop-opacity=".55"/><stop offset="1" stop-color="#ff2d6f" stop-opacity="0"/></radialGradient>
+        <radialGradient id="${id}p"><stop offset="0" stop-color="#ff2d6f" stop-opacity=".75"/><stop offset="1" stop-color="#ff2d6f" stop-opacity="0"/></radialGradient><radialGradient id="${id}q"><stop offset="0" stop-color="#4dd2ff" stop-opacity=".65"/><stop offset="1" stop-color="#4dd2ff" stop-opacity="0"/></radialGradient></defs>
+        <ellipse cx="60" cy="60" rx="57" ry="25" transform="rotate(-28 60 60)" fill="url(#${id}p)"/><ellipse cx="60" cy="60" rx="50" ry="20" transform="rotate(38 60 60)" fill="url(#${id}q)"/>
+        ${mini ? '' : [0, 1.1, 2.2].map(d => `<circle class="sp rk-wave" style="animation-delay:${d}s" cx="60" cy="60" r="34" fill="none" stroke="#ffd0a8" stroke-width="1"/>`).join('')}
+        <g class="sp rk-spin" style="animation-duration:40s">${deb}</g>
+        <g class="sp rk-spinr" style="animation-duration:70s"><path d="${starPath(4, 58, 2.4, -45)}" fill="#fff" opacity=".75"/><path d="${starPath(4, 44, 2.2, 0)}" fill="#ffd9b8" opacity=".85"/></g>
+        <g class="rk-breathe"><circle cx="60" cy="60" r="27" fill="url(#${id}c)"/><circle cx="60" cy="60" r="7" fill="#fff"/></g>`;
+    }
+    if (r.skin === 'sing') {
+      let fall = ''; for (let j = 0; j < (mini ? 0 : 26); j++) { const a = j * 47, rr = 30 + (j % 13) * 2.2; fall += `<circle cx="${P(a, rr).split(',')[0]}" cy="${P(a, rr).split(',')[1]}" r="${f2(0.4 + (j % 3) * 0.35)}" fill="#e9ddff" opacity="${f2(0.3 + (j % 5) * 0.14)}"/>`; }
+      return `<defs><linearGradient id="${id}d" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff"/><stop offset=".3" stop-color="#ffd27a"/><stop offset=".62" stop-color="#ff7ad9"/><stop offset="1" stop-color="#6b3dff" stop-opacity=".55"/></linearGradient>
+        <radialGradient id="${id}h"><stop offset=".3" stop-color="#a46bff" stop-opacity="0"/><stop offset=".38" stop-color="#c49bff" stop-opacity=".75"/><stop offset="1" stop-color="#a46bff" stop-opacity="0"/></radialGradient></defs>
+        <circle cx="60" cy="60" r="58" fill="url(#${id}h)"/>
+        ${mini ? '' : `<circle class="sp rk-spin" style="animation-duration:50s" cx="60" cy="60" r="51" fill="none" stroke="#a46bff" stroke-width=".6" stroke-dasharray="2 6" opacity=".7"/><g class="sp rk-spin" style="animation-duration:9s">${fall}</g>`}
+        <g transform="rotate(-14 60 60)">
+          <ellipse cx="60" cy="60" rx="54" ry="13" fill="none" stroke="url(#${id}d)" stroke-width="5"/>
+          ${mini ? '' : `<ellipse class="rk-flow" cx="60" cy="60" rx="54" ry="13" fill="none" stroke="#fff" stroke-width="1" pathLength="100" stroke-dasharray="5 15" opacity=".75"/>`}
+          <circle cx="60" cy="60" r="24.5" fill="none" stroke="#ffd27a" stroke-width="7" opacity=".35"/>
+          <path d="M35,60 A25,25 0 0 1 85,60" fill="none" stroke="url(#${id}d)" stroke-width="5.5" stroke-linecap="round"/>
+          <path d="M37,62 A23,23 0 0 0 83,62" fill="none" stroke="#ff7ad9" stroke-width="1.6" opacity=".8"/>
+          <circle cx="60" cy="60" r="20" fill="#000" stroke="#fff2d6" stroke-width="1.2"/>
+          <path d="M6,60 A54,13 0 0 0 114,60" fill="none" stroke="url(#${id}d)" stroke-width="5"/>
+        </g>`;
+    }
+    const lm = lemni(mini ? 52 : 46);
+    return `<defs><linearGradient id="${id}g" x1="0" y1="0" x2="1" y2="0">${stops(RAINBOW)}</linearGradient><radialGradient id="${id}h"><stop offset="0" stop-color="#fff" stop-opacity=".3"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+      ${mini ? '' : `<path id="${id}t" d="M60,60 m-53,0 a53,53 0 1,1 106,0 a53,53 0 1,1 -106,0" fill="none"/>`}</defs>
+      <circle cx="60" cy="60" r="46" fill="url(#${id}h)"/>
+      ${mini ? '' : [0, 1, 2].map(j => `<circle class="sp rk-wave" style="animation-delay:${j}s" cx="60" cy="60" r="30" fill="none" stroke="#fff" stroke-width="1"/>`).join('') + `<g class="sp rk-spinr" style="animation-duration:30s"><text font-size="5.4" letter-spacing="2.2" fill="#fff" font-family="Unbounded,sans-serif" opacity=".85"><textPath href="#${id}t">∞ BEDAREV MATH ∞ BEDAREV MATH ∞ BEDAREV MATH ∞</textPath></text></g>` + orbit(57, 1.8, '#fff', 9) + orbit(49, 1.4, '#ffe14d', 13, true)}
+      <path d="${lm}" fill="none" stroke="url(#${id}g)" stroke-width="13" opacity=".25" stroke-linejoin="round"/>
+      <path d="${lm}" fill="none" stroke="url(#${id}g)" stroke-width="6.5" stroke-linejoin="round"/>
+      <path class="rk-flow" d="${lm}" fill="none" stroke="#fff" stroke-width="2.2" pathLength="100" stroke-dasharray="10 40" stroke-linecap="round"/>
+      <path class="rk-tw" d="${starPath(4, 8, 1.3, -90, 60, 60)}" fill="#fff"/>`;
+  }
+  // rank emblem: the higher the rank, the more layers and motion
   function emblem(r, size = 64, mini = false, lock = false) {
-    const k = r.tier + 1, T = r.T, id = 'em' + (++EMB), [c0, c1] = T.c, g = T.g;
+    const k = r.i + 1, T = r.T, id = 'em' + (++EMB), [c0, c1] = T.c, g = T.g;
+    const wrap = body => `<span class="embw t${k}${r.skin ? ' lg' : ''}${mini ? ' mini' : ''}${lock ? ' lock' : ''}" style="--g:${g};width:${size}px;height:${size}px"><svg class="emb" viewBox="0 0 120 120" width="${size}" height="${size}" aria-hidden="true">${body}</svg></span>`;
+    if (r.skin) return wrap(legendArt(r, id, mini));
     const R = k >= 11 ? 25 : 30, ri = R * 0.42;
     let defs = `<linearGradient id="${id}a" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c0}"/><stop offset="1" stop-color="${c1}"/></linearGradient>`;
     let back = '', mid = '', front = '';
@@ -1753,29 +1873,47 @@
       back += `<circle cx="60" cy="60" r="28" fill="#0a0a0d" stroke="${c1}" stroke-width="1.1"/>`;
       if (!mini) { let gx = ''; for (let j = 0; j < 30; j++) { const a = j * 0.62, rr = 9 + j * 1.55; gx += `<circle cx="${f2(60 + rr * Math.cos(a))}" cy="${f2(60 + rr * Math.sin(a))}" r="${f2(0.5 + (j % 3) * 0.35)}" fill="${j % 2 ? c0 : g}" opacity="${f2(0.4 + (j % 4) * 0.15)}"/>`; } mid += `<g class="sp rk-spin" style="animation-duration:22s">${gx}</g>`; }
     }
+    // Myth: a ring of the oldest symbols of the subject
     if (k >= 12 && !mini) {
-      defs += `<path id="${id}t" d="M60,60 m-48,0 a48,48 0 1,1 96,0 a48,48 0 1,1 -96,0" fill="none"/>`;
-      mid += `<g class="sp rk-spinr" style="animation-duration:26s"><text font-size="5.6" letter-spacing="2.2" fill="#fff" font-family="Unbounded,sans-serif" opacity=".85"><textPath href="#${id}t">∞ BEDAREV MATH ∞ BEDAREV MATH ∞ BEDAREV MATH ∞</textPath></text></g>`;
-      back += [0, 1, 2].map(j => `<circle class="sp rk-wave" style="animation-delay:${j}s" cx="60" cy="60" r="30" fill="none" stroke="#fff" stroke-width="1.2"/>`).join('');
+      defs += `<path id="${id}t" d="M60,60 m-49,0 a49,49 0 1,1 98,0 a49,49 0 1,1 -98,0" fill="none"/>`;
+      mid += `<g class="sp rk-spinr" style="animation-duration:40s"><text font-size="6.4" letter-spacing="3.4" fill="${c0}" font-family="'Cambria Math','Segoe UI Symbol',serif" opacity=".9"><textPath href="#${id}t">∑ ∫ ∂ ∇ π √ Δ θ λ φ ∑ ∫ ∂ ∇ π √ Δ θ λ φ ∑ ∫ ∂ ∇</textPath></text></g>`;
     }
     defs += `<clipPath id="${id}c"><path d="${starPath(5, R, ri)}"/></clipPath><linearGradient id="${id}s" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".8"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>`;
     front += `<g class="${k >= 3 ? 'rk-breathe' : ''}"><path d="${starPath(5, R, ri)}" fill="url(#${id}a)" stroke="${k >= 11 ? c0 : 'rgba(255,255,255,.6)'}" stroke-width=".7"/><path d="${starPath(5, R * 0.6, ri * 0.6)}" fill="none" stroke="#fff" stroke-width=".55" opacity=".5"/>${k >= 3 ? `<g clip-path="url(#${id}c)"><g transform="skewX(-20)"><rect class="rk-sweep" x="10" y="20" width="20" height="90" fill="url(#${id}s)"/></g></g>` : ''}</g>`;
-    if (r.div) for (let j = 0; j < r.div; j++) { const x = 60 + (j - (r.div - 1) / 2) * 9; front += `<path d="M${f2(x)},101 l3.4,3.4 -3.4,3.4 -3.4,-3.4Z" fill="${c0}" stroke="${c1}" stroke-width=".5"/>`; }
-    return `<span class="embw t${k}${mini ? ' mini' : ''}${lock ? ' lock' : ''}" style="--g:${g};width:${size}px;height:${size}px"><svg class="emb" viewBox="0 0 120 120" width="${size}" height="${size}" aria-hidden="true"><defs>${defs}</defs>${back}${mid}${front}</svg></span>`;
+    return wrap(`<defs>${defs}</defs>${back}${mid}${front}`);
   }
   const rankStyle = r => `--g:${r.T.g};--ink:${r.T.ink};--c0:${r.T.c[0]};--c1x:${r.T.c[1]}`;
+  const legendCls = r => (r.skin ? ` legend lg-${r.skin}` : '');
   function rankCard(o = {}) {
     const x = rankInfo();
-    return `<a class="rcard t${x.r.tier + 1}${o.compact ? ' compact' : ''}" href="#stats" data-a="statsGo" data-v="ranks" style="${rankStyle(x.r)}">${emblem(x.r, o.size || 104)}
-      <div class="grow" style="min-width:0"><div class="eyebrow">ранг</div><div class="rname">${esc(rankName(x.r))}</div>
+    return `<a class="rcard t${x.r.i + 1}${legendCls(x.r)}${o.compact ? ' compact' : ''}" href="#stats" data-a="statsGo" data-v="ranks" style="${rankStyle(x.r)}">${emblem(x.r, o.size || 104)}
+      <div class="grow" style="min-width:0"><div class="eyebrow">${x.r.skin ? L('легендарный ранг', 'legendary rank') : L('ранг', 'rank')} · ${x.r.i + 1}/${RANKS.length}</div><div class="rname rn t${x.r.i + 1}">${esc(rankName(x.r))}</div>
         <div class="tiny muted"><span data-count="${x.xp}">${x.xp}</span> XP</div>
-        ${x.nx ? `<div class="rbar"><i style="width:${Math.round(x.p * 100)}%"></i></div><div class="tiny muted">до «${esc(nextRankName(x))}» — ${x.nx.xp - x.xp} XP</div>` : '<div class="tiny" style="margin-top:8px">Высший ранг. Бесконечность покорена.</div>'}</div></a>`;
+        ${x.nx ? `<div class="rbar"><i style="width:${Math.round(x.p * 100)}%"></i></div><div class="tiny muted">${L('до', 'to')} «${esc(nextRankName(x))}»: ${esc(reqText(x.req))}</div>` : `<div class="tiny" style="margin-top:8px">${L('Высший ранг. Пройдено всё — бесконечность покорена.', 'The highest rank. Everything done — infinity conquered.')}</div>`}</div></a>`;
   }
+  const rankDates = () => { const w = {}; (S.events || []).forEach(e => { if (e.k === 'rank' && !w[e.r]) w[e.r] = e.t; }); return w; };
   function rankLadder() {
-    const x = rankInfo();
-    return `<div class="ladder">${RANK_TIERS.map((T, ti) => { const rs = RANKS.filter(r => r.tier === ti), got = x.xp >= rs[0].xp, cur = x.r.tier === ti;
-      if (!got) return `<div class="lstep lock unknown">${rankUnknown(84)}<b>???</b><div class="tiny muted">${ti === x.r.tier + 1 ? `откроется на ${rs[0].xp} XP` : 'скрыто'}</div></div>`;
-      return `<div class="lstep t${ti + 1} ${got ? 'got' : 'lock'} ${cur ? 'cur' : ''}" style="${rankStyle(rs[0])}">${emblem(cur ? x.r : rs[rs.length - 1], 84, false, !got)}<b>${esc(T.n)}</b><div class="tiny muted">${rs.map(r => `${r.div ? ROMAN[r.div] + ' · ' : ''}${r.xp} XP`).join('<br>')}</div></div>`; }).join('')}</div>`;
+    const x = rankInfo(), when = rankDates();
+    return `<div class="ladder">${RANKS.map(r => {
+      const got = r.i <= x.r.i, cur = r.i === x.r.i, hide = !got && (r.skin || r.i !== x.r.i + 1);
+      const req = r.i ? rankReqs(r, x.F, x.xp, RANKS[r.i - 1].xp || 0) : [];
+      const reqs = req.length ? `<div class="lreq">${req.map(q => `<span class="${q.ok ? 'ok' : ''}">${q.ok ? '✓ ' : ''}${esc(q.l)}${!q.ok && q.k !== 'xp' ? ` <b>${q.v}/${q.n}</b>` : ''}</span>`).join('')}</div>` : '';
+      if (hide) return `<div class="lstep lock unknown${r.skin ? ' legend-q' : ''}">${rankUnknown(84)}<b>???</b>${r.skin ? `<div class="lcap">${L('легендарный ранг', 'legendary rank')} · ${r.i + 1}</div>` : ''}${reqs}</div>`;
+      return `<div class="lstep t${r.i + 1}${legendCls(r)} ${got ? 'got' : 'lock'} ${cur ? 'cur' : ''}" data-here="${L('вы здесь', 'you are here')}" style="${rankStyle(r)}">${emblem(r, 84, false, !got)}<b class="rn t${r.i + 1}">${esc(rankName(r))}</b>${got && when[r.i] ? `<div class="lcap">${fmtDate(when[r.i])}</div>` : ''}${got ? '' : reqs}</div>`; }).join('')}</div>`;
+  }
+  // the quickest way up: the nearest boss, golden and crimson chapter and achievement step
+  function rankHints() {
+    const chs = CHS.map(ch => ({ ch, st: chState(ch) })), out = [];
+    const near = (list, f) => list.map(c => Object.assign(c, { left: f(c.st) })).sort((a, b) => a.left - b.left)[0];
+    const b = near(chs.filter(c => c.st.state === 'none' && bossKnown(c.ch)), s => s.hp + (s.ts.total - s.ts.done) + (s.revN - s.revOk));
+    if (b) out.push(['☠', `${L('Добей босса', 'Beat the boss')} <b>${esc(BOSS[b.ch.key].n)}</b> · ${L('глава', 'chapter')} ${b.ch.n}`, L(`осталось ${b.left}`, `${b.left} left`), '+300 XP', `#book/${b.ch.key}`]);
+    const g = near(chs.filter(c => c.st.state === 'boss'), s => s.total - s.allOk);
+    if (g) out.push(['◆', `${L('Золото для главы', 'Gold for chapter')} ${g.ch.n}. ${esc(g.ch.name)}`, L(`ещё ${g.left} задач на 4–5`, `${g.left} more at 4–5`), '+500 XP', `#book/${g.ch.key}`]);
+    const rd = near(chs.filter(c => c.st.state === 'gold'), s => s.total - s.all5);
+    if (rd) out.push(['✶', `${L('Багровая глава', 'Crimson chapter')} ${rd.ch.n}. ${esc(rd.ch.name)}`, L(`ещё ${rd.left} задач на 5`, `${rd.left} more at 5`), '+900 XP', `#book/${rd.ch.key}`]);
+    const a = achState(awardStats()).filter(q => q.next != null).sort((p, q) => (q.v - q.prev) / (q.next - q.prev) - (p.v - p.prev) / (p.next - p.prev))[0];
+    if (a) out.push([a.a.g, `<b>${esc(a.a.name)}</b> · ${esc(a.a.d)}`, `${a.v}/${a.next}`, '+25 XP', '#stats']);
+    return out;
   }
   // full-screen celebrations (rank up, boss beaten) are queued so that none is lost
   // Celebrations never interrupt a question: while a session is running they are held back, and once it
@@ -1791,15 +1929,49 @@
     if (document.querySelector('.rankup')) OVQ.push(top.build); else top.build();
   }
   const closeOverlay = el => { el.classList.add('out'); setTimeout(() => { el.remove(); const nx = OVQ.shift(); if (nx) nx(); }, 400); };
-  function rankUp(r) { showOverlay(() => rankUpNow(r), 'rank'); }
+  // a legendary rank outranks a boss: it changes the interface, so it should not be lost in the queue
+  function rankUp(r) { showOverlay(() => rankUpNow(r), r.skin ? 'final' : 'rank'); }
+  const legendText = k => ({
+    eclipse: L('Все 22 босса повержены. Солнце закрыто — над интерфейсом взошла корона затмения.', 'All 22 bosses beaten. The sun is covered, and an eclipse corona now rises over the interface.'),
+    nova: L('Все 22 главы золотые. Звезда взорвалась — её свет теперь горит в интерфейсе.', 'All 22 chapters gold. The star has exploded, and its light now burns through the interface.'),
+    sing: L('Половина глав багровые, три четверти достижений собраны. Всё вокруг падает к одной точке — к тебе.', 'Half the chapters crimson, three quarters of the achievements collected. Everything now falls toward one point: you.'),
+    inf: L('Все главы багровые и 90% достижений. Ты прошёл всё, что здесь есть. Дальше — только бесконечность.', 'Every chapter crimson and 90% of the achievements. You have done everything here. Beyond this, only infinity.'),
+  }[k]);
   function rankUpNow(r) {
     const el = document.createElement('div');
-    el.className = 'rankup'; el.setAttribute('style', rankStyle(r));
-    let sp = ''; for (let j = 0; j < 46; j++) sp += `<i style="--a:${Math.round(Math.random() * 360)}deg;--d:${Math.round(150 + Math.random() * 320)}px;--s:${(0.4 + Math.random()).toFixed(2)};animation-delay:${(Math.random() * 0.35).toFixed(2)}s"></i>`;
-    const nx = RANKS[r.i + 1];
-    el.innerHTML = `<div class="ru-rays"></div><div class="ru-sp">${sp}</div><div class="ru-in"><div class="ru-cap">новый ранг</div>${emblem(r, 230)}<div class="ru-name t${r.tier + 1}">${esc(rankName(r))}</div><div class="ru-sub">${nx ? `Следующий — «${esc(nx.tier > r.tier ? '???' : rankName(nx))}» через ${nx.xp - r.xp} XP` : 'Это вершина. Дальше — только бесконечность.'}</div><button class="btn pri lg">Продолжить</button></div>`;
+    el.className = 'rankup' + (r.skin ? ` ru-legend ru-${r.skin}` : ''); el.setAttribute('style', rankStyle(r)); el.setAttribute('data-notr', '');
+    const cols = { eclipse: ['#ffcf6a', '#fff3cf', '#ff9d2e'], nova: ['#fff', '#ffd36e', '#ff2d6f', '#4dd2ff', '#ff7a3d'], sing: ['#a46bff', '#e9ddff', '#ff7ad9', '#ffd27a'], inf: RAINBOW }[r.skin];
+    let sp = ''; for (let j = 0; j < (r.skin ? 90 : 46); j++) sp += `<i style="--a:${Math.round(Math.random() * 360)}deg;--d:${Math.round(150 + Math.random() * (r.skin ? 480 : 320))}px;--s:${(0.4 + Math.random()).toFixed(2)};animation-delay:${(Math.random() * (r.skin ? 1.2 : 0.35)).toFixed(2)}s${cols ? `;background:${cols[j % cols.length]}` : ''}"></i>`;
+    const fx = { eclipse: '<div class="ru-corona"></div><div class="ru-flash"></div>', nova: '<div class="ru-flash"></div><div class="ru-shock"></div><div class="ru-shock" style="animation-delay:.3s"></div><div class="ru-shock" style="animation-delay:.6s"></div>', sing: '<div class="ru-disk"></div><div class="ru-disk r2"></div>', inf: `<div class="ru-aurora"></div><svg class="ru-lemni" viewBox="0 0 120 120" aria-hidden="true"><path d="${lemni(54)}" pathLength="100"/></svg><div class="ru-flash"></div>` }[r.skin] || '';
+    const nx = RANKS[r.i + 1], x = rankInfo();
+    const sub = r.skin ? legendText(r.skin) : nx ? `${L('Следующий', 'Next')} — «${esc(nx.skin ? '???' : rankName(nx))}»${x.nx === nx && x.req.length ? ': ' + esc(reqText(x.req)) : ''}` : '';
+    el.innerHTML = `${fx}<div class="ru-rays"></div><div class="ru-sp">${sp}</div><div class="ru-in"><div class="ru-cap">${r.skin ? L('легендарный ранг', 'legendary rank') : L('новый ранг', 'new rank')} · ${r.i + 1}/${RANKS.length}</div>${emblem(r, 230)}<div class="ru-name rn t${r.i + 1}">${esc(rankName(r))}</div><div class="ru-sub">${sub}</div>${r.skin ? `<div class="ru-note">${L('Интерфейс изменился. Вернуть прежний вид можно в настройках.', 'The interface has changed. You can switch back in settings.')}</div>` : ''}<button class="btn pri lg">${L('Продолжить', 'Continue')}</button></div>`;
     document.body.appendChild(el);
     el.addEventListener('click', () => closeOverlay(el));
+  }
+  // legendary ranks restyle part of the interface: a decor layer behind the page plus CSS under html[data-rank]
+  const SKIN_FX = {
+    eclipse: () => { let rays = ''; for (let j = 0; j < 32; j++) { const a = j * 11.25 + prng(j) * 6, len = 110 + prng(j + 4) * 85, w = 1.6 + prng(j + 7) * 2, t = d => (a + d) * Math.PI / 180; rays += `<path d="M${f2(200 + 76 * Math.cos(t(-w)))},${f2(200 + 76 * Math.sin(t(-w)))} L${f2(200 + len * Math.cos(t(0)))},${f2(200 + len * Math.sin(t(0)))} L${f2(200 + 76 * Math.cos(t(w)))},${f2(200 + 76 * Math.sin(t(w)))}Z"/>`; }
+      return `<div class="fx-ecl"><svg viewBox="0 0 400 400"><defs><radialGradient id="fxk"><stop offset=".37" stop-color="#fff2cc" stop-opacity=".95"/><stop offset=".43" stop-color="#ffcf6a" stop-opacity=".5"/><stop offset=".66" stop-color="#ff9d2e" stop-opacity=".1"/><stop offset="1" stop-color="#ff9d2e" stop-opacity="0"/></radialGradient></defs><circle cx="200" cy="200" r="200" fill="url(#fxk)"/><g class="fx-spin" fill="#ffd98a" opacity=".32">${rays}</g><g class="fx-spinr" fill="#fff1c9" opacity=".18" transform="rotate(5 200 200)">${rays}</g><circle cx="200" cy="200" r="75" style="fill:var(--bg)" stroke="#ffe7b0" stroke-width="1.6"/><circle class="fx-bead" cx="253" cy="147" r="4" fill="#fff"/></svg></div>`; },
+    nova: () => '<div class="fx-nova"><i class="b1"></i><i class="b2"></i><i class="b3"></i><i class="shock"></i><i class="shock s2"></i><i class="core"></i></div>',
+    sing: () => { let dots = ''; for (let j = 0; j < 60; j++) { const a = j * 0.55, rr = 90 + j * 1.8; dots += `<circle cx="${f2(200 + rr * Math.cos(a))}" cy="${f2(200 + rr * Math.sin(a))}" r="${f2(0.8 + (j % 3) * 0.6)}" fill="#d3b8ff" opacity="${f2(0.25 + (j % 4) * 0.15)}"/>`; }
+      return `<div class="fx-sing"><svg viewBox="0 0 400 400"><defs><radialGradient id="fxh"><stop offset=".3" stop-color="#7b4dff" stop-opacity="0"/><stop offset=".36" stop-color="#7b4dff" stop-opacity=".4"/><stop offset="1" stop-color="#7b4dff" stop-opacity="0"/></radialGradient><linearGradient id="fxd" x1="0" x2="1"><stop offset="0" stop-color="#fff"/><stop offset=".3" stop-color="#ffd27a"/><stop offset=".62" stop-color="#ff7ad9"/><stop offset="1" stop-color="#6b3dff" stop-opacity=".35"/></linearGradient></defs><circle cx="200" cy="200" r="200" fill="url(#fxh)"/><g class="fx-spin fast">${dots}</g><g transform="rotate(-16 200 200)"><ellipse cx="200" cy="200" rx="185" ry="42" fill="none" stroke="url(#fxd)" stroke-width="12" opacity=".85"/><ellipse class="rk-flow fx-flow" cx="200" cy="200" rx="185" ry="42" fill="none" stroke="#fff" stroke-width="2" pathLength="100" stroke-dasharray="4 12" opacity=".6"/><path d="M110,200 A90,90 0 0 1 290,200" fill="none" stroke="url(#fxd)" stroke-width="10"/><circle cx="200" cy="200" r="72" fill="#000" stroke="#fff2d6" stroke-width="2"/><path d="M15,200 A185,42 0 0 0 385,200" fill="none" stroke="url(#fxd)" stroke-width="12"/></g></svg></div>`; },
+    inf: () => `<div class="fx-aur"><i></i><i></i><i></i><i></i></div><div class="fx-lem"><svg viewBox="0 0 120 120"><defs><linearGradient id="fxg" x1="0" x2="1">${stops(RAINBOW)}</linearGradient></defs><path d="${lemni(54)}" fill="none" stroke="url(#fxg)" stroke-width="1.4" opacity=".55"/><path class="rk-flow fx-flow" d="${lemni(54)}" fill="none" stroke="#fff" stroke-width="1" pathLength="100" stroke-dasharray="6 44" stroke-linecap="round"/></svg></div>`,
+  };
+  function rankSkin() {
+    if (!hasPlan('pro')) return '';
+    const x = rankInfo(), pick = S.settings.rankSkin || 'auto';
+    if (pick === 'off') return '';
+    const r = RANKS.find(q => q.skin === pick);
+    return r && r.i <= x.r.i ? pick : x.r.skin || '';
+  }
+  let SKIN = null;
+  function applyRankSkin() {
+    const k = rankSkin(); if (k === SKIN) return; SKIN = k;
+    const el = document.documentElement; if (k) el.setAttribute('data-rank', k); else el.removeAttribute('data-rank');
+    const old = document.getElementById('rankfx'); if (old) old.remove();
+    if (!k) return;
+    const fx = document.createElement('div'); fx.id = 'rankfx'; fx.setAttribute('aria-hidden', 'true'); fx.innerHTML = SKIN_FX[k](); document.body.prepend(fx);
   }
 
   /* ================= BOSSES ================= */
@@ -1946,7 +2118,7 @@
   function rankUnknown(size = 64) {
     return `<span class="embw lock unknown" style="width:${size}px;height:${size}px"><svg class="emb" viewBox="0 0 120 120" width="${size}" height="${size}" aria-hidden="true"><path d="${polyPath(6, 52)}" fill="#0c0c10" stroke="#3a3a46" stroke-width="1"/><path d="${polyPath(6, 40)}" fill="none" stroke="#2a2a33" stroke-dasharray="2 4"/><text x="60" y="76" text-anchor="middle" font-size="46" font-weight="800" fill="#2a2a33" font-family="Unbounded,sans-serif">?</text></svg></span>`;
   }
-  const nextRankName = x => (!x.nx ? '' : x.nx.tier > x.r.tier ? '???' : rankName(x.nx));
+  const nextRankName = x => (!x.nx ? '' : x.nx.skin ? '???' : rankName(x.nx));
   function bossReveal(ch) {
     showOverlay(() => {
       const B = BOSS[ch.key], el = document.createElement('div');
@@ -1983,19 +2155,24 @@
     const att = S.attempts.filter(a => (QBY[a.q] || TBY[a.q]) && !sessOff(a.sess)).sort((a, b) => a.t - b.t);
     if (!att.length) return;
     let prev = { r: 0, ch: {}, rv: {}, tp: {} };
-    [...new Set(att.map(a => dayOf(a.t)))].sort((a, b) => a - b).forEach(d => {
-      const end = dateOfDay(d + 1).getTime();
-      rebuild(end);
-      const now = snapNow(), last = att.filter(a => a.t < end).pop();
-      S.events.push(...snapDiff(prev, now, last ? last.t : end - 1));
-      prev = now;
-    });
+    RANK_FLOOR = false;
+    try {
+      [...new Set(att.map(a => dayOf(a.t)))].sort((a, b) => a - b).forEach(d => {
+        const end = dateOfDay(d + 1).getTime();
+        rebuild(end);
+        const now = snapNow(), last = att.filter(a => a.t < end).pop();
+        S.events.push(...snapDiff(prev, now, last ? last.t : end - 1));
+        prev = now;
+      });
+    } finally { RANK_FLOOR = true; }
     rebuild();
   }
   function progressCheck() {
     // on the site the study data arrives a moment after the page: checking before that would record
     // studied topics as lost and then as newly studied again (with rank-ups)
     if (!paidReady) return;
+    // a rank once reached is kept
+    const li = rankInfo().live; if (li > (+S.rankHi || 0)) { S.rankHi = li; MEMO = {}; save(); }
     if (!S.snap) { backfillHistory(); S.snap = snapNow(); save(); return; }
     const now = snapNow(), old = S.snap;
     if (JSON.stringify(now) === JSON.stringify(old)) return;
@@ -2824,7 +3001,8 @@
     const ri = rankInfo(), tr_ = $('#topRank');
     // ranks are Pro: a free account sees the way to the plans instead
     if (tr_ && !hasPlan('pro')) { if (hdrRank !== 'up' + EN()) { hdrRank = 'up' + EN(); tr_.innerHTML = `<a class="upchip" href="../index.html#pricing">★ ${L('Перейти на Pro', 'Go Pro')}</a>`; } }
-    else if (tr_ && hdrRank !== ri.r.i) { hdrRank = ri.r.i; tr_.innerHTML = `<a class="rchip" href="#stats" data-a="statsGo" data-v="ranks" title="${ri.xp} XP">${emblem(ri.r, 28, true)}<span>${esc(rankName(ri.r))}</span></a>`; }
+    else if (tr_) { const key = [ri.r.i, ri.xp, EN()].join(); if (hdrRank !== key) { hdrRank = key; tr_.innerHTML = `<a class="rchip${legendCls(ri.r)}" href="#stats" data-a="statsGo" data-v="ranks" title="${esc(`${fmtN(ri.xp)} XP${ri.nx ? ` · ${L('до', 'to')} «${nextRankName(ri)}»: ${reqText(ri.req)}` : ''}`)}">${emblem(ri.r, 28, true)}<span>${esc(rankName(ri.r))}</span></a>`; } }
+    applyRankSkin();
     const lb = $('#langBtn'); if (lb) lb.innerHTML = `<b class="${EN() ? '' : 'on'}">RU</b><i></i><b class="${EN() ? 'on' : ''}">EN</b>`;
   }
   Object.assign(ACT, {
