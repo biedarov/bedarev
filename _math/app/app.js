@@ -1204,6 +1204,7 @@
     if (data.final) { const F = finalOf(); Object.assign(F.seals, data.final.seals || {}); if (data.final.opened && (!F.opened || data.final.opened < F.opened)) F.opened = data.final.opened; }
     if (data.events && !data.r16) data.events = rank16(data.events);
     if ((+data.rankHi || 0) > (+S.rankHi || 0)) S.rankHi = +data.rankHi;
+    if (data.events) { const held = Math.max(+S.rankHi || 0, +data.rankHi || 0); data.events = data.events.filter(e => e.k !== 'rank' || e.r <= held); }
     if (data.events) { const seen = new Set((S.events || []).map(e => e.t + e.k + (e.n || ''))); (S.events || (S.events = [])).push(...data.events.filter(e => !seen.has(e.t + e.k + (e.n || '')))); S.events.sort((a, b) => a.t - b.t); }
     if (data.settings && data.settings.startDate && !S.settings.startDate) S.settings.startDate = data.settings.startDate;
   }
@@ -2182,7 +2183,7 @@
     // A tab still running the old 32-step code (or an old synced copy) can write old rank numbers back:
     // old step 12 read as rank 12 showed up as a false "Eclipse". No event may name a rank above the one held.
     const held = Math.max(li, +S.rankHi || 0), bad = (S.events || []).filter(e => e.k === 'rank' && e.r > held);
-    if (bad.length || (S.snap && S.snap.r > held)) { S.events = S.events.filter(e => !bad.includes(e)); if (S.snap) S.snap.r = Math.min(S.snap.r, held); MEMO = {}; save(); }
+    if (bad.length || (S.snap && S.snap.r > held)) { S.events = S.events.filter(e => !bad.includes(e)); if (S.snap) S.snap.r = Math.min(S.snap.r, held); MEMO = {}; save(); setTimeout(render); }
     if (!S.snap) { backfillHistory(); S.snap = snapNow(); save(); return; }
     const now = snapNow(), old = S.snap;
     if (JSON.stringify(now) === JSON.stringify(old)) return;
@@ -2199,7 +2200,7 @@
   }
   // what a finished session brought: a quiet list on its summary instead of a pile of pop-ups
   function sessEvents(s) {
-    const ev = (S.events || []).filter(e => e.t >= s.started && (hasPlan('pro') || !['rank', 'ach'].includes(e.k)));
+    const ev = (S.events || []).filter(e => (e.k !== 'rank' || e.r <= rankInfo().r.i) && e.t >= s.started && (hasPlan('pro') || !['rank', 'ach'].includes(e.k)));
     if (!ev.length) return '';
     const seen = new Set(), rows = ev.filter(e => { const k = e.k + (e.ch || e.code || e.r || e.n); if (seen.has(k)) return false; seen.add(k); return true; });
     return `<div class="sessev"><div class="sessev-h">за эту сессию</div>${rows.map(evLine).join('')}</div>`;
@@ -2209,7 +2210,7 @@
   let histMode = 'all';
   const EV_META = { topic: ['✓', 'Тема изучена'], tfull: ['★', 'Тема пройдена полностью'], reveal: ['◉', 'Босс раскрыт'], boss: ['☠', 'Босс повержен'], gold: ['◆', 'Золотая глава'], red: ['✶', 'Багровая глава'], rank: ['★', 'Новый ранг'], ach: ['⬡', 'Достижение'], lore: ['◬', 'Найдена записка'], final: ['✶', 'Финал открыт'], seal: ['⛓', 'Печать'] };
   function histEvents() {
-    const ev = (S.events || []).slice();
+    const held = rankInfo().r.i, ev = (S.events || []).filter(e => e.k !== 'rank' || e.r <= held);
     Object.entries(S.ach || {}).forEach(([id, rec]) => { if (ACH.some(x => x.id === id) && rec.t) Object.entries(rec.t).forEach(([tier, t]) => ev.push({ k: 'ach', t, a: id, tier: +tier })); });
     return ev;
   }
