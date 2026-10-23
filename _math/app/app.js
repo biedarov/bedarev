@@ -2179,6 +2179,10 @@
     if (!paidReady) return;
     // a rank once reached is kept
     const li = rankInfo().live; if (li > (+S.rankHi || 0)) { S.rankHi = li; MEMO = {}; save(); }
+    // A tab still running the old 32-step code (or an old synced copy) can write old rank numbers back:
+    // old step 12 read as rank 12 showed up as a false "Eclipse". No event may name a rank above the one held.
+    const held = Math.max(li, +S.rankHi || 0), bad = (S.events || []).filter(e => e.k === 'rank' && e.r > held);
+    if (bad.length || (S.snap && S.snap.r > held)) { S.events = S.events.filter(e => !bad.includes(e)); if (S.snap) S.snap.r = Math.min(S.snap.r, held); MEMO = {}; save(); }
     if (!S.snap) { backfillHistory(); S.snap = snapNow(); save(); return; }
     const now = snapNow(), old = S.snap;
     if (JSON.stringify(now) === JSON.stringify(old)) return;
