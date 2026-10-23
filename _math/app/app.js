@@ -1894,13 +1894,16 @@
   const rankDates = () => { const w = {}; (S.events || []).forEach(e => { if (e.k === 'rank' && !w[e.r]) w[e.r] = e.t; }); return w; };
   function rankLadder() {
     const x = rankInfo(), when = rankDates();
-    return `<div class="ladder">${RANKS.map(r => {
+    // the twelve regular ranks are short cards; the four legendary ones, which list milestones, get a row of their own
+    const card = r => {
       const got = r.i <= x.r.i, cur = r.i === x.r.i, hide = !got && (r.skin || r.i !== x.r.i + 1);
       const req = r.i ? rankReqs(r, x.F, x.xp, RANKS[r.i - 1].xp || 0) : [];
       // one row per requirement: the label, then a thin bar with the count, the same in every card
       const reqs = req.length ? `<div class="lreq">${req.map(q => `<div class="lr${q.ok ? ' ok' : ''}"><span>${q.ok ? '✓ ' : ''}${esc(q.l)}</span>${q.k === 'xp' || q.ok ? '' : `<div class="lr-b"><i style="width:${Math.round(q.frac * 100)}%"></i></div><b>${q.v}/${q.n}</b>`}</div>`).join('')}</div>` : '';
       if (hide) return `<div class="lstep lock unknown${r.skin ? ' legend-q' : ''}">${rankUnknown(84)}<b>???</b>${r.skin ? `<div class="lcap">${L('легендарный ранг', 'legendary rank')} · ${r.i + 1}</div>` : ''}${reqs}</div>`;
-      return `<div class="lstep t${r.i + 1}${legendCls(r)} ${got ? 'got' : 'lock'} ${cur ? 'cur' : ''}" data-here="${L('вы здесь', 'you are here')}" style="${rankStyle(r)}">${emblem(r, 84, false, !got)}<b class="rn t${r.i + 1}">${esc(rankName(r))}</b>${got && when[r.i] ? `<div class="lcap">${fmtDate(when[r.i])}</div>` : ''}${got ? '' : reqs}</div>`; }).join('')}</div>`;
+      return `<div class="lstep t${r.i + 1}${legendCls(r)} ${got ? 'got' : 'lock'} ${cur ? 'cur' : ''}" data-here="${L('вы здесь', 'you are here')}" style="${rankStyle(r)}">${emblem(r, 84, false, !got)}<b class="rn t${r.i + 1}">${esc(rankName(r))}</b>${got && when[r.i] ? `<div class="lcap">${fmtDate(when[r.i])}</div>` : ''}${got ? '' : reqs}</div>`; };
+    return `<div class="ladder">${RANKS.filter(r => !r.skin).map(card).join('')}</div>
+      <div class="section-title"><span class="idx">13–16</span><h2>${L('Легендарные ранги', 'Legendary ranks')}</h2></div><div class="ladder legend-row">${RANKS.filter(r => r.skin).map(card).join('')}</div>`;
   }
   // the quickest way up: the nearest boss, golden and crimson chapter and achievement step
   function rankHints() {

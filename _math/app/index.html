@@ -246,7 +246,14 @@ button.chip{cursor:pointer}
 .rhint:hover{border-color:var(--accent3);background:var(--panel2)}
 .rh-ic{width:30px;height:30px;flex:none;display:grid;place-items:center;border-radius:9px;background:var(--panel2);font-size:1rem}
 .rhint>b{font-family:var(--fd);font-size:.74rem;font-weight:600;color:var(--accent);white-space:nowrap}
-.lreq{display:flex;flex-direction:column;gap:7px;width:100%;margin-top:auto;padding-top:4px;font-size:.68rem;line-height:1.3;color:var(--muted)}
+/* 12 regular ranks fill whole rows (6, 4, 3 or 2 a row); the 4 legendary ones: 4 or 2 a row */
+.ladder{grid-template-columns:repeat(6,minmax(0,1fr))}
+.ladder.legend-row{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:1100px){.ladder{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:760px){.ladder{grid-template-columns:repeat(3,minmax(0,1fr))}.ladder.legend-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:480px){.ladder{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.legend-row .lreq{margin-top:auto}
+.lreq{display:flex;flex-direction:column;gap:7px;width:100%;padding-top:4px;font-size:.68rem;line-height:1.3;color:var(--muted)}
 .lr{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:3px 8px;text-align:left}
 .lr>span{grid-column:1/-1}
 .lr:not(:has(.lr-b))>span{text-align:center}
@@ -264,7 +271,7 @@ button.chip{cursor:pointer}
 .rankhero{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(220px,1fr);gap:20px;align-items:center}
 @media (max-width:860px){.rankhero{grid-template-columns:1fr}}
 .rankhero .rname{font-size:clamp(1.3rem,6.4vw,2rem)}
-.ladder{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(150px,100%),1fr));gap:10px}
+.ladder{display:grid;gap:10px}
 .lstep{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:16px 10px 14px;border-radius:14px;border:1px solid var(--border);background:var(--panel);overflow:hidden}
 .lstep b{font-family:var(--fd);font-weight:600;font-size:.86rem;color:var(--ink)}
 .lstep.got{border-color:color-mix(in srgb,var(--g) 35%,var(--border));background:linear-gradient(180deg,color-mix(in srgb,var(--g) 9%,var(--panel)),var(--panel))}
@@ -1341,6 +1348,6 @@ body.focus #top *,body.focus #top *::before,body.focus #top *::after{animation-p
 <script src="study_ids.js?v=1"></script>
 <script src="sol_ids.js?v=1"></script>
 <script src="i18n.js?v=20261040"></script>
-<script src="app.js?v=20261051"></script>
+<script src="app.js?v=20261053"></script>
 </body>
 </html>
