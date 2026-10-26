@@ -1125,8 +1125,9 @@ tr.sessdetail td{background:var(--panel2)}
 .doom-clock small{font-size:.38em;color:#ff5a68;margin:0 .12em;font-weight:500}
 .doom-sub{color:#9a9aa8;font-size:.85rem}
 .dy{max-width:720px;margin:22px auto 0}
-.dy-bar{height:8px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
-.dy-bar i{display:block;height:100%;background:linear-gradient(90deg,#ff7a59,#ff2a3d);box-shadow:0 0 18px #ff2a3d;transform-origin:left}
+.dy-bar{position:relative;height:8px;border-radius:99px;background:#34343c;overflow:hidden}
+.dy-bar .pace{position:absolute;top:0;bottom:0;background:#a9a9b4;box-shadow:none}
+.dy-bar i{position:absolute;left:0;top:0;height:100%;background:linear-gradient(90deg,#ff7a59,#ff2a3d);box-shadow:0 0 18px #ff2a3d;transform-origin:left}
 .enter .dy-bar i{animation:grow 1.6s var(--ease) both}
 .dy-l{display:flex;justify-content:space-between;gap:10px;font-size:.72rem;color:#8a8a96;margin-top:6px}
 .dy-l b{color:#fff;font-weight:600}
@@ -1150,7 +1151,7 @@ tr.sessdetail td{background:var(--panel2)}
 .dc-row>span{font-size:.62rem;text-transform:uppercase;letter-spacing:.1em;color:#6c6c7a;font-family:var(--fd)}
 .dc-cells{display:grid;grid-template-columns:repeat(31,1fr);gap:3px}
 .dc-cells i{aspect-ratio:1;border-radius:3px;background:rgba(255,255,255,.06)}
-.doom i.ok{background:#1fa463} .doom i.x{background:#ff2a3d;opacity:.85} .doom i.f{background:rgba(255,255,255,.08)} .doom i.pre{background:transparent;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)} .doom .dc-cells i.na{background:transparent}
+.doom i.ok{background:#1fa463} .doom i.x{background:#ff2a3d;opacity:.85} .doom i.f{background:#34343c} .doom i.fp{background:#a9a9b4} .doom i.pre{background:transparent;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)} .doom .dc-cells i.na{background:transparent}
 .doom i.now{outline:2px solid #fff;outline-offset:1px;animation:pulseO 1.4s infinite}
 .dw{position:relative;display:flex;align-items:flex-end;gap:3px;height:120px}
 .dw i{flex:1;background:#ff2a3d;opacity:.75;border-radius:3px 3px 1px 1px;min-width:3px;transform-origin:bottom}
@@ -1408,6 +1409,6 @@ body.focus #top *,body.focus #top *::before,body.focus #top *::after{animation-p
 <script src="study_ids.js?v=1"></script>
 <script src="sol_ids.js?v=1"></script>
 <script src="i18n.js?v=20261040"></script>
-<script src="app.js?v=20261062"></script>
+<script src="app.js?v=20261063"></script>
 </body>
 </html>

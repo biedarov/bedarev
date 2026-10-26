@@ -2641,6 +2641,10 @@
     const rate = ts.done / span, need = left ? remainT / left : Infinity;
     const proj = Math.min(ts.total, Math.floor(ts.done + rate * left));
     const finish = rate > 0 ? new Date(Date.now() + Math.ceil(remainT / rate) * DAY) : null;
+    // the countdown bar: light grey up to the day you finish every topic at this pace, dark grey the rest of the school year
+    const finDay = !remainT ? td : rate > 0 ? td + Math.ceil(remainT / rate) : Infinity;
+    const paceW = Math.max(0, Math.min(100, pct(Math.min(finDay, dE) - dS, total)) - pct(passed, total));
+    const paceTxt = !remainT ? L('все темы изучены', 'every topic studied') : finDay <= dE ? L(`по темпу финиш ≈ ${fmtDay(finDay)}`, `at this pace you finish ≈ ${fmtDay(finDay)}`) : L('по темпу не успеваешь', "at this pace you won't make it");
     const bk = prog(BOOK_ORDER), [exU, exUT] = unitsOf(Q);
     const remainTasks = (bk.total - bk.done) + (exUT - exU);
     const timed = LIVE.filter(a => a.time > 0), avgMin = timed.length ? timed.reduce((x, a) => x + a.time, 0) / 60 / timed.length : 3;
@@ -2659,7 +2663,7 @@
       for (let k = 1; k <= 31; k++) {
         if (k > dim) { cells += '<i class="na"></i>'; continue; }
         const d = dayOf(new Date(md.getFullYear(), md.getMonth(), k, 12).getTime());
-        const cls = d > dE ? 'na' : d === td ? (active.has(d) ? 'now ok' : 'now') : d > td ? 'f' : d < dS ? 'pre' : active.has(d) ? 'ok' : 'x';
+        const cls = d > dE ? 'na' : d === td ? (active.has(d) ? 'now ok' : 'now') : d > td ? (d <= finDay ? 'fp' : 'f') : d < dS ? 'pre' : active.has(d) ? 'ok' : 'x';
         cells += `<i class="${cls}" title="${fmtDay(d)}"></i>`;
       }
       cal += `<div class="dc-row"><span>${esc(md.toLocaleDateString(LOC(), { month: 'short' }))}</span><div class="dc-cells">${cells}</div></div>`;
@@ -2671,7 +2675,7 @@
       <div class="doom-head"><div class="eyebrow">отсчёт</div><div class="doom-title" data-text="До экзамена">До экзамена</div>
         <div class="doom-clock" id="doomClock">${clockText(ex - Date.now())}</div>
         <div class="doom-sub">${esc(fmtD(ex))} · Leaving Certificate · Mathematics Higher Level</div>
-        <div class="dy"><div class="dy-bar"><i style="width:${pct(passed, total)}%"></i></div><div class="dy-l"><span>${esc(fmtDay(dS))} · старт</span><b>прошло ${pct(passed, total)}% подготовки</b><span>${esc(ex.toLocaleDateString(LOC(), { day: 'numeric', month: 'short' }))}</span></div></div></div>
+        <div class="dy"><div class="dy-bar"><span class="pace" style="left:${pct(passed, total)}%;width:${paceW}%"></span><i style="width:${pct(passed, total)}%"></i></div><div class="dy-l"><span>${esc(fmtDay(dS))} · старт</span><b>прошло ${pct(passed, total)}% подготовки · ${paceTxt}</b><span>${esc(ex.toLocaleDateString(LOC(), { day: 'numeric', month: 'short' }))}</span></div></div></div>
       <div class="dgrid">
         ${cell('red', 'дней впустую', `<span data-count="${wasted}">${wasted}</span>`, `из ${passed} прошедших — ${pct(wasted, passed)}%. Это ≈${lost} ${plural(lost, 'тема', 'темы', 'тем')}, которые уже могли быть изучены.`)}
         ${cell('', 'осталось дней', `<span data-count="${left}">${left}</span>`, `≈ ${Math.round(left / 7)} ${plural(Math.round(left / 7), 'неделя', 'недели', 'недель')}. Каждый день — ${(100 / total).toFixed(2)}% подготовки.`)}
@@ -2683,7 +2687,7 @@
         ${cell('', L('подвопросы экзаменов', 'exam sub-questions'), `${exU}<small>/${exUT}</small>`, L(`${exUT - exU} подвопросов настоящих экзаменов ты ещё не решал`, `${exUT - exU} sub-questions of real papers you have not solved yet`))}
       </div>
       <div class="dverdict">${verdict}</div>
-      <div class="dcal"><div class="dc-h"><b>Учебный год</b><span><i class="pre"></i>до старта <i class="ok"></i>занимался <i class="x"></i>пусто <i class="f"></i>впереди</span></div>${cal}</div>
+      <div class="dcal"><div class="dc-h"><b>Учебный год</b><span><i class="pre"></i>до старта <i class="ok"></i>занимался <i class="x"></i>пусто <i class="fp"></i>${L('по темпу', 'at your pace')} <i class="f"></i>впереди</span></div>${cal}</div>
       <div class="dweeks"><div class="dc-h"><b>Задачи по неделям</b><span>пунктир — сколько нужно в неделю, чтобы успеть: ${needWeek}</span></div>
         <div class="dw">${weeks.map((n, j) => (n < 0 ? '<i class="fu"></i>' : `<i style="height:${Math.max(2, Math.round(100 * n / wmax))}%" class="${n >= needWeek ? 'ok' : ''}" title="неделя ${j + 1}: ${n}"></i>`)).join('')}<span class="dw-need" style="bottom:${Math.round(100 * needWeek / wmax)}%"></span></div></div>
       <div class="dcta"><div class="dq">${['Экзамен не перенесут.', 'Пустой день остаётся пустым навсегда.', 'Тебя никто не спасёт, кроме тебя.', 'Завтра ты будешь жалеть, что не начал сегодня.'][td % 4]}</div>
