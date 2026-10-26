@@ -475,7 +475,7 @@
             ${nt && nt.t.ch === cur ? `<div class="small" style="margin-top:12px">Следующая тема: <b>${esc(nt.t.s.n)} ${esc(nt.t.s.name)}</b> ${topicChip(nt.t.code)}</div>` : ''}
             <div class="row" style="margin-top:12px"><button class="btn sm" data-a="go" data-v="book/${cur.key}">Открыть главу →</button></div></div></div></div>
         ${bossKnown(cur) ? `<div class="minib ${s}" data-a="go" data-v="book/${cur.key}" style="--bh:${B.h}">${bossArt(cur, 150, s)}<div class="grow" style="min-width:0"><div class="boss-cap">босс главы ${cur.n}</div><div class="mb-name">${esc(B.n)}</div><div class="boss-title">${esc(B.t)}</div>
-          <div class="hp-l" style="margin-top:12px"><span>HP</span><b>${cs.hp}</b><span>/ ${cs.ex.length}</span></div><div class="hpmini dark"><i style="width:${pct(cs.hp, cs.ex.length)}%"></i></div>
+          <div class="hp-l" style="margin-top:12px"><span>HP</span><b>${cs.hp}</b><span>/ ${cs.hpMax}</span></div><div class="hpmini dark"><i style="width:${pct(cs.hp, cs.hpMax)}%"></i></div>
           <button class="btn boss-btn sm" style="margin-top:12px" data-a="bossFight" data-ch="${cur.key}">⚔ В бой</button></div></div>`
           : `<div class="minib unknown" data-a="go" data-v="book/${cur.key}" style="--bh:240">${bossSilhouette(150)}<div class="grow" style="min-width:0"><div class="boss-cap">босс главы ${cur.n} · скрыт</div><div class="mb-name">???</div><div class="boss-title">Кто-то ждёт в конце этой главы. Пройдите учебник одной темы — и узнаете, кто.</div></div></div>`}
       </div>`;
@@ -1448,7 +1448,7 @@
       <div class="cc-head"><span class="cc-num">${String(ch.n).padStart(2, '0')}</span>${tag ? `<span class="cc-tag">${tag}</span>` : ''}</div>
       <div><div class="cc-title">${esc(ch.name)}</div><div class="cc-bn">${known ? esc(B.n) : '??? · босс скрыт'}</div></div>
       <div class="cc-foot"><div class="cc-stat"><span>темы<b>${st.ts.done}/${st.ts.total}${st.ts.full ? ` <em>★${st.ts.full}</em>` : ''}</b></span><div class="cc-line tl">${topicTrack(st.ts)}</div></div>
-        <div class="cc-stat"><span>hp<b>${known ? `${st.hp}/${st.ex.length}` : '?'}</b></span><div class="cc-line hp"><i style="width:${known ? pct(st.hp, st.ex.length) : 100}%"></i></div></div></div>
+        <div class="cc-stat"><span>hp<b>${known ? `${st.hp}/${st.hpMax}` : '?'}</b></span><div class="cc-line hp"><i style="width:${known ? pct(st.hp, st.hpMax) : 100}%"></i></div></div></div>
     </a>`;
   }
   const chFx = n => { let s = ''; for (let j = 0; j < n; j++) s += `<i style="left:${(j * 37 + 11) % 100}%;animation-delay:${((j * 0.73) % 4).toFixed(2)}s;animation-duration:${(3 + (j % 4) * 0.8).toFixed(1)}s"></i>`; return `<div class="chfx" aria-hidden="true">${s}</div>`; };
@@ -1526,7 +1526,7 @@
       <div class="boss-title">Кто-то ждёт в конце этой главы. Пройдите учебник хотя бы одной темы — и узнаете, кто.</div>
       <div class="hp"><div class="hp-l"><span>HP</span><b>?</b><span>/ ?</span></div><div class="hp-bar">${'<i></i>'.repeat(14)}</div></div>
       <ul class="boss-req"><li><span>○</span><span class="grow">Пройти учебник одной темы главы, чтобы раскрыть босса</span><b>${bookTopics(ch)}/1</b></li></ul></div></div>`;
-    const segs = st.ex.map(q => `<i class="${st.exState(q)}" title="${esc(qTitle(q))}${st.exState(q) === 'else' ? ' — решён в другой главе: реши здесь, чтобы нанести урон' : ''}"></i>`).join('');
+    const segs = st.units.map(x => `<i class="${st.uState(x)}" title="${esc(qTitle(x.q))}${x.u ? ' ' + esc(partLabel(x.u)) : ''}${st.uState(x) === 'else' ? ' — решено в другой главе: реши здесь, чтобы нанести урон' : ''}"></i>`).join('');
     const req = [[st.ts.done === st.ts.total, 'Темы главы изучены', `${st.ts.done}/${st.ts.total}`], [st.revOk === st.revN, 'Повторение главы на 4–5', `${st.revOk}/${st.revN}`], [st.exOk === st.ex.length, 'Экзаменационные вопросы на 4–5', `${st.exOk}/${st.ex.length}`]];
     const cap = { alive: 'босс главы ' + ch.n, dead: 'повержен', gold: 'золотая глава', red: 'багровая глава' }[s];
     return `<div class="bosscard ${s}" style="--bh:${B.h}">
@@ -1535,18 +1535,18 @@
         <div class="boss-cap">${esc(cap)}</div>
         <div class="boss-name" data-text="${esc(B.n)}">${esc(B.n)}</div>
         <div class="boss-title">${esc(B.t)}</div>
-        <div class="hp"><div class="hp-l"><span>HP</span><b>${st.hp}</b><span>/ ${st.ex.length}</span></div><div class="hp-bar">${segs}</div></div>
+        <div class="hp"><div class="hp-l"><span>HP</span><b>${st.hp}</b><span>/ ${st.hpMax}</span></div><div class="hp-bar">${segs}</div></div>
         <ul class="boss-req">${req.map(([ok, l, v]) => `<li class="${ok ? 'ok' : ''}"><span>${ok ? '✓' : '○'}</span><span class="grow">${l}</span><b>${v}</b></li>`).join('')}</ul>
         <div class="boss-q">${examPills(st.ex, 'ch:' + ch.key)}</div>${st.ex.some(q => st.exState(q) === 'else') ? `<div class="tiny boss-hint" style="margin-top:6px"><span class="else-key"></span> обведены вопросы, решённые в других главах — здесь они урона не наносят, их нужно решить в бою с этим боссом или в темах этой главы</div>` : ''}
         <div class="row" style="margin-top:14px"><button class="btn boss-btn" data-a="bossFight" data-ch="${ch.key}">${st.hp ? '⚔ В бой' : '⚔ Реванш'}</button>
-          <span class="tiny boss-hint">${st.hp ? `ещё ${st.hp} ${plural(st.hp, 'вопрос', 'вопроса', 'вопросов')} с экзаменов не взяты на 4–5` : 'Все вопросы взяты — можно повторить для закрепления.'}</span></div>
+          <span class="tiny boss-hint">${st.hp ? L(`ещё ${st.hp} ${plural(st.hp, 'часть', 'части', 'частей')} экзаменационных вопросов не взяты на 4–5`, `${st.hp} exam ${st.hp === 1 ? 'part is' : 'parts are'} not yet taken at 4–5`) : L('Все части взяты — можно повторить для закрепления.', 'Every part is taken: fight again to keep it.')}</span></div>
         <div class="tiny boss-hint" style="margin-top:8px">${s === 'red' ? 'Каждая задача главы решена уверенно. Абсолют.' : s === 'gold' ? (redKnown() ? 'Все задачи главы на 4–5. Осталось сделать их все на 5 — и глава станет багровой.' : 'Все задачи главы на 4–5. Говорят, есть форма выше золота. Её видел только тот, кто не ошибался.') : st.boss ? (goldKnown() ? 'Дальше: все задачи главы на 4–5 — глава станет золотой, все на 5 — багровой.' : 'Говорят, у поверженной главы есть ещё формы. Пройди её до последней задачи — и увидишь.') : 'Победа: все темы главы изучены, всё повторение и все вопросы экзаменов по главе — на 4–5.'}</div>
       </div></div>`;
   }
   function bossPanel(s) {
     const ch = TCH[s.boss]; if (!ch) return '';
     const st = chState(ch), B = BOSS[ch.key];
-    const segs = st.ex.map(q => `<i class="${st.exState(q)}"></i>`).join('');
+    const segs = st.units.map(x => `<i class="${st.uState(x)}"></i>`).join('');
     return `<div class="bossbar ${bossStateOf(st)}" style="--bh:${B.h}">${bossArt(ch, 70, bossStateOf(st))}<div class="grow" style="min-width:0"><div class="boss-cap">бой с боссом · глава ${ch.n}</div><b class="bb-name">${esc(B.n)}</b><div class="hp-bar sm">${segs}</div></div><div class="hpnum"><span>HP</span> ${st.hp}<small>/${st.ex.length}</small></div></div>`;
   }
   const CH_ORD = { none: 0, boss: 1, gold: 2, red: 3 };
@@ -1998,9 +1998,15 @@
       const all = ch.exItems.concat(ch.revItems), total = all.length + ex.length;
       const allOk = all.filter(id => lc(id) >= 4).length + exOk;
       const all5 = all.filter(id => lc(id) >= 5).length + ex.filter(q => exConf(q) >= 5).length;
-      const boss = ts.done === ts.total && revOk === ch.revItems.length && exOk === ex.length;
+      // the boss's HP: one per exam part of this chapter, taken once the part is solved at 4–5 in its topic or in the fight
+      const units = [];
+      ex.forEach(q => { const ps = partsOf(q); (ps.length ? ps : [{ p: '', codes: codesOf(q) }]).forEach(p => { const cs = p.codes.filter(c => codes.includes(c)); if (cs.length) units.push({ q, u: p.p, cs }); }); });
+      const uConf = x => Math.min(...x.cs.map(c => { const a = unitCredit(x.q, x.u, c); return a ? (a.parts && a.parts[x.u]) || a.conf : 0; }));
+      const uOk = units.filter(x => uConf(x) >= 4).length;
+      const uState = x => (uConf(x) >= 4 ? 'hit' : x.cs.some(c => unitCredit(x.q, x.u, c)) ? 'tried' : unitAtt(x.q, x.u) ? 'else' : '');
+      const boss = ts.done === ts.total && revOk === ch.revItems.length && uOk === units.length;
       const state = total && all5 === total ? 'red' : total && allOk === total ? 'gold' : boss ? 'boss' : 'none';
-      return { codes, ts, ex, exOk, exTried, exState, hp: ex.length - exOk, revOk, revN: ch.revItems.length, allOk, all5, total, boss, state, exConf };
+      return { codes, ts, ex, exOk, exTried, exState, units, uState, hpMax: units.length, hp: units.length - uOk, revOk, revN: ch.revItems.length, allOk, all5, total, boss, state, exConf };
     });
   }
   const CH_STATE = { none: '', boss: 'босс повержен', gold: 'золотая глава', red: 'багровая глава' };
@@ -3382,7 +3388,7 @@
     const ch = TCH[s.boss]; if (!ch) return '';
     const st = chState(ch), B = BOSS[ch.key], sv = bossStateOf(st), dmg = Math.max(0, (s.bossHp0 != null ? s.bossHp0 : st.hp) - st.hp);
     return `<div class="bossres ${sv}" style="--bh:${B.h}">${bossArt(ch, 130, sv)}<div class="grow"><div class="boss-cap">${sv === 'alive' ? 'бой окончен' : CH_STATE[st.state]}</div><div class="mb-name">${esc(B.n)}</div>
-      <div class="small" style="margin-top:6px">Урон за бой: <b>−${dmg} HP</b> · осталось ${st.hp}/${st.ex.length}</div>
+      <div class="small" style="margin-top:6px">Урон за бой: <b>−${dmg} HP</b> · осталось ${st.hp}/${st.hpMax}</div>
       ${sv === 'alive' ? `<div class="tiny boss-hint" style="margin-top:6px">${st.hp ? `Для победы: все экзаменационные вопросы главы на 4–5${st.ts.done < st.ts.total ? `, темы главы ${st.ts.done}/${st.ts.total}` : ''}${st.revOk < st.revN ? `, повторение ${st.revOk}/${st.revN}` : ''}.` : `HP на нуле. Осталось: ${st.ts.done < st.ts.total ? `темы главы ${st.ts.done}/${st.ts.total}` : ''}${st.ts.done < st.ts.total && st.revOk < st.revN ? ', ' : ''}${st.revOk < st.revN ? `повторение на 4–5 ${st.revOk}/${st.revN}` : ''}.`}</div>` : ''}</div></div>`;
   }
   let hdrRank = -1;
