@@ -348,19 +348,11 @@
   }
   window.addEventListener('hashchange', () => { if (skipHash) { skipHash = false; return; } route(); });
   const VIEWS = {};
-  // the one review entry point: today's queue, or a tick once it is done
-  function dailyBtn(cls) {
-    const p = dailyPlan();
-    return p.items.length ? `<button class="${cls}" data-a="startDaily" title="${esc(L(`≈${p.mins} мин из ${p.budget}; самое важное первым`, `≈${p.mins} of ${p.budget} min; most important first`))}">↻ ${L('Повторение на сегодня', 'Review for today')} <span class="badge">${p.items.length}</span></button>`
-      : `<button class="${cls}" disabled>✓ ${L('Повторение на сегодня сделано', 'Today’s review is done')}</button>`;
-  }
   function render() {
     if (view === 'practice' && R) saveDraft();
     document.querySelectorAll('#nav .tab').forEach(b => b.classList.toggle('on', b.dataset.v === view));
     const gear = $('#gearBtn'); if (gear) gear.classList.toggle('on', view === 'settings');
-    // the Path carries today's review count; the Vault no longer counts every due question
-    const dn = dailyPlan().items.length;
-    $('#nav [data-v="book"]').innerHTML = 'Путь' + (dn ? `<span class="badge">${dn}</span>` : '');
+    $('#nav [data-v="book"]').innerHTML = 'Путь';
     $('#nav [data-v="bank"]').innerHTML = 'Хранилище';
     $('#tab-practice').classList.toggle('hidden', !S.session);
     ['stats', 'history', 'doom'].forEach(v => { const b = $(`#nav [data-v="${v}"]`); if (b) b.classList.toggle('pro', !hasPlan('pro')); });
@@ -385,6 +377,8 @@
     main.innerHTML = proPage(view) || VIEWS[view]();
     main.classList.toggle('enter', entering && !motionOff());
     (AFTER[view] || (() => { }))();
+    // a sideways tab strip (Statistics on a phone) shows its open tab
+    const st_ = $('.stabs .on'); if (st_) { const p = st_.parentElement; p.scrollLeft = st_.offsetLeft - (p.clientWidth - st_.offsetWidth) / 2; }
     document.querySelectorAll('[data-ks]').forEach(e => { if (keep[e.dataset.ks]) e.scrollTop = keep[e.dataset.ks]; });
     window.scrollTo(0, entering ? 0 : y);
     lastKey = key;
@@ -467,7 +461,7 @@
         <h1 class="hero-h">${hello}.<span class="muted">${todayN ? (todayN >= goal ? `Цель дня выполнена: решено ${todayN}.` : `Сегодня решено ${todayN} из ${goal}.`) : cur ? `Глава ${cur.n} · ${esc(cur.name)} ждёт.` : 'Все главы пройдены.'}</span></h1>
         ${topicBar(ALL_TOPICS, { big: true, title: 'Изучено тем' })}
         <div class="hero-books">${TT.books.map(b => { const codes = b.chapters.flatMap(chTopics), s = topicSum(codes); return `<div><div class="tiny muted">${esc(b.title)} · ${esc(b.name)}</div><div class="row" style="gap:8px;flex-wrap:nowrap"><b class="mono small">${s.done}/${s.total}${s.full ? ` <span class="tfull-n">★${s.full}</span>` : ''}</b><div style="flex:1">${topicBar(codes, { label: false })}</div></div></div>`; }).join('')}</div>
-        <div class="row" style="margin-top:20px">${ntBtn(nt, 'btn pri lg')}${dailyBtn('btn lg')}</div>
+        <div class="row" style="margin-top:20px">${ntBtn(nt, 'btn pri lg')}${checkBtns()}</div>
       </div>
       <div class="hero-r">${hasPlan('pro') ? rankCard() : proPitch()}</div>
       ${heroDeco()}
@@ -486,9 +480,10 @@
           : `<div class="minib unknown" data-a="go" data-v="book/${cur.key}" style="--bh:240">${bossSilhouette(150)}<div class="grow" style="min-width:0"><div class="boss-cap">босс главы ${cur.n} · скрыт</div><div class="mb-name">???</div><div class="boss-title">Кто-то ждёт в конце этой главы. Пройдите учебник одной темы — и узнаете, кто.</div></div></div>`}
       </div>`;
     }
-    h += `<div class="kpis" style="margin-top:14px">
+    h += `<div class="kpis k6" style="margin-top:14px">
       <div class="kpi">${ring(todayN / goal)}<b><span data-count="${todayN}">${todayN}</span> / ${goal}</b><span>сегодня решено / цель</span></div>
-      ${(() => { const p = dailyPlan(); return `<div class="kpi"><b>${p.items.length ? `${p.items.length} <small class="muted">≈${p.mins} ${L('мин', 'min')}</small>` : '✓'}</b><span>${p.items.length ? L('повторение на сегодня', 'review for today') : L('повторение на сегодня сделано', 'today’s review is done')}${p.waiting ? L(` · ещё ${p.waiting} подождут`, ` · ${p.waiting} more can wait`) : ''}</span></div>`; })()}
+      <div class="kpi"><b>${fmtDur(LIVE.filter(a => dayOf(a.t) === today()).reduce((x, a) => x + (a.time || 0), 0))}</b><span>${L('времени сегодня', 'time today')}</span></div>
+      ${(() => { const ch = dailyCheck(); return `<div class="kpi"><b>${ch.done}<small class="muted"> / ${ch.ids.length}</small></b><span>${L('проверка дня', 'daily check')}</span></div>`; })()}
       ${hasPlan('pro') ? `<div class="kpi"><b>${st.streak} <small class="muted">${plural(st.streak, 'день', 'дня', 'дней')}</small></b><span>серия занятий · рекорд ${st.bestStreak}</span></div>` : kpiLock(L('Серия занятий', 'Study streak'))}
       <div class="kpi"><b><span data-count="${bk.done}">${bk.done}</span><small class="muted"> / ${bk.total}</small></b><span>задач учебников решено</span></div>
       <div class="kpi"><b><span data-count="${exU}">${exU}</span><small class="muted"> / ${exUT}</small></b><span>${L('подвопросов exam papers пройдено', 'exam sub-questions done')}</span></div>
@@ -503,8 +498,7 @@
       <div class="card"><div class="row"><h2 class="grow">Что подтянуть</h2><button class="btn sm ghost" data-a="statsGo" data-v="topics">Все темы →</button></div>
         <p class="muted small" style="margin-top:0">Темы, которые чаще всего встречаются на экзамене и которые вы пока знаете хуже всего — учебник и экзаменационные вопросы вместе.</p>
         ${hasPlan('pro') ? prioList(st.prio.slice(0, 6)) : lockBox('pro', L('Подбор слабых тем', 'Picking the weak topics'))}</div>
-      <div class="card"><h2>Повторения на 2 недели</h2>${forecastChart(reviewForecast(), 14)}
-        <h3 style="margin-top:14px">Последние решения</h3>${recentList(7)}</div>
+      <div class="card"><h2>Последние решения</h2>${recentList(9)}</div>
     </div>
     <p class="muted tiny ${hasPlan('pro') ? '' : 'hidden'}" style="margin-top:12px">* Готовность — насколько изучены темы (учебник и экзаменационные вопросы поровну), с весом по частоте темы в работах 2015–2026.</p>`;
     return h;
@@ -692,8 +686,8 @@
       toast(L(`${shut.length} ${plural(shut.length, 'задача доступна', 'задачи доступны', 'задач доступны')} в тарифе Pro — они пропущены`, `${shut.length} ${shut.length === 1 ? 'question needs' : 'questions need'} Pro — skipped`));
     }
     if (!ids.length) { toast('Нет вопросов для сессии'); return; }
-    S.session = { id: uid(), qids: ids, i: 0, started: Date.now(), title, exam: !!opts.exam, limit: opts.limit || null, challenge: opts.challenge || null, study: opts.study || null, boss: opts.boss || null, bossHp0: opts.boss ? chState(TCH[opts.boss]).hp : null, final: !!opts.final, review: !!opts.review, daily: !!opts.daily, ctxs: opts.ctxs || null, ctx: opts.ctx || (opts.boss ? 'ch:' + opts.boss : opts.study && TG[opts.study] ? TG[opts.study].sec || null : null), done: [] };
-    S.sessions[S.session.id] = { id: S.session.id, title, started: S.session.started, exam: !!opts.exam, challenge: opts.challenge || null, study: opts.study || null, boss: opts.boss || null, final: !!opts.final, daily: !!opts.daily, ctx: S.session.ctx, n: ids.length };
+    S.session = { id: uid(), qids: ids, i: 0, started: Date.now(), title, exam: !!opts.exam, limit: opts.limit || null, challenge: opts.challenge || null, study: opts.study || null, boss: opts.boss || null, bossHp0: opts.boss ? chState(TCH[opts.boss]).hp : null, final: !!opts.final, review: !!opts.review, daily: !!opts.daily, check: !!opts.check, ctxs: opts.ctxs || null, ctx: opts.ctx || (opts.boss ? 'ch:' + opts.boss : opts.study && TG[opts.study] ? TG[opts.study].sec || null : null), done: [] };
+    S.sessions[S.session.id] = { id: S.session.id, title, started: S.session.started, exam: !!opts.exam, challenge: opts.challenge || null, study: opts.study || null, boss: opts.boss || null, final: !!opts.final, daily: !!opts.daily, check: !!opts.check, ctx: S.session.ctx, n: ids.length };
     save(); closeModal(); R = null; go('practice');
   }
 
@@ -1108,7 +1102,7 @@
       return `<tr><th>${y}</th>${[1, 2].map(p => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => cell(y, p, n)).join('') + '<td style="width:10px"></td>').join('')}<td class="tiny muted" style="text-align:left;padding-left:6px">${done}/${tot}</td></tr>`;
     }).join('');
     return `<div class="card"><h2>Карта экзаменов</h2>
-      <p class="muted small" style="margin-top:0">${L('Каждая клетка — вопрос. Цвет — оценка, когда решены все его подвопросы; пунктир — решена только часть; рамка — пора повторить. Q1–Q6 — Section A, дальше Section B. Нажмите на клетку, чтобы открыть вопрос.', 'Each cell is a question. Colour: its rating once all its sub-questions are solved; dashed: only some are solved; frame: due for review. Q1–Q6 are Section A, the rest Section B. Click a cell to open the question.')}</p>
+      <p class="muted small" style="margin-top:0">${L('Каждая клетка — вопрос. Цвет — оценка, когда решены все его подвопросы; пунктир — решена только часть. Q1–Q6 — Section A, дальше Section B. Нажмите на клетку, чтобы открыть вопрос.', 'Each cell is a question. Colour: its rating once all its sub-questions are solved; dashed: only some are solved. Q1–Q6 are Section A, the rest Section B. Click a cell to open the question.')}</p>
       <div class="tablewrap"><table class="emap">${head}${rows}</table></div>
       <div class="legend" style="margin-top:10px"><span><i class="dot"></i>не решался</span><span><span class="else-key"></span>${L('решена часть', 'partly solved')}</span>${[1, 2, 3, 4, 5].map(v => `<span><i class="dot cf${v}"></i>${esc(CONF[v].n)}</span>`).join('')}</div></div>`;
   }
@@ -1399,7 +1393,7 @@
   }
   function pills(ids) {
     return `<div class="pills">${ids.map(id => { const t = TBY[id], c = C[id], s = status(id);
-      return `<button class="pill ${c ? 'cf' + c.lastConf : ''} ${s === 'due' ? 'due' : ''} ${s === 'retired' ? 'ret' : ''}" data-a="preview" data-id="${id}" title="${esc(bookTitle(t))}${c ? ' — ' + CONF[c.lastConf].n : ''}">${t.n}</button>`; }).join('')}</div>`;
+      return `<button class="pill ${typeFailed(id) ? 'tfail' : ''} ${c ? 'cf' + c.lastConf : ''} ${s === 'due' ? 'due' : ''} ${s === 'retired' ? 'ret' : ''}" data-a="preview" data-id="${id}" title="${esc(bookTitle(t))}${c ? ' — ' + CONF[c.lastConf].n : ''}">${t.n}</button>`; }).join('')}</div>`;
   }
   const bar = (p, color) => `<div class="bar"><i style="width:${Math.round(p * 100)}%;${color ? 'background:' + color : ''}"></i></div>`;
   // the next step on the path: the topic after the one worked on last that is not studied yet
@@ -1435,7 +1429,7 @@
     const cnt = { boss: 0, gold: 0, red: 0 };
     CHS.forEach(ch => { const s = chState(ch).state; if (s !== 'none') cnt.boss++; if (s === 'gold' || s === 'red') cnt.gold++; if (s === 'red') cnt.red++; });
     let h = `<div class="pagehead"><div><div class="eyebrow">сюжет</div><h1>Путь</h1><div class="small muted" style="max-width:640px">Две книги — два акта. Каждая глава: темы, повторение и босс — настоящие вопросы экзаменов 2015–2026 по этой главе.</div></div>
-      <div class="row">${ntBtn(nt)}${dailyBtn('btn')}${loreBtn()}</div></div>`;
+      <div class="row">${ntBtn(nt)}${loreBtn()}</div></div>`;
     h += `<div class="card pathsum"><div class="grow" style="min-width:260px">${topicBar(ALL_TOPICS, { big: true, title: 'Изучено тем' })}</div>
       <div class="pathstats">${[['boss', '☠', 'боссов повержено', true], ['gold', '◆', 'золотых глав', cnt.gold > 0], ['red', '✶', 'багровых глав', cnt.red > 0]].map(([k, i, l, known]) => `<div class="pst ${k} ${known ? '' : 'unknown'}"><span>${known ? i : '?'}</span><b><span data-count="${cnt[k]}">${cnt[k]}</span>/${CHS.length}</b><small>${known ? l : '???'}</small></div>`).join('')}</div></div>`;
     TT.books.forEach((b, bi) => {
@@ -1450,7 +1444,7 @@
     const st = chState(ch), B = BOSS[ch.key], known = bossKnown(ch), s = bossStateOf(st);
     const tag = { boss: '☠ повержен', gold: '◆ золото', red: '✶ багровая' }[st.state] || '';
     return `<a class="cc s-${st.state} ${known ? '' : 'unknown'}" href="#book/${ch.key}" style="--bh:${known ? B.h : 240}">${st.state === 'gold' || st.state === 'red' ? chFx(14) : ''}
-      <div class="cc-bg">${known ? bossArt(ch, st.state === 'none' ? 176 : 330, s) : bossSilhouette(200)}</div>
+      <div class="cc-bg">${known ? bossArt(ch, st.state === 'none' ? 176 : 330, s, true) : bossSilhouette(200)}</div>
       <div class="cc-head"><span class="cc-num">${String(ch.n).padStart(2, '0')}</span>${tag ? `<span class="cc-tag">${tag}</span>` : ''}</div>
       <div><div class="cc-title">${esc(ch.name)}</div><div class="cc-bn">${known ? esc(B.n) : '??? · босс скрыт'}</div></div>
       <div class="cc-foot"><div class="cc-stat"><span>темы<b>${st.ts.done}/${st.ts.total}${st.ts.full ? ` <em>★${st.ts.full}</em>` : ''}</b></span><div class="cc-line tl">${topicTrack(st.ts)}</div></div>
@@ -1471,14 +1465,13 @@
           <div class="tstep ${ts.bookDone ? 'ok' : ''}"><span class="exstep">${ts.bookDone ? '✓' : '1'}</span><b>Учебник</b><span class="tiny muted grow">${Math.round(ts.book * 100)}% · решено ${p.done}/${p.total} · ${ts.bookDone ? 'тема изучена' : 'освойте упражнения — тема засчитается изученной'}</span></div>
           ${sec.groups.map(gid => { const g = TG[gid], gi = gIds(gid), gp = prog(gi), nx = nextFrom(gi);
             const stu = S.study[gid] ? studySummary(studyState(gid)) : null;
-            return `<div class="tiny muted" style="margin-top:8px">${esc(groupTitle(g))}${g.part ? ' (' + esc(g.part) + ')' : ''} · ${gi.length} ${plural(gi.length, 'вопрос', 'вопроса', 'вопросов')} · решено ${gp.done}${gp.avg != null ? ' · уверенность ' + gp.avg.toFixed(1) : ''} ${studyBadge(gid)}</div>
-              ${pills(gi)}
-              <div class="row" style="margin-top:7px">
-                ${!STUDY_IDS.has(gid) ? '' : !hasPlan('pro') ? `<button class="btn sm" data-a="study" data-g="${gid}">🎯 Изучить тему <span class="planchip pro">Pro</span></button>` : `<button class="btn sm pri" data-a="study" data-g="${gid}" ${stu && stu.finished ? 'data-restart="1"' : ''} title="Адаптивно: следующая задача зависит от того, как вы решили предыдущую">🎯 ${stu ? (stu.finished ? 'Изучить заново' : 'Продолжить изучение') : 'Изучить тему'}</button>`}
-                ${nx ? `<button class="btn sm" data-a="gStart" data-g="${gid}" data-m="cont">${gp.done ? 'Все подряд: продолжить' : 'Все подряд'}</button>` : `<button class="btn sm" data-a="gStart" data-g="${gid}" data-m="weak">Повторить слабые</button>`}
-                <button class="btn sm" data-a="gStart" data-g="${gid}" data-m="rand">Случайные 5</button>
-                ${g.ansAll ? `<button class="btn sm ghost" data-a="ansAll" data-g="${gid}">Ответы</button>` : ''}
-              </div>`; }).join('')}
+            // one line per exercise: what it is on the left, its actions on the right (like the exam block's «Решать»);
+            // a studied topic (or a finished run without weak spots) needs no study button
+            const studyB = !STUDY_IDS.has(gid) || (stu && stu.perfect) || (ts.bookDone && !(stu && !stu.finished)) ? '' : !hasPlan('pro') ? `<button class="btn sm" data-a="study" data-g="${gid}">${L('Изучить тему', 'Study the topic')} <span class="planchip pro">Pro</span></button>`
+              : `<button class="btn sm pri" data-a="study" data-g="${gid}" ${stu && stu.finished ? 'data-restart="1"' : ''} title="Адаптивно: следующая задача зависит от того, как вы решили предыдущую">${stu ? (stu.finished ? L('Изучить заново', 'Study again') : L('Продолжить изучение', 'Continue studying')) : L('Изучить тему', 'Study the topic')}</button>`;
+            const contB = nx && !(stu && stu.perfect) ? `<button class="btn sm ghost" data-a="gStart" data-g="${gid}" data-m="cont">${gp.done ? 'Все подряд: продолжить' : 'Все подряд'}</button>` : '';
+            return `<div class="grp-h"><span class="tiny muted grow">${esc(groupTitle(g))}${g.part ? ' (' + esc(g.part) + ')' : ''} · ${gi.length} ${plural(gi.length, 'вопрос', 'вопроса', 'вопросов')} · решено ${gp.done}${gp.avg != null ? ' · уверенность ' + gp.avg.toFixed(1) : ''} ${studyBadge(gid)}</span>${contB}${studyB}</div>
+              ${pills(gi)}`; }).join('')}
           ${ex.length ? `<div class="exblock ${ts.exFull ? 'done' : ''}">
             <div class="row"><span class="exstep">${ts.exFull ? '★' : '2'}</span><div class="grow" style="min-width:0"><b class="exlabel">Экзамены по теме · ${ex.length}</b>
               <div class="tiny muted">${ts.exFull ? 'Все вопросы экзаменов по теме решены на 4–5 в этой теме' : `на 4–5 в этой теме: ${ts.good}/${ex.length} — нужно для «★ пройдена полностью»${ts.exElse ? ` · <span class="else-key"></span> решено в других темах: ${ts.exElse}` : ''}`}</div></div>
@@ -1493,7 +1486,7 @@
         <div class="row"><span class="tierlbl">${t}</span><div class="grow"><b>${TIER[t].n}</b><div class="tiny muted">${esc(TIER[t].ru)} · ${gi.length} ${plural(gi.length, 'вопрос', 'вопроса', 'вопросов')}</div></div><span class="tiny muted">${gp.mast}/${gi.length} на 4–5</span></div>
         ${bar(gi.length ? gp.mast / gi.length : 0, 'var(--c2)')}${pills(gi)}
         <div class="row" style="margin-top:7px">${nx ? `<button class="btn sm pri" data-a="gStart" data-g="${gid}" data-m="cont">${gp.done ? 'Продолжить' : 'Начать'}</button>` : `<button class="btn sm pri" data-a="gStart" data-g="${gid}" data-m="weak">Слабые</button>`}
-          <button class="btn sm" data-a="gStart" data-g="${gid}" data-m="all">Все</button>${TG[gid].ansAll ? `<button class="btn sm ghost" data-a="ansAll" data-g="${gid}">Ответы</button>` : ''}</div></div>`;
+          <button class="btn sm" data-a="gStart" data-g="${gid}" data-m="all">Все</button></div></div>`;
     }).join('');
     const ready = pe.p >= 0.7;
     return `<div class="crumbs"><a href="#book">Путь</a> › ${esc(b.title)} › Глава ${ch.n}</div>
@@ -1502,7 +1495,7 @@
           <div class="small muted">${esc(b.title)} · упражнения ${pe.done}/${pe.total} · повторение ${pr.done}/${pr.total} · экзамен ${st.exTried}/${st.ex.length}</div></div>${chBadge(st)}</div>
         <div class="row" style="margin-top:14px">${nextCh ? `<button class="btn pri" data-a="startOne" data-id="${nextCh}" data-cont="1">▶ Продолжить главу</button>` : ''}
           <button class="btn" data-a="chStart" data-ch="${ch.key}" data-m="weak">Слабые места</button>
-          <button class="btn" data-a="chStart" data-ch="${ch.key}" data-m="rand">Случайные 10</button>
+          <button class="btn" data-a="chCheck" data-ch="${ch.key}" title="${esc(L('10 случайных задач из пройденных типов главы, на верхних уровнях сложности. Ответ на 3 и ниже — тип становится красным', '10 random questions from the chapter types you have passed, at their upper levels. A 3 or lower turns the type red'))}">✓ ${L('Проверка главы', 'Chapter check')}</button>
           <button class="btn" data-a="scrollTo" data-id="boss-${ch.key}">☠ К боссу: ${esc(bossName(ch))}</button></div>
         <div style="margin-top:16px">${topicBar(st.codes, { title: 'Темы главы' })}</div>
         <div class="grid g3" style="margin-top:12px">
@@ -1872,6 +1865,51 @@
   }
   // what the next days hold: cards falling due per day (for the forecast chart)
   const reviewForecast = () => Object.values(reviewCards()).map(c => ({ due: c.R < R_DUE ? today() : c.dueDay, retired: false }));
+
+  /* ---------- daily check ----------
+     Every day: 5 random questions of 5 different question types you have already passed (a question of the type solved
+     at 4–5), at the type's upper levels (2–3 stars; 1–2 when the type tops out at 2). The day's set is fixed once made.
+     A check answer rated 3 or lower fails its type: every question of that type turns red on the Path, and Home offers to
+     go through them all. The type is cleared once each of its questions is solved at 4–5 after the failure. */
+  const isCheck = a => !!(S.sessions[a.sess] && S.sessions[a.sess].check);
+  const checkLevels = ty => (ty.maxD >= 3 ? [2, 3] : ty.maxD === 2 ? [1, 2] : [1]);
+  function dailyCheck() {
+    const td = today();
+    if (!S.check || S.check.day !== td) {
+      const passed = Object.values(typeMap().types).filter(ty => ty.items.some(x => C[x.id] && C[x.id].hist.some(a => a.conf >= 4)));
+      const order = passed.map((ty, k) => [prng(td * 37 + k), ty]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
+      const ids = [];
+      for (const ty of order) {
+        if (ids.length >= 5) break;
+        const lv = checkLevels(ty), list = ty.items.filter(x => lv.includes(x.d) && status(x.id) !== 'retired');
+        if (list.length) ids.push(list[Math.floor(prng(td * 53 + ids.length) * list.length)].id);
+      }
+      // kept in the progress (saved with the next change), so the day's set does not change on reload
+      S.check = { day: td, ids };
+    }
+    const done = S.check.ids.filter(id => LIVE.some(a => a.q === id && isCheck(a) && dayOf(a.t) === td));
+    return { ids: S.check.ids, done: done.length, left: S.check.ids.filter(id => !done.includes(id)) };
+  }
+  const failedTypes = () => memo('ftypes', () => {
+    const at = {};
+    LIVE.forEach(a => { if (!isCheck(a)) return; const ty = typeMap().by[a.q]; if (ty && a.conf <= 3) at[ty.key] = a.t; });
+    const out = {};
+    Object.entries(at).forEach(([k, t0]) => {
+      const ty = typeMap().types[k];
+      const left = ty.items.filter(x => status(x.id) !== 'retired' && !(C[x.id] && C[x.id].hist.some(a => a.t > t0 && a.conf >= 4)));
+      if (left.length) out[k] = { ty, t: t0, left: left.map(x => x.id) };
+    });
+    return out;
+  });
+  const typeFailed = id => { const ty = typeMap().by[id]; return !!(ty && failedTypes()[ty.key]); };
+  function checkBtns() {
+    const ch = dailyCheck(), f = Object.values(failedTypes()), n = f.reduce((x, t) => x + t.left.length, 0);
+    const check = !ch.ids.length ? '' : ch.left.length
+      ? `<button class="btn lg" data-a="startCheck">✓ ${L('Проверка дня', 'Daily check')} <span class="badge">${ch.left.length}</span></button>`
+      : `<button class="btn lg" disabled>✓ ${L('Проверка дня пройдена', 'Daily check done')}</button>`;
+    const fix = n ? `<button class="btn lg failbtn" data-a="fixPanel" title="${esc(f.map(t => t.ty.name).join(' · '))}">✗ ${L('Ошибки проверки', 'Check mistakes')}: ${f.length} ${L(plural(f.length, 'тип', 'типа', 'типов'), f.length === 1 ? 'type' : 'types')} <span class="badge">${n}</span></button>` : '';
+    return fix + check;
+  }
 
   /* ================= TOPICS & CHAPTERS ================= */
   // A topic is a textbook section. It counts as studied when its exercises are mastered: the adaptive study
@@ -2349,7 +2387,8 @@
   };
   // the test copy can draw any boss for a contact sheet (127.0.0.1 only)
   if (TEST) { window.__bossArt = (key, size, state) => bossArt(TCH[key], size, state); window.__rankUp = i => rankUpNow(RANKS[i]); window.__review = () => ({ plan: dailyPlan(), cards: reviewCards() }); window.__rank = () => { const x = rankInfo(); return { shown: x.r.i, live: x.live, hi: S.rankHi, snap: S.snap && S.snap.r, ev: (S.events || []).filter(e => e.k === "rank").map(e => e.r) }; }; }
-  function bossArt(ch, size = 220, state = 'alive') {
+  // lite: no blurred glow filter (Path cards: 22 animated pictures at once, and a moving filter is costly to redraw)
+  function bossArt(ch, size = 220, state = 'alive', lite = false) {
     const B = BOSS[ch.key] || BOSS['1-1'], id = 'bs' + (++EMB), h = B.h, mini = size < 100;
     const col = state === 'gold' ? '#ffcf4d' : state === 'red' ? '#ff2a3d' : `hsl(${h} 92% 62%)`, deep = state === 'gold' ? '#6b4a00' : state === 'red' ? '#4a0008' : `hsl(${h} 85% 18%)`;
     let em = ''; if (!mini) for (let j = 0; j < 9; j++) em += `<circle class="b-ember" cx="${30 + (j * 83) % 180}" cy="${200 + (j * 37) % 30}" r="${1 + (j % 3) * 0.6}" fill="${col}" style="animation-delay:${(j * 0.7) % 5}s;animation-duration:${4 + j % 4}s"/>`;
@@ -2361,7 +2400,7 @@
       <circle cx="120" cy="120" r="119" fill="url(#${id}h)" class="b-halo"/>
       <g class="b-ring"><text font-size="8.5" letter-spacing="2.6" fill="${col}" opacity=".5" font-family="Unbounded,monospace"><textPath href="#${id}c">${esc(glyphs)}</textPath></text></g>
       <circle cx="120" cy="120" r="98" fill="none" stroke="${col}" stroke-width=".6" stroke-dasharray="1 5" opacity=".55" class="b-ring2"/>
-      <g class="b-body" ${mini ? '' : `filter="url(#${id}g)"`} stroke="${col}" fill="none" stroke-width="1.3" stroke-linejoin="round">${MOTIF[B.m](col)}</g>${em}
+      <g class="b-body" ${mini || lite ? '' : `filter="url(#${id}g)"`} stroke="${col}" fill="none" stroke-width="1.3" stroke-linejoin="round">${MOTIF[B.m](col)}</g>${em}
       ${state === 'dead' ? '<g class="b-slash"><path d="M40,40 L200,200" stroke="#ff2a3d" stroke-width="5" stroke-linecap="round"/><path d="M200,40 L40,200" stroke="#ff2a3d" stroke-width="5" stroke-linecap="round" opacity=".85"/></g>' : ''}
     </svg>`;
   }
@@ -3388,6 +3427,43 @@
     startDaily: () => {
       const p = dailyPlan(); if (!p.items.length) { toast(L('На сегодня повторять нечего', 'Nothing to review today')); return; }
       startSession(p.items.map(x => x.id), L('Повторение на сегодня', 'Review for today'), { review: true, daily: true, ctxs: p.items.map(x => x.ctx || null) });
+    },
+    chCheck: el => {
+      const key = el.dataset.ch, types = Object.values(typeMap().types).filter(ty => chKeyOf(TG[ty.gid]) === key && ty.items.some(x => C[x.id] && C[x.id].hist.some(a => a.conf >= 4)));
+      if (!types.length) { toast(L('В этой главе ещё нет пройденных типов задач', 'No question type of this chapter is passed yet')); return; }
+      const pool = shuffle(types.map(ty => shuffle(ty.items.filter(x => checkLevels(ty).includes(x.d) && status(x.id) !== 'retired')))).filter(l => l.length);
+      // one question per type first, then a second round when the chapter has fewer than 10 types
+      const ids = []; for (let r = 0; ids.length < 10 && pool.some(l => l[r]); r++) pool.forEach(l => { if (l[r] && ids.length < 10) ids.push(l[r].id); });
+      startSession(ids, `${L('Проверка главы', 'Chapter check')} ${TCH[key].n}`, { check: true });
+    },
+    startCheck: () => {
+      const ch = dailyCheck(); if (!ch.left.length) return;
+      startSession(ch.left, L('Проверка дня', 'Daily check'), { check: true });
+    },
+    // the panel behind «Ошибки проверки»: every failed type, what is left of it, one button per type and one for all
+    fixPanel: () => {
+      const f = Object.values(failedTypes()); if (!f.length) return;
+      const total = f.reduce((x, t) => x + t.left.length, 0);
+      const card = t => {
+        const g = TG[t.ty.gid], sec = g.sec ? SEC[g.sec] : null, n = t.ty.items.length, ok = n - t.left.length;
+        return `<div class="fx-card"><div class="fx-top"><div class="fx-ic">✗</div><div class="fx-t"><b>${esc(t.ty.name)}</b><span class="tiny muted">${sec ? esc(sec.n + ' ' + sec.name) + ' · ' : ''}${esc(groupTitle(g))} · ${L('ошибка', 'missed on')} ${fmtDate(t.t)}</span></div>
+          <button class="btn sm pri" data-a="startFixType" data-k="${t.ty.key}">${L('Пройти', 'Start')} <span class="badge">${t.left.length}</span></button></div>
+          <div class="fx-bar"><i style="width:${pct(ok, n)}%"></i></div><div class="fx-meta tiny"><span>${L('исправлено', 'fixed')} ${ok} / ${n}</span><span class="muted">${L('осталось', 'left')} ${t.left.length}</span></div>
+          <div class="fx-pills">${t.ty.items.map(x => `<button class="fx-pill ${t.left.includes(x.id) ? 'left' : 'ok'}" data-a="preview" data-id="${x.id}" title="${esc(bookTitle(TBY[x.id]))}">${TBY[x.id].n}<i>${'•'.repeat(x.d)}</i></button>`).join('')}</div></div>`;
+      };
+      openModal(`<div class="box fixbox"><div class="fx-head"><div><div class="eyebrow" style="color:#ff6b7d">${L('проверка дня', 'daily check')}</div><h2>${L('Ошибки проверки', 'Check mistakes')}</h2>
+          <p class="small muted">${L('В этих типах ты ответил на 3 или ниже. Их задачи красные на Пути. Реши каждую на 4–5 — тип закроется.', 'You rated these types 3 or lower. Their questions are red on the Path. Solve each at 4–5 and the type closes.')}</p></div>
+          <button class="btn sm ghost" data-a="closeModal">✕</button></div>
+        <div class="fx-list">${f.map(card).join('')}</div>
+        <div class="fx-foot"><span class="small muted">${f.length} ${L(plural(f.length, 'тип', 'типа', 'типов'), f.length === 1 ? 'type' : 'types')} · ${total} ${L(plural(total, 'задача', 'задачи', 'задач'), total === 1 ? 'question' : 'questions')}</span><button class="btn pri" data-a="startFix">${L('Пройти все', 'Do them all')} <span class="badge">${total}</span></button></div></div>`);
+    },
+    startFixType: el => {
+      const t = failedTypes()[el.dataset.k]; if (!t) return;
+      startSession(t.left.slice().sort((a, b) => t.ty.items.find(x => x.id === a).d - t.ty.items.find(x => x.id === b).d), `${L('Ошибка проверки', 'Check mistake')}: ${t.ty.name}`);
+    },
+    startFix: () => {
+      const ids = Object.values(failedTypes()).flatMap(t => t.left.map(id => [t.ty.items.find(x => x.id === id).d, id]).sort((a, b) => a[0] - b[0]).map(x => x[1]));
+      if (ids.length) startSession(ids, L('Ошибки проверки: все задачи типа', 'Check mistakes: every question of the type'));
     },
     ivRetire: () => { R.iv = R.iv === null ? undefined : null; render(); },
     studyFix: el => {
