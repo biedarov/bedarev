@@ -76,7 +76,10 @@
      On the published site (BM_CONFIG.cloud) the images, the worked solutions and the lore come from Supabase,
      which hands them out by plan; locally they are read from this folder. The plan checks below only shape the
      interface — what a plan may see is enforced by the database. */
-  const ACC = window.BM || null;
+  const ACC = window.BM || null; // the hosted site only: the local app has no account and everything open
+  const TEST = location.hostname === '127.0.0.1'; // the test copy (its own storage), never the owner's localhost
+  // the local app previews a rank from the address (display only): …/app/?rank=15, back to the real one with ?rank=off
+  if (!ACC) { const m = location.search.match(/[?&]rank=(\d+|off)/); if (m) try { if (m[1] === 'off') localStorage.removeItem('bm_demo_rank'); else localStorage.setItem('bm_demo_rank', m[1]); } catch (e) { /* storage blocked */ } }
   const CLOUD = !!(ACC && ACC.cloud);
   const PLAN_RANK = { none: 0, free: 1, pro: 2, max: 3 };
   const PLAN_LABEL = { none: 'Free', free: 'Free', pro: 'Pro', max: 'Max' };
@@ -91,22 +94,20 @@
   const CUTS = window.LC_CUTS || {};
   function cutFor(q, ctx) {
     const c = CUTS[q.id]; if (!c || !ctx) return null;
-    const ch = String(ctx).startsWith('ch:') ? TCH[String(ctx).slice(3)] : null;
-    const codes = ch ? ch.sections.map(x => x.code) : [ctx];
-    const keep = q.parts.filter(p => p.codes.some(x => codes.includes(x))).map(p => p.p);
+    const keep = ctxParts(q, ctx).map(p => p.p);
     if (!keep.length || keep.length === q.parts.length) return null;
     const e = c[keep.join('+')];
     const given = ((window.LC_CUT_NOTES || {})[q.id] || {})[keep.join('+')] || null;
-    return e ? Object.assign({ keep, chapter: !!ch, given }, e) : null;
+    return e ? Object.assign({ keep, chapter: String(ctx).startsWith('ch:'), given }, e) : null;
   }
   const partName = k => k.split('.').map(x => `(${x})`).join('');
   const cutBar = (cut, full, act, id) => `<div class="cutbar"><span class="cb-ic">✂</span><span class="cb-l">${full ? L('Показан весь вопрос', 'Showing the whole question') : `${L('Показаны только', 'Showing only')} <b>${cut.keep.map(partName).join(' ')}</b> — ${cut.chapter ? L('части этой главы', 'the parts on this chapter') : L('части этой темы', 'the parts on this topic')}`}</span><button class="btn sm ghost" data-a="${act}" data-id="${id}">${full ? L('Только нужные части', 'Only the needed parts') : L('Весь вопрос', 'Whole question')}</button></div>`;
   // what a kept part needs from a cut one, typeset on the paper above the question (rendered by tools/cutnotes.js)
   const givenSheet = cut => {
     if (!cut.given) return '';
-    const from = esc(cut.given.from), keep = cut.keep.map(partName).join(' ');
-    return `<div class="given-sheet" data-notr style="max-width:${S.settings.imgw}px"><div class="gs-h"><span class="gs-tag">${L('Дано', 'Given')}</span><span class="gs-t">${L('Ответ части', 'The answer to part')} ${from}</span></div>
-      <div class="gs-why">${L(`Часть ${from} — из другой темы, поэтому скрыта. Её результат нужен для ${keep}: просто используй его.`, `Part ${from} is on another topic, so it is hidden. ${keep} builds on its result: just use it.`)}</div>
+    const from = esc(cut.given.from), keep = cut.keep.map(partName).join(' '), many = from.includes(',');
+    return `<div class="given-sheet" data-notr style="max-width:${S.settings.imgw}px"><div class="gs-h"><span class="gs-tag">${L('Дано', 'Given')}</span><span class="gs-t">${many ? L('Ответы частей', 'The answers to parts') : L('Ответ части', 'The answer to part')} ${from}</span></div>
+      <div class="gs-why">${many ? L(`Части ${from} — из других тем, поэтому скрыты. Их результаты нужны для ${keep}: просто используй их.`, `Parts ${from} are on other topics, so they are hidden. ${keep} builds on their results: just use them.`) : L(`Часть ${from} — из другой темы, поэтому скрыта. Её результат нужен для ${keep}: просто используй его.`, `Part ${from} is on another topic, so it is hidden. ${keep} builds on its result: just use it.`)}</div>
       <div class="gs-b">${EN() ? cut.given.en : cut.given.ru}</div></div>`;
   };
   const canSee = path => !path || hasPlan(tierOf(path));
@@ -148,7 +149,7 @@
 
   /* ---------- persistent state ---------- */
   const KEY = 'lcm_state_v1';
-  const DEF_SETTINGS = { iv: { 1: 1, 2: 2, 3: 4, 4: 7, 5: 14 }, goal: 5, theme: 'auto', imgw: 880, newPerDay: 5, accent: 'blue', bg: 'grid', motion: 'full', rankSkin: 'auto', lang: (() => { try { return localStorage.getItem('bm_lang') || 'en'; } catch (e) { return 'en'; } })() };
+  const DEF_SETTINGS = { iv: { 1: 1, 2: 2, 3: 4, 4: 7, 5: 14 }, goal: 5, reviewMin: 30, theme: 'auto', imgw: 880, newPerDay: 5, accent: 'blue', bg: 'grid', motion: 'full', rankSkin: 'auto', lang: (() => { try { return localStorage.getItem('bm_lang') || 'en'; } catch (e) { return 'en'; } })() };
   function fresh() { return { version: 1, attempts: [], stars: {}, notes: {}, tags: {}, settings: JSON.parse(JSON.stringify(DEF_SETTINGS)), session: null, lastExport: null, created: Date.now(), challenges: {}, sessions: {}, flags: {}, ach: {}, study: {}, r16: 1 }; }
   // Ranks went from 32 steps to 16 (October 2026): old rank events move onto the new ladder by their XP.
   function rank16(events) {
@@ -181,7 +182,7 @@
     if (S.events.length !== n) localStorage.setItem(KEY, JSON.stringify(S));
   })();
   function saveLocal() { MEMO = {}; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { toast('Не удалось сохранить прогресс в браузере'); } }
-  function save() { saveLocal(); syncSoon(); }
+  function save() { saveLocal(); syncSoon(); diskSoon(); }
 
   /* ---------- derived cards ---------- */
   let C = {}, LIVE = [], CTXA = {};
@@ -196,7 +197,17 @@
       c.n++; c.time += a.time || 0; c.last = a; c.lastConf = a.conf; c.iv = a.iv;
       c.retired = a.iv == null; c.due = a.iv == null ? null : dayOf(a.t) + a.iv;
       c.hist.push(a);
-      if (QBY[a.q]) { const x = attCtx(a); if (x) (CTXA[a.q] || (CTXA[a.q] = {}))[x] = a; }
+      if (QBY[a.q]) { const x = attCtx(a); if (x) (CTXA[a.q] || (CTXA[a.q] = {}))[x] = a; else c.whole = a; }
+    });
+    // an exam question solved part by part keeps a schedule per context (a whole-question attempt resets them all):
+    // it is due as soon as any of them is, and a review brings back the parts of that context
+    Object.keys(CTXA).forEach(id => {
+      const c = C[id], t0 = c.whole ? c.whole.t : 0;
+      const live = Object.entries(CTXA[id]).filter(([, a]) => a.t >= t0).concat(c.whole ? [[null, c.whole]] : []);
+      if (live.length < 2) return;
+      const open = live.filter(([, a]) => a.iv != null).sort((p, q) => (dayOf(p[1].t) + p[1].iv) - (dayOf(q[1].t) + q[1].iv));
+      if (!open.length) { c.retired = true; c.due = null; return; }
+      c.retired = false; c.due = dayOf(open[0][1].t) + open[0][1].iv; c.dueCtx = open[0][0];
     });
   }
   rebuild();
@@ -221,13 +232,6 @@
   const ST_NAME = { new: 'Новый', due: 'Пора повторить', sched: 'Запланирован', retired: 'Не показывать' };
   const codesOf = q => S.tags[q.id] || q.codes;
   const partsOf = q => S.tags[q.id] ? [] : q.parts;
-  // confidence of the latest attempt for a given subsection
-  function confFor(q, code) {
-    const c = C[q.id]; if (!c) return null;
-    const a = c.last; const ps = partsOf(q).filter(p => p.codes.includes(code));
-    if (a.parts && ps.length) { const v = ps.map(p => a.parts[p.p]).filter(x => x); if (v.length) return avg(v); }
-    return a.conf;
-  }
   const chOfCode = code => String(code).split('.')[0];
   // the rating an attempt gives to one subsection (its parts for that subsection if they were rated)
   function partConf(q, a, code) {
@@ -254,6 +258,41 @@
   // a question is passed fully once it is at 4–5 in every topic it belongs to
   const qTopics = q => codesOf(q).filter(c => TOPIC[c]);
   const qFull = q => { const cs = qTopics(q); return cs.length > 0 && cs.every(c => ctxConf(q, c) >= 4); };
+  /* ---------- exam sub-questions ----------
+     A question is solved part by part: a topic shows only its own parts, a boss fight only its chapter's. An
+     attempt covers the parts of its context (every part outside one); a question is complete only once all its
+     parts are covered, and statistics count the parts (sub-questions). */
+  const qUnits = q => { const ps = partsOf(q); return ps.length ? ps.map(p => p.p) : ['']; };
+  function ctxParts(q, ctx) {
+    const ps = partsOf(q); if (!ctx || !ps.length) return ps;
+    const ch = String(ctx).startsWith('ch:') ? TCH[String(ctx).slice(3)] : null;
+    const codes = ch ? ch.sections.map(x => x.code) : [ctx];
+    const keep = ps.filter(p => p.codes.some(x => codes.includes(x)));
+    return keep.length ? keep : ps;
+  }
+  function attUnits(q, a) {
+    if (!partsOf(q).length) return [''];
+    return a.pp || ctxParts(q, attCtxOwn(a)).map(p => p.p);
+  }
+  // question -> part -> the latest attempt that covered it
+  const unitMap = () => memo('pd', () => { const m = {}; LIVE.forEach(a => { const q = QBY[a.q]; if (q) attUnits(q, a).forEach(u => { (m[a.q] || (m[a.q] = {}))[u] = a; }); }); return m; });
+  const unitAtt = (q, u) => (unitMap()[q.id] || {})[u] || null;
+  const unitConf = (q, u) => { const a = unitAtt(q, u); return a ? (a.parts && a.parts[u]) || a.conf : 0; };
+  const qDoneN = q => qUnits(q).filter(u => unitAtt(q, u)).length;
+  const qComplete = q => qDoneN(q) === qUnits(q).length;
+  const qPartial = q => { const n = qDoneN(q); return n > 0 && n < qUnits(q).length; };
+  // a complete question's rating (the average of its parts) and its weakest part
+  const qConf = q => (qComplete(q) ? Math.round(avg(qUnits(q).map(u => unitConf(q, u)))) : 0);
+  const qMin = q => (qComplete(q) ? Math.min(...qUnits(q).map(u => unitConf(q, u))) : 0);
+  // a part counts for a topic only when solved in that topic (or in its chapter's boss fight)
+  function unitCredit(q, u, code) { const a = ctxAtt(q, code); return a && attUnits(q, a).includes(u) ? a : null; }
+  // a question's rating in a chapter: its weakest part of that chapter, each solved in its topic or the boss fight
+  function chConf(q, key) {
+    const cs = codesOf(q).filter(c => chOfCode(c) === key); if (!cs.length) return 0;
+    return Math.min(...cs.map(c => ctxConf(q, c)));
+  }
+  // sub-questions of a set of questions: [done, total]
+  const unitsOf = qs => qs.reduce((x, q) => [x[0] + qDoneN(q), x[1] + qUnits(q).length], [0, 0]);
   function suggest(id, conf) {
     const base = +S.settings.iv[conf];
     const c = C[id];
@@ -282,7 +321,7 @@
     if (f.papers.length && !f.papers.includes(q.paper)) return false;
     if (f.sections.length && !f.sections.includes(q.section)) return false;
     if (f.status.length && !f.status.includes(status(q.id))) return false;
-    if (f.conf.length) { const c = C[q.id]; if (!c || !f.conf.includes(c.lastConf)) return false; }
+    if (f.conf.length) { const v = qConf(q); if (!v || !f.conf.includes(v)) return false; }
     if (f.star && !S.stars[q.id]) return false;
     if (f.text) {
       const t = f.text.toLowerCase().replace(/\s+/g, '');
@@ -309,12 +348,20 @@
   }
   window.addEventListener('hashchange', () => { if (skipHash) { skipHash = false; return; } route(); });
   const VIEWS = {};
+  // the one review entry point: today's queue, or a tick once it is done
+  function dailyBtn(cls) {
+    const p = dailyPlan();
+    return p.items.length ? `<button class="${cls}" data-a="startDaily" title="${esc(L(`≈${p.mins} мин из ${p.budget}; самое важное первым`, `≈${p.mins} of ${p.budget} min; most important first`))}">↻ ${L('Повторение на сегодня', 'Review for today')} <span class="badge">${p.items.length}</span></button>`
+      : `<button class="${cls}" disabled>✓ ${L('Повторение на сегодня сделано', 'Today’s review is done')}</button>`;
+  }
   function render() {
+    if (view === 'practice' && R) saveDraft();
     document.querySelectorAll('#nav .tab').forEach(b => b.classList.toggle('on', b.dataset.v === view));
     const gear = $('#gearBtn'); if (gear) gear.classList.toggle('on', view === 'settings');
-    const edue = dueList().length, bdue = TI.length ? bookDue().length : 0;
-    $('#nav [data-v="book"]').innerHTML = 'Путь' + (bdue ? `<span class="badge">${bdue}</span>` : '');
-    $('#nav [data-v="bank"]').innerHTML = 'Хранилище' + (edue ? `<span class="badge">${edue}</span>` : '');
+    // the Path carries today's review count; the Vault no longer counts every due question
+    const dn = dailyPlan().items.length;
+    $('#nav [data-v="book"]').innerHTML = 'Путь' + (dn ? `<span class="badge">${dn}</span>` : '');
+    $('#nav [data-v="bank"]').innerHTML = 'Хранилище';
     $('#tab-practice').classList.toggle('hidden', !S.session);
     ['stats', 'history', 'doom'].forEach(v => { const b = $(`#nav [data-v="${v}"]`); if (b) b.classList.toggle('pro', !hasPlan('pro')); });
     headerRight();
@@ -402,11 +449,11 @@
     const nt = nextTopic();
     const cur = nt ? nt.t.ch : CHS.find(ch => chState(ch).state === 'none') || CHS[0];
     const cs = cur ? chState(cur) : null;
-    const exDone = Q.filter(q => C[q.id]).length, bk = prog(BOOK_ORDER);
+    const [exU, exUT] = unitsOf(Q), exNew = Q.filter(q => !C[q.id]).length, bk = prog(BOOK_ORDER);
     const hr = new Date().getHours();
     const hello = hr < 5 ? 'Доброй ночи' : hr < 12 ? 'Доброе утро' : hr < 18 ? 'Добрый день' : 'Добрый вечер';
     let h = '';
-    if (exportOld) h += `<div class="notice row"><span class="grow">Прогресс хранится только в этом браузере. Сделайте резервную копию, чтобы его не потерять.</span><button class="btn sm pri" data-a="export">Скачать копию</button></div>`;
+    if (exportOld && !DISK.on) h += `<div class="notice row"><span class="grow">Прогресс хранится только в этом браузере. Сделайте резервную копию, чтобы его не потерять.</span><button class="btn sm pri" data-a="export">Скачать копию</button></div>`;
     if (finalState() === 'awake') h += `<a class="notice row fnotice" href="#book/final"><span class="grow"><b data-notr>${L('Экзаменатор', 'The Examiner')}</b> ${L('сегодня ещё не запечатан.', 'has not been sealed today.')}</span><button class="btn sm boss-btn" data-a="finalFight">⛓ ${L('Запечатать', 'Seal him')}</button></a>`;
     if (S.session) {
       const s = S.session;
@@ -420,7 +467,7 @@
         <h1 class="hero-h">${hello}.<span class="muted">${todayN ? (todayN >= goal ? `Цель дня выполнена: решено ${todayN}.` : `Сегодня решено ${todayN} из ${goal}.`) : cur ? `Глава ${cur.n} · ${esc(cur.name)} ждёт.` : 'Все главы пройдены.'}</span></h1>
         ${topicBar(ALL_TOPICS, { big: true, title: 'Изучено тем' })}
         <div class="hero-books">${TT.books.map(b => { const codes = b.chapters.flatMap(chTopics), s = topicSum(codes); return `<div><div class="tiny muted">${esc(b.title)} · ${esc(b.name)}</div><div class="row" style="gap:8px;flex-wrap:nowrap"><b class="mono small">${s.done}/${s.total}${s.full ? ` <span class="tfull-n">★${s.full}</span>` : ''}</b><div style="flex:1">${topicBar(codes, { label: false })}</div></div></div>`; }).join('')}</div>
-        <div class="row" style="margin-top:20px">${ntBtn(nt, 'btn pri lg')}<button class="btn lg" data-a="startDueAll" ${due.length ? '' : 'disabled'}>↻ Повторение <span class="badge">${due.length}</span></button></div>
+        <div class="row" style="margin-top:20px">${ntBtn(nt, 'btn pri lg')}${dailyBtn('btn lg')}</div>
       </div>
       <div class="hero-r">${hasPlan('pro') ? rankCard() : proPitch()}</div>
       ${heroDeco()}
@@ -441,22 +488,22 @@
     }
     h += `<div class="kpis" style="margin-top:14px">
       <div class="kpi">${ring(todayN / goal)}<b><span data-count="${todayN}">${todayN}</span> / ${goal}</b><span>сегодня решено / цель</span></div>
-      <div class="kpi"><b data-count="${due.length}">${due.length}</b><span>пора повторить · учебник ${bdue} · экзамены ${edue}</span></div>
+      ${(() => { const p = dailyPlan(); return `<div class="kpi"><b>${p.items.length ? `${p.items.length} <small class="muted">≈${p.mins} ${L('мин', 'min')}</small>` : '✓'}</b><span>${p.items.length ? L('повторение на сегодня', 'review for today') : L('повторение на сегодня сделано', 'today’s review is done')}${p.waiting ? L(` · ещё ${p.waiting} подождут`, ` · ${p.waiting} more can wait`) : ''}</span></div>`; })()}
       ${hasPlan('pro') ? `<div class="kpi"><b>${st.streak} <small class="muted">${plural(st.streak, 'день', 'дня', 'дней')}</small></b><span>серия занятий · рекорд ${st.bestStreak}</span></div>` : kpiLock(L('Серия занятий', 'Study streak'))}
       <div class="kpi"><b><span data-count="${bk.done}">${bk.done}</span><small class="muted"> / ${bk.total}</small></b><span>задач учебников решено</span></div>
-      <div class="kpi"><b><span data-count="${exDone}">${exDone}</span><small class="muted"> / ${Q.length}</small></b><span>вопросов exam papers решено</span></div>
+      <div class="kpi"><b><span data-count="${exU}">${exU}</span><small class="muted"> / ${exUT}</small></b><span>${L('подвопросов exam papers пройдено', 'exam sub-questions done')}</span></div>
       ${hasPlan('pro') ? `<div class="kpi"><b><span data-count="${st.readiness}">${st.readiness}</span>%</b><span>готовность к экзамену*</span></div>` : kpiLock(L('Готовность к экзамену', 'Exam readiness'))}
     </div>`;
     h += `<div class="section-title"><h2>Другие режимы</h2></div><div class="big-actions">
       <button class="big" data-a="startWeak"><span class="n">${st.weakQ}</span><b>Слабые места</b><span class="muted small">задачи с последней оценкой 1–2 и вопросы самых «приоритетных» тем</span></button>
-      <button class="big" data-a="startNew"><span class="n">${Q.length - exDone}</span><b>Новые с экзаменов</b><span class="muted small">${S.settings.newPerDay} случайных ещё не решённых вопросов exam papers</span></button>
+      <button class="big" data-a="startNew"><span class="n">${exNew}</span><b>Новые с экзаменов</b><span class="muted small">${S.settings.newPerDay} случайных ещё не решённых вопросов exam papers</span></button>
       <button class="big" data-a="examPick"><span class="n">2:30</span><b>Пробный экзамен</b><span class="muted small">целая работа (Paper 1 или 2) за выбранный год, с таймером</span></button>
     </div>`;
     h += `<div class="grid g2" style="margin-top:16px">
       <div class="card"><div class="row"><h2 class="grow">Что подтянуть</h2><button class="btn sm ghost" data-a="statsGo" data-v="topics">Все темы →</button></div>
         <p class="muted small" style="margin-top:0">Темы, которые чаще всего встречаются на экзамене и которые вы пока знаете хуже всего — учебник и экзаменационные вопросы вместе.</p>
         ${hasPlan('pro') ? prioList(st.prio.slice(0, 6)) : lockBox('pro', L('Подбор слабых тем', 'Picking the weak topics'))}</div>
-      <div class="card"><h2>Повторения на 2 недели</h2>${forecastChart(Object.values(C), 14)}
+      <div class="card"><h2>Повторения на 2 недели</h2>${forecastChart(reviewForecast(), 14)}
         <h3 style="margin-top:14px">Последние решения</h3>${recentList(7)}</div>
     </div>
     <p class="muted tiny ${hasPlan('pro') ? '' : 'hidden'}" style="margin-top:12px">* Готовность — насколько изучены темы (учебник и экзаменационные вопросы поровну), с весом по частоте темы в работах 2015–2026.</p>`;
@@ -560,7 +607,8 @@
   function examVault() {
     const list = filtered();
     const count = code => topicExam(code).length;
-    const doneCount = code => topicExam(code).filter(q => C[q.id]).length;
+    // solved in the topic itself (its parts), not somewhere else
+    const doneCount = code => topicExam(code).filter(q => ctxAtt(q, code)).length;
     const chk = (arr, v) => (arr.includes(v) ? 'checked' : '');
     let tree = '';
     D.books.forEach(b => {
@@ -584,7 +632,7 @@
       return `<div class="qrow" data-a="preview" data-id="${q.id}">
         <div><div class="row" style="gap:.3rem">${starBtn(q.id)}<span class="id">${q.year} P${q.paper} Q${q.q}</span></div><div class="meta">Section ${q.section} · ${q.marks} баллов</div></div>
         <div class="chips">${tagChips(q, 4, true)}</div>
-        <div class="right"><div class="row" style="gap:.35rem">${confDot(c && c.lastConf)}${stBadge(q.id)}</div><div>${c ? c.n + ' ' + plural(c.n, 'попытка', 'попытки', 'попыток') : ''}</div></div>
+        <div class="right"><div class="row" style="gap:.35rem">${qPartial(q) ? `<span class="else-key" title="${L('решена часть', 'partly solved')}"></span>` : confDot(qConf(q) || null)}${stBadge(q.id)}</div><div>${qPartial(q) ? `${L('подвопросов', 'sub-questions')} ${qDoneN(q)}/${qUnits(q).length} · ` : ''}${c ? c.n + ' ' + plural(c.n, 'попытка', 'попытки', 'попыток') : ''}</div></div>
       </div>`;
     }).join('');
     if (list.length > 400) rows += `<div class="muted small">Показаны первые 400 из ${list.length}. Уточните фильтр.</div>`;
@@ -644,17 +692,29 @@
       toast(L(`${shut.length} ${plural(shut.length, 'задача доступна', 'задачи доступны', 'задач доступны')} в тарифе Pro — они пропущены`, `${shut.length} ${shut.length === 1 ? 'question needs' : 'questions need'} Pro — skipped`));
     }
     if (!ids.length) { toast('Нет вопросов для сессии'); return; }
-    S.session = { id: uid(), qids: ids, i: 0, started: Date.now(), title, exam: !!opts.exam, limit: opts.limit || null, challenge: opts.challenge || null, study: opts.study || null, boss: opts.boss || null, bossHp0: opts.boss ? chState(TCH[opts.boss]).hp : null, final: !!opts.final, ctx: opts.ctx || (opts.boss ? 'ch:' + opts.boss : opts.study && TG[opts.study] ? TG[opts.study].sec || null : null), done: [] };
-    S.sessions[S.session.id] = { id: S.session.id, title, started: S.session.started, exam: !!opts.exam, challenge: opts.challenge || null, study: opts.study || null, boss: opts.boss || null, final: !!opts.final, ctx: S.session.ctx, n: ids.length };
+    S.session = { id: uid(), qids: ids, i: 0, started: Date.now(), title, exam: !!opts.exam, limit: opts.limit || null, challenge: opts.challenge || null, study: opts.study || null, boss: opts.boss || null, bossHp0: opts.boss ? chState(TCH[opts.boss]).hp : null, final: !!opts.final, review: !!opts.review, daily: !!opts.daily, ctxs: opts.ctxs || null, ctx: opts.ctx || (opts.boss ? 'ch:' + opts.boss : opts.study && TG[opts.study] ? TG[opts.study].sec || null : null), done: [] };
+    S.sessions[S.session.id] = { id: S.session.id, title, started: S.session.started, exam: !!opts.exam, challenge: opts.challenge || null, study: opts.study || null, boss: opts.boss || null, final: !!opts.final, daily: !!opts.daily, ctx: S.session.ctx, n: ids.length };
     save(); closeModal(); R = null; go('practice');
   }
 
   /* ================= PRACTICE ================= */
   let R = null; // rating UI state for the current question
   function curQ() { const s = S.session; return s && s.i < s.qids.length ? itemOf(s.qids[s.i]) : null; }
+  // the question in progress (rating, marks, interval, timer) survives a reload or a closed tab
+  const DRAFT_KEY = 'lcm_draft';
+  function saveDraft() { try { if (R && S.session) localStorage.setItem(DRAFT_KEY, JSON.stringify({ sess: S.session.id, i: S.session.i, R: Object.assign({}, R, { elapsed: elapsed(), since: null }) })); } catch (e) { /* storage full: the attempt itself is still saved */ } }
   function initR(it) {
     if (R && R.q === it.id) return;
+    try { const d = JSON.parse(localStorage.getItem(DRAFT_KEY)); if (d && d.R && S.session && d.sess === S.session.id && d.i === S.session.i && d.R.q === it.id) { R = Object.assign(d.R, { since: d.R.paused ? null : Date.now() }); return; } } catch (e) { /* no draft */ }
     R = { q: it.id, conf: null, parts: {}, score: '', iv: undefined, showMs: false, showCs: false, elapsed: 0, since: Date.now(), paused: false, partsOpen: false };
+  }
+  // the context an exam question is solved in: the session's; in a review, the one it was last solved in
+  // (so a review brings back the parts you studied, not the whole question)
+  // (the daily review sets the parts of each exam question in ctxs, by position)
+  function itemCtx(s, q) {
+    if (s.ctx) return s.ctx;
+    if (s.ctxs && s.i in s.ctxs) return s.ctxs[s.i] || null;
+    return s.review && C[q.id] ? ('dueCtx' in C[q.id] ? C[q.id].dueCtx : attCtxOwn(C[q.id].last)) || null : null;
   }
   const elapsed = () => R ? R.elapsed + (R.since ? Date.now() - R.since : 0) : 0;
   const sessLimit = s => s.limit || (s.exam ? 150 : null);
@@ -680,7 +740,9 @@
     initR(it);
     const c = C[it.id];
     const exam = it.kind === 'exam', q = it.q;
-    const parts = exam ? partsOf(q) : [];
+    const ictx = exam ? itemCtx(s, q) : null;
+    const parts = exam ? ctxParts(q, ictx) : [];
+    const cut = exam ? cutFor(q, ictx) : null, full = !!R.fullQ;
     const sug = R.conf ? suggest(it.id, R.conf) : null;
     const ivSel = R.iv !== undefined ? R.iv : sug;
     const lim = sessLimit(s);
@@ -708,10 +770,9 @@
       <div>
         ${s.boss ? bossPanel(s) : s.final ? finalPanel(s) : exam ? (s.study ? examFinalPanel(it) : '') : studyPanel(it)}
         <div class="card" style="margin-bottom:12px">${exam ? examHead(q) : bookHead(it)}</div>
-        ${(() => { const cut = exam ? cutFor(q, s.ctx) : null, full = !!R.fullQ;
-          return (cut ? cutBar(cut, full, 'cutToggle', it.id) : '') + `<div class="paper" id="paper">${cut && !full ? givenSheet(cut) + imgTag(cut.img, cut.size, it.title) : imgTag(it.img, it.size, it.title, it.kind === 'book' ? BOOK_SCALE : 0)}</div>`; })()}
+        ${(cut ? cutBar(cut, full, 'cutToggle', it.id) : '') + `<div class="paper" id="paper">${cut && !full ? givenSheet(cut) + imgTag(cut.img, cut.size, it.title) : imgTag(it.img, it.size, it.title, it.kind === 'book' ? BOOK_SCALE : 0)}</div>`}
         <div class="row" style="margin:12px 0">${solBtn}<span class="grow"></span>${links}</div>
-        ${R.showMs && it.sol ? `<div class="paper" id="ms">${it.approx ? `<div class="approx">Точное место ответа на №${it.t.n} не распознано — показан блок ответов с соседними номерами, найдите в нём №${it.t.n}.</div>` : ''}${imgTag(it.sol, it.solSize, it.solName, it.kind === 'book' ? BOOK_SCALE : 0)}</div>` : ''}
+        ${R.showMs && it.sol ? `<div class="paper" id="ms">${it.approx ? `<div class="approx">Точное место ответа на №${it.t.n} не распознано — показан блок ответов с соседними номерами, найдите в нём №${it.t.n}.</div>` : ''}${cut && cut.ms && !full ? imgTag(cut.ms, cut.msSize, it.solName) : imgTag(it.sol, it.solSize, it.solName, it.kind === 'book' ? BOOK_SCALE : 0)}</div>` : ''}
         ${R.showCs && it.csol ? csolBox(it.id) : ''}
       </div>
       <aside class="card rate">
@@ -720,11 +781,8 @@
         <div class="tiny muted" style="margin-top:6px">${R.conf ? esc(CONF[R.conf].d) : 'Клавиши <span class="kbd">1</span>–<span class="kbd">5</span>'}</div>
         ${parts.length > 1 ? `<div class="field"><label><button class="btn sm ghost" data-a="partsToggle">${R.partsOpen ? '▾' : '▸'} Оценить по пунктам</button> <span class="tiny muted" style="text-transform:none;letter-spacing:0;font-weight:400">(точнее статистика по подтемам)</span></label>
           ${R.partsOpen ? parts.map(p => `<div class="partrow"><span class="small" title="${esc(p.codes.map(secLabel).join('\n'))}"><b>${esc(partLabel(p.p))}</b></span><div class="minis">${[1, 2, 3, 4, 5].map(v => `<button class="mini ${R.parts[p.p] === v ? 'on' : ''}" data-a="pconf" data-p="${p.p}" data-v="${v}">${v}</button>`).join('')}<span class="tiny muted" style="margin-left:4px;align-self:center">${p.codes.map(secShort).join(', ')}</span></div></div>`).join('') : ''}</div>` : ''}
-        ${exam ? `<div class="field"><label>Баллы (необязательно)</label><div class="row"><input class="num" type="number" min="0" max="${q.marks}" step="1" id="score" value="${esc(R.score)}" placeholder="—"> <span class="muted">из ${q.marks}</span></div></div>` : ''}
-        <div class="field"><label>Показать снова через</label>
-          <div class="ivs">${ivBtns}</div>
-          <div class="row small" style="margin-top:6px">своё: <input class="num" type="number" min="0" max="999" id="ivCustom" value="${custom ? ivSel : ''}" placeholder="дней"> ${sug != null ? `<span class="muted">· рекомендуем: ${ivName(sug)}</span>` : ''}</div>
-        </div>
+        ${exam && !cut ? `<div class="field"><label>Баллы (необязательно)</label><div class="row"><input class="num" type="number" min="0" max="${q.marks}" step="1" id="score" value="${esc(R.score)}" placeholder="—"> <span class="muted">из ${q.marks}</span></div></div>` : ''}
+        <div class="field"><label>${L('Повторение', 'Review')}</label><div class="row small"><span class="grow muted">${R.iv === null ? L('больше не показывать', 'never show again') : L('автоматически: задача вернётся, когда начнёт забываться', 'automatic: it comes back when it starts to fade')}</span><button class="btn sm ghost" data-a="ivRetire">${R.iv === null ? L('Вернуть', 'Bring back') : L('Не показывать', 'Never show')}</button></div></div>
         <div class="field"><label>Заметка к вопросу</label><textarea id="note" placeholder="Где ошибся, что запомнить…">${esc(S.notes[it.id] || '')}</textarea></div>
         <button class="btn pri" style="width:100%;justify-content:center;margin-top:14px" data-a="saveNext" ${R.conf ? '' : 'disabled'}>Сохранить и дальше <span class="kbd" style="color:var(--text)">Enter</span></button>
         ${c ? `<div class="field"><label>История (${c.n})</label><div class="hist">${c.hist.slice().reverse().slice(0, 6).map(a => `<div class="row">${confDot(a.conf)} <span>${esc(CONF[a.conf].n)}</span><span class="muted grow">${a.score != null && exam ? a.score + '/' + q.marks : ''}</span><span class="muted">${fmtDate(a.t)}</span></div>`).join('')}</div></div>` : ''}
@@ -806,14 +864,18 @@
     const ic = $('#ivCustom'); if (ic) ic.addEventListener('input', () => { const v = parseInt(ic.value, 10); if (!isNaN(v) && v >= 0) { R.iv = v; document.querySelectorAll('.iv').forEach(b => b.classList.remove('on')); } });
     const nt = $('#note'); if (nt) nt.addEventListener('input', () => { const it = curQ(); if (!it) return; if (nt.value.trim()) S.notes[it.id] = nt.value; else delete S.notes[it.id]; save(); });
   };
+  let draftTick = 0;
   setInterval(() => {
     if (view !== 'practice' || !R) return;
+    if (++draftTick % 5 === 0) saveDraft();
     const t = $('#qtimer'); if (t) t.textContent = fmtClock(elapsed());
     const e = $('#examtimer'); if (e && S.session) e.textContent = fmtClock(sessLimit(S.session) * 6e4 - (Date.now() - S.session.started));
   }, 1000);
   // the timer keeps running while the tab is hidden (only the Pause button stops it);
   // background tabs throttle setInterval, so refresh the clocks as soon as the tab is back
+  window.addEventListener('pagehide', saveDraft);
   document.addEventListener('visibilitychange', () => {
+    if (document.hidden) saveDraft();
     if (document.hidden || view !== 'practice' || !R) return;
     const t = $('#qtimer'); if (t) t.textContent = fmtClock(elapsed());
     const e = $('#examtimer'); if (e && S.session) e.textContent = fmtClock(sessLimit(S.session) * 6e4 - (Date.now() - S.session.started));
@@ -825,7 +887,10 @@
     const parts = Object.keys(R.parts).length ? Object.assign({}, R.parts) : null;
     let sc = null;
     if (it.kind === 'exam' && R.score !== '') { sc = Math.max(0, Math.min(it.q.marks, Number(R.score))); if (isNaN(sc)) sc = null; }
-    S.attempts.push({ id: uid(), q: it.id, ctx: it.kind === 'exam' ? S.session.ctx || null : undefined, t: Date.now(), conf: R.conf, parts, score: sc, time: Math.round(elapsed() / 1000), iv, sug, sess: S.session.id });
+    // pp: the parts this attempt covered (the ones shown in its context)
+    const ictx = it.kind === 'exam' ? itemCtx(S.session, it.q) : undefined;
+    const pp = it.kind === 'exam' && partsOf(it.q).length ? ctxParts(it.q, ictx).map(p => p.p) : undefined;
+    S.attempts.push({ id: uid(), q: it.id, ctx: ictx, pp, t: Date.now(), conf: R.conf, parts, score: sc, time: Math.round(elapsed() / 1000), iv, sug, sess: S.session.id });
     if (S.sessions[S.session.id]) S.sessions[S.session.id].ended = Date.now();
     if (iv === 0 && !S.session.challenge && !S.session.study && S.session.qids.indexOf(it.id, S.session.i + 1) === -1) S.session.qids.push(it.id);
     S.session.i++;
@@ -847,26 +912,43 @@
       const items = [];
       if (src !== 'book') Q.forEach(q => { const codes = codesOf(q); items.push({ id: q.id, q, codes, chs: [...new Set(codes.map(chapOf))] }); });
       if (src !== 'exam') TI.forEach(t => { const g = TG[t.g]; items.push({ id: t.id, t, codes: g.sec ? [g.sec] : [], chs: [chKeyOf(g)] }); });
-      const latest = items.filter(it => C[it.id]).map(it => C[it.id].lastConf);
-      const blank = code => ({ code, total: 0, done: 0, confs: [], weak: 0, attempts: 0, time: 0, last: 0, scores: [], freq: FREQ[code] || 0, exT: 0, exD: 0, bkT: 0, bkD: 0 });
-      const add = (r, it, v) => { const c = C[it.id]; r.total++; if (it.q) r.exT++; else r.bkT++; if (!c) return; r.done++; if (it.q) r.exD++; else r.bkD++; r.confs.push(v); if (v <= 2) r.weak++; r.attempts += c.n; r.time += c.time; r.last = Math.max(r.last, c.last.t); if (it.q) c.hist.forEach(a => { if (a.score != null) r.scores.push(a.score / it.q.marks); }); };
+      // exam papers are counted by sub-question (part): solved once any attempt covered it
+      const units = [];
+      if (src !== 'book') Q.forEach(q => { const ps = partsOf(q); (ps.length ? ps : [{ p: '', codes: codesOf(q) }]).forEach(p => units.push({ q, u: p.p, codes: p.codes })); });
+      const uConf = units.filter(x => unitAtt(x.q, x.u)).map(x => unitConf(x.q, x.u));
+      const latest = items.filter(it => !it.q && C[it.id]).map(it => C[it.id].lastConf).concat(uConf);
+      const blank = code => ({ code, total: 0, done: 0, confs: [], weak: 0, attempts: 0, time: 0, last: 0, scores: [], freq: FREQ[code] || 0, exT: 0, exD: 0, bkT: 0, bkD: 0, exC: [] });
+      const add = (r, it, v) => { const c = C[it.id]; r.total++; r.bkT++; if (!c) return; r.done++; r.bkD++; r.confs.push(v); if (v <= 2) r.weak++; r.attempts += c.n; r.time += c.time; r.last = Math.max(r.last, c.last.t); };
+      // a part counts for a topic (and its chapter) only when solved in that topic or in the chapter's boss fight
+      const addU = (r, x, a) => { r.total++; r.exT++; if (!a) return; const v = (a.parts && a.parts[x.u]) || a.conf; r.done++; r.exD++; r.confs.push(v); r.exC.push(v); if (v <= 2) r.weak++; r.last = Math.max(r.last, a.t); };
       const fin = r => { r.avg = avg(r.confs); r.m = r.total ? r.confs.reduce((x, v) => x + (v - 1) / 4, 0) / r.total : 0; r.score = avg(r.scores); };
       const sec = {}; Object.keys(SEC).forEach(code => { sec[code] = blank(code); });
       const chap = {}; CHAPS.forEach(ch => { chap[ch.id] = Object.assign(blank(ch.id), { id: ch.id, freq: 0 }); });
       items.forEach(it => {
+        if (it.q) {
+          // attempts, time and marks of a question go to each topic it was solved in
+          it.codes.forEach(code => { const a = sec[code] && ctxAtt(it.q, code); if (!a) return; const r = sec[code]; const hs = C[it.q.id].hist.filter(h => attCtx(h) === code || attCtx(h) === 'ch:' + chOfCode(code));
+            r.attempts += hs.length; r.time += hs.reduce((x, h) => x + (h.time || 0), 0); hs.forEach(h => { if (h.score != null && !h.pp) r.scores.push(h.score / it.q.marks); }); });
+          return;
+        }
         const c = C[it.id];
-        it.codes.forEach(code => { if (sec[code]) add(sec[code], it, c ? (it.q ? confFor(it.q, code) : c.lastConf) : null); });
-        it.chs.forEach(k => { if (chap[k]) add(chap[k], it, c ? (it.q ? avg(it.codes.filter(x => chapOf(x) === k).map(x => confFor(it.q, x))) : c.lastConf) : null); });
+        it.codes.forEach(code => { if (sec[code]) add(sec[code], it, c ? c.lastConf : null); });
+        it.chs.forEach(k => { if (chap[k]) add(chap[k], it, c ? c.lastConf : null); });
+      });
+      units.forEach(x => {
+        x.codes.forEach(code => { if (sec[code]) addU(sec[code], x, unitCredit(x.q, x.u, code)); });
+        [...new Set(x.codes.map(chapOf))].forEach(k => { if (!chap[k]) return; const a = x.codes.filter(c => chapOf(c) === k).map(c => unitCredit(x.q, x.u, c)).filter(Boolean).sort((p, q) => q.t - p.t)[0]; addU(chap[k], x, a || null); });
       });
       Object.values(sec).forEach(r => { fin(r); const ts = topicState(r.code); r.ts = ts; r.tm = ts ? ts.m : r.m; r.prio = (r.freq / (FREQ_TOTAL || 1)) * (1 - r.tm); });
       CHAPS.forEach(ch => { const r = chap[ch.id]; fin(r); r.freq = ch.sections.reduce((x, s) => x + sec[s.code].freq, 0); const ts = topicSum(ch.sections.map(s => s.code).filter(c => TOPIC[c])); r.tdone = ts.done; r.tfull = ts.full; r.tprog = ts.prog; r.ttotal = ts.total; r.tm = ts.m; r.prio = (r.freq / (FREQ_TOTAL || 1)) * (1 - r.tm); });
       // readiness: topics weighted by how often they appear in the papers; textbook and exam practice count equally
-      const exM = code => { const qs = topicExam(code); return qs.length ? qs.reduce((x, q) => x + (C[q.id] ? (confFor(q, code) - 1) / 4 : 0), 0) / qs.length : 0; };
+      const exM = code => { const r = sec[code]; return r.exT ? r.exC.reduce((x, v) => x + (v - 1) / 4, 0) / r.exT : 0; };
       const readiness = Math.round(100 * Object.values(sec).reduce((x, r) => x + (r.freq / (FREQ_TOTAL || 1)) * (r.ts ? 0.5 * exM(r.code) + 0.5 * r.ts.book : exM(r.code)), 0));
       const prio = Object.values(sec).filter(r => r.freq > 0).sort((a, b) => b.prio - a.prio);
-      const done = items.filter(it => C[it.id]);
-      return { src, att, items, streak, bestStreak, days, latest, sec, chap, readiness, prio,
-        weakQ: done.filter(it => C[it.id].lastConf <= 2).length, doneQ: done.length, totalQ: items.length,
+      const done = items.filter(it => !it.q && C[it.id]), bkN = items.filter(it => !it.q).length;
+      return { src, att, items, units, streak, bestStreak, days, latest, sec, chap, readiness, prio,
+        weakQ: done.filter(it => C[it.id].lastConf <= 2).length + uConf.filter(v => v <= 2).length, doneQ: done.length + uConf.length, totalQ: bkN + units.length,
+        qComplete: src === 'book' ? 0 : Q.filter(qComplete).length,
         totalTime: att.reduce((x, a) => x + (a.time || 0), 0), avgLatest: avg(latest), mastered: latest.filter(v => v >= 4).length };
     });
   }
@@ -897,9 +979,9 @@
     const exAll = prog(CHS.flatMap(c => c.exItems)), revAll = prog(CHS.flatMap(c => c.revItems));
     const cnt = { boss: 0, gold: 0, red: 0 }; CHS.forEach(ch => { const s = chState(ch).state; if (s !== 'none') cnt.boss++; if (s === 'gold' || s === 'red') cnt.gold++; if (s === 'red') cnt.red++; });
     const nextBoss = CHS.map(ch => ({ ch, st: chState(ch) })).filter(x => x.st.state === 'none' && bossKnown(x.ch)).sort((a, b) => (b.st.exOk / (b.st.ex.length || 1)) - (a.st.exOk / (a.st.ex.length || 1)))[0];
-    const big = (done, total, color) => `<div class="spbig">${ring(total ? done / total : 0, 92, color, 3.6)}<div><b><span data-count="${done}">${done}</span><small>/${total}</small></b><span>решено разных задач · ${pct(done, total)}%</span></div></div>`;
+    const big = (done, total, color, what = 'решено разных задач') => `<div class="spbig">${ring(total ? done / total : 0, 92, color, 3.6)}<div><b><span data-count="${done}">${done}</span><small>/${total}</small></b><span>${what} · ${pct(done, total)}%</span></div></div>`;
     const kv = (l, v) => `<div class="kv"><span>${l}</span><b>${v}</b></div>`;
-    const years = YEARS.map(y => { const qs = Q.filter(q => q.year === y), d = qs.filter(q => C[q.id]).length; return { y, d, n: qs.length }; });
+    const years = YEARS.map(y => { const [d, n] = unitsOf(Q.filter(q => q.year === y)); return { y, d, n }; });
     return `<div class="split2">
       <div class="card sp sp-book"><div class="sp-h"><div class="eyebrow">задания учебников</div><h2>Text &amp; Tests 4 · 5</h2></div>
         ${big(B.doneQ, B.totalQ, 'var(--accent)')}
@@ -909,11 +991,11 @@
           <div class="sprow"><span>Упражнения</span>${bar(exAll.p)}<b>${exAll.done}/${exAll.total}</b></div><div class="sprow"><span>Повторение глав</span>${bar(revAll.p, 'var(--c2)')}<b>${revAll.done}/${revAll.total}</b></div></div>
       </div>
       <div class="card sp sp-exam"><div class="sp-h"><div class="eyebrow">exam papers</div><h2>Экзамены ${YEARS[0]}–${YEARS[YEARS.length - 1]}</h2></div>
-        ${big(E.doneQ, E.totalQ, 'var(--c2)')}
-        <div class="kvs">${kv('освоено (4–5)', E.mastered)}${kv('средняя уверенность', E.avgLatest != null ? E.avgLatest.toFixed(2) : '—')}${kv('попыток', ex.length)}${kv('время', fmtDur(E.totalTime))}${kv('мин на балл (экзамен 0.50)', perMark != null ? perMark.toFixed(2) : '—')}${kv('средний % баллов', scorePct != null ? scorePct + '%' : '—')}</div>
+        ${big(E.doneQ, E.totalQ, 'var(--c2)', L('пройдено подвопросов', 'sub-questions done'))}
+        <div class="kvs">${kv(L('вопросов целиком', 'whole questions'), `${E.qComplete}/${Q.length}`)}${kv('освоено (4–5)', E.mastered)}${kv('средняя уверенность', E.avgLatest != null ? E.avgLatest.toFixed(2) : '—')}${kv('попыток', ex.length)}${kv('время', fmtDur(E.totalTime))}${kv('мин на балл (экзамен 0.50)', perMark != null ? perMark.toFixed(2) : '—')}${kv('средний % баллов', scorePct != null ? scorePct + '%' : '—')}</div>
         <h3>Последняя оценка</h3>${distBar(E.latest, E.totalQ)}
         <div class="years">${years.map(x => `<div class="yr" title="${x.y}: ${x.d}/${x.n}"><i style="height:${x.n ? Math.max(4, Math.round(100 * x.d / x.n)) : 0}%"></i><span>’${String(x.y).slice(2)}</span></div>`).join('')}</div>
-        <div class="tiny muted" style="margin-top:4px">решено по годам экзаменов</div>
+        <div class="tiny muted" style="margin-top:4px">${L('подвопросы по годам экзаменов', 'sub-questions by exam year')}</div>
       </div></div>
     <div class="grid g3" style="margin-top:14px">
       <div class="card">${topicBar(ALL_TOPICS, { title: 'Изучено тем' })}<div class="kvs" style="margin-top:12px">${kv('готовность к экзамену', `<span data-count="${A.readiness}">${A.readiness}</span>%`)}${kv('серия дней', `${A.streak} · рекорд ${A.bestStreak}`)}</div></div>
@@ -1015,20 +1097,20 @@
     const cell = (y, p, n) => {
       const q = QBY[`${y}-P${p}-Q${n}`];
       if (!q) return '<td><span class="cell none"></span></td>';
-      const c = C[q.id], s = status(q.id);
-      const bg = c ? `var(--c${c.lastConf})` : 'var(--cnew)';
-      const tip = `${qTitle(q)} — ${c ? CONF[c.lastConf].n + ', попыток ' + c.n : 'не решался'}${s === 'due' ? ', пора повторить' : ''}\n${codesOf(q).map(secLabel).join('\n')}`;
-      return `<td><span class="cell ${s === 'due' ? 'due' : ''}" style="background:${bg}" title="${esc(tip)}" data-a="preview" data-id="${q.id}">${n}</span></td>`;
+      const c = C[q.id], s = status(q.id), v = qConf(q), part = qPartial(q);
+      const bg = v ? `var(--c${v})` : 'var(--cnew)';
+      const tip = `${qTitle(q)} — ${v ? CONF[v].n + ', попыток ' + c.n : part ? L(`решено подвопросов ${qDoneN(q)} из ${qUnits(q).length}`, `${qDoneN(q)} of ${qUnits(q).length} sub-questions solved`) : 'не решался'}${s === 'due' ? ', пора повторить' : ''}\n${codesOf(q).map(secLabel).join('\n')}`;
+      return `<td><span class="cell ${part ? 'part' : ''} ${s === 'due' ? 'due' : ''}" ${part ? '' : `style="background:${bg}"`} title="${esc(tip)}" data-a="preview" data-id="${q.id}">${n}</span></td>`;
     };
     const head = `<tr><th></th>${[1, 2].map(p => `<th colspan="10">Paper ${p}</th><th></th>`).join('')}</tr>`;
     const rows = YEARS.map(y => {
-      const done = Q.filter(q => q.year === y && C[q.id]).length, tot = Q.filter(q => q.year === y).length;
+      const done = Q.filter(q => q.year === y && qComplete(q)).length, tot = Q.filter(q => q.year === y).length;
       return `<tr><th>${y}</th>${[1, 2].map(p => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => cell(y, p, n)).join('') + '<td style="width:10px"></td>').join('')}<td class="tiny muted" style="text-align:left;padding-left:6px">${done}/${tot}</td></tr>`;
     }).join('');
     return `<div class="card"><h2>Карта экзаменов</h2>
-      <p class="muted small" style="margin-top:0">Каждая клетка — вопрос. Цвет — последняя оценка уверенности, рамка — пора повторить. Q1–Q6 — Section A, дальше Section B. Нажмите на клетку, чтобы открыть вопрос.</p>
+      <p class="muted small" style="margin-top:0">${L('Каждая клетка — вопрос. Цвет — оценка, когда решены все его подвопросы; пунктир — решена только часть; рамка — пора повторить. Q1–Q6 — Section A, дальше Section B. Нажмите на клетку, чтобы открыть вопрос.', 'Each cell is a question. Colour: its rating once all its sub-questions are solved; dashed: only some are solved; frame: due for review. Q1–Q6 are Section A, the rest Section B. Click a cell to open the question.')}</p>
       <div class="tablewrap"><table class="emap">${head}${rows}</table></div>
-      <div class="legend" style="margin-top:10px"><span><i class="dot"></i>не решался</span>${[1, 2, 3, 4, 5].map(v => `<span><i class="dot cf${v}"></i>${esc(CONF[v].n)}</span>`).join('')}</div></div>`;
+      <div class="legend" style="margin-top:10px"><span><i class="dot"></i>не решался</span><span><span class="else-key"></span>${L('решена часть', 'partly solved')}</span>${[1, 2, 3, 4, 5].map(v => `<span><i class="dot cf${v}"></i>${esc(CONF[v].n)}</span>`).join('')}</div></div>`;
   }
   let logAll = false;
   function logTab(st) {
@@ -1148,6 +1230,7 @@
       <div class="prevstrip"><button class="btn pri">Кнопка</button><span class="chip on">выбрано</span><span class="tchip prog">в процессе</span><div style="flex:1;min-width:120px">${bar(0.62)}</div>${emblem(rankInfo().r, 46, true)}</div>
       <h2 style="margin-top:22px">Цели</h2>
       <div class="setrow"><span>Вопросов в день</span><input class="num" type="number" min="1" value="${s.goal}" data-f="goal"></div>
+      <div class="setrow"><span>${L('Повторение в день, минут', 'Review per day, minutes')}</span><input class="num" type="number" min="5" step="5" value="${s.reviewMin}" data-f="reviewMin"><span class="muted small">${L('очередь собирается сама: самое важное первым', 'the queue builds itself, most important first')}</span></div>
       <div class="setrow"><span>«Новые с экзаменов»</span><input class="num" type="number" min="1" value="${s.newPerDay}" data-f="newPerDay"></div>
       <div class="setrow"><span>Дата экзамена</span><input class="txt" type="date" data-f="examDate" value="${(() => { const d = examDate(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })()}"><span class="muted small">для страницы «Отсчёт»</span></div>
       <div class="setrow"><span>Начало подготовки</span><input class="txt" type="date" data-f="startDate" value="${isoDay(startDay())}"><span class="muted small">${S.settings.startDate ? 'задано вручную — очистите поле, чтобы считать от первой задачи' : 'по умолчанию — день первой решённой задачи'}. От этой даты считаются темп и прогноз.</span></div>
@@ -1157,7 +1240,8 @@
       <p class="muted small" style="margin-top:0">После оценки уверенности кнопка с этим интервалом подсвечивается как рекомендованная. Если задача подряд решена на 4–5, интервал автоматически растёт (×1.8 или ×2.5). Вы всегда можете выбрать другой.</p>
       ${[1, 2, 3, 4, 5].map(v => `<div class="row" style="margin:6px 0"><span class="dot cf${v}"></span><span style="width:170px">${v} — ${esc(CONF[v].n)}</span><input class="num" type="number" min="0" value="${s.iv[v]}" data-f="iv" data-v="${v}"> <span class="muted">дней</span></div>`).join('')}
       <h2 style="margin-top:22px">Данные</h2>
-      <p class="muted small" style="margin-top:0">Весь прогресс (оценки, интервалы, заметки, избранное, изменённые темы) хранится в этом браузере. Если очистить данные браузера или открыть страницу в другом браузере, его не будет — поэтому периодически скачивайте резервную копию.</p>
+      ${DISK.on ? `<p class="muted small" style="margin-top:0">${L(`Прогресс сохраняется сам: сразу в браузере и через секунду — в файл <b>Maths/progress/${TEST ? 'test' : 'localhost'}.json</b> на диске. При запуске файл подхватывается, так что прогресс не пропадёт, даже если очистить браузер, открыть другой браузер или закрыть вкладку посреди вопроса. Резервные копии на диске: последнее состояние каждого дня (60 дней) и копия перед любым сохранением, в котором стало меньше попыток.`, `Progress saves itself: at once in the browser and a second later to <b>Maths/progress/${TEST ? 'test' : 'localhost'}.json</b> on disk. The file is read at start-up, so nothing is lost even if you clear the browser, switch browsers or close the tab mid-question. Backups on disk: the last state of each day (60 days) and a copy before any save that has fewer attempts.`)}</p>
+      <p class="small">${L('Автосохранение', 'Autosave')}: <b id="diskline">${diskLine()}</b> <button class="btn sm ghost" data-a="diskBackups">${L('Резервные копии на диске…', 'Backups on disk…')}</button></p>` : `<p class="muted small" style="margin-top:0">Весь прогресс (оценки, интервалы, заметки, избранное, изменённые темы) хранится в этом браузере. Если очистить данные браузера или открыть страницу в другом браузере, его не будет — поэтому периодически скачивайте резервную копию.</p>`}
       <p class="small">Попыток: <b>${S.attempts.length}</b> · заметок: <b>${Object.keys(S.notes).length}</b> · избранных: <b>${Object.keys(S.stars).length}</b> · вопросов с изменёнными темами: <b>${Object.keys(S.tags).length}</b><br>
       Последняя копия: <b>${S.lastExport ? fmtDate(S.lastExport) : 'ещё не делалась'}</b></p>
       <div class="row"><button class="btn pri" data-a="export">Скачать резервную копию (.json)</button>
@@ -1226,6 +1310,50 @@
     SYNC.busy = false;
   }
   const syncSoon = () => { if (!ACC || !hasPlan('max')) return; clearTimeout(SYNC.t); SYNC.t = setTimeout(syncNow, 8000); };
+
+  /* ---------- autosave to disk (the local app, tools/server.pyw) ----------
+     Every change goes to localStorage at once and, a moment later, to Maths/progress/localhost.json (written
+     atomically, with a backup per day and a copy before any save that has fewer attempts). On load the file is
+     merged in, so progress survives cleared browser data, another browser, a crash or a closed tab. The test copy
+     (127.0.0.1) has a file of its own. */
+  const DISK = { on: !ACC && location.protocol === 'http:' && /^(localhost|127\.0\.0\.1)$/.test(location.hostname), at: 0, err: null, t: null, busy: false, again: false, dirty: false, warned: false, ready: false };
+  const diskBody = () => JSON.stringify(Object.assign({}, S, { savedAt: Date.now() }));
+  async function diskNow() {
+    // nothing goes to disk before the file was read in: an empty browser must not overwrite it
+    if (!DISK.on || !DISK.ready) return;
+    if (DISK.busy) { DISK.again = true; return; }
+    DISK.busy = true; DISK.dirty = false; clearTimeout(DISK.t);
+    try {
+      const r = await fetch('/progress', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: diskBody() });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      DISK.at = Date.now(); DISK.err = null; DISK.warned = false;
+    } catch (e) {
+      DISK.err = String(e.message || e); DISK.dirty = true; DISK.t = setTimeout(diskNow, 15000);
+      if (!DISK.warned) { DISK.warned = true; toast(L('Не удалось сохранить прогресс в файл — пока он только в браузере. Повторю через 15 с.', 'Could not save the progress to its file — it is only in the browser for now. Retrying in 15 s.')); }
+    }
+    DISK.busy = false; diskMark();
+    if (DISK.again) { DISK.again = false; diskNow(); }
+  }
+  const diskSoon = () => { if (!DISK.on) return; DISK.dirty = true; clearTimeout(DISK.t); DISK.t = setTimeout(diskNow, 1200); };
+  const diskLine = () => (!DISK.on ? '' : DISK.err ? `<span class="bad">${L('не сохраняется', 'not saving')}: ${esc(DISK.err)}</span>` : DISK.at ? `${L('сохранено', 'saved')} ${new Date(DISK.at).toLocaleTimeString(LOC(), { hour: '2-digit', minute: '2-digit', second: '2-digit' })}` : L('ждёт первого сохранения', 'waiting for the first save'));
+  const diskMark = () => { const e = $('#diskline'); if (e) e.innerHTML = diskLine(); };
+  // the page is hidden or closed: save now (a hidden tab finishes the request; a closing one sends a beacon)
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && DISK.dirty) diskNow(); });
+  window.addEventListener('pagehide', () => { if (DISK.on && DISK.ready && DISK.dirty) try { navigator.sendBeacon('/progress', new Blob([diskBody()], { type: 'application/json' })); } catch (e) { /* the file is updated from this browser next time */ } });
+  // on load: an empty browser takes the file as it is; otherwise what only the file has is merged in
+  async function diskLoad() {
+    if (!DISK.on) return;
+    try {
+      const r = await fetch('/progress', { cache: 'no-store' });
+      const d = r.ok ? await r.json() : null;
+      if (d && d.version && Array.isArray(d.attempts)) {
+        if (!S.attempts.length && d.attempts.length) { DISK.on = false; localStorage.setItem(KEY, JSON.stringify(d)); location.reload(); return; }
+        const n = S.attempts.length; mergeState(d);
+        if (S.attempts.length !== n) { rebuild(); saveLocal(); render(); toast(L(`Из файла автосохранения добавлено попыток: ${S.attempts.length - n}`, `Added from the autosave file: ${S.attempts.length - n} attempts`)); }
+      }
+    } catch (e) { DISK.err = String(e.message || e); }
+    DISK.ready = true; diskNow();
+  }
 
   AFTER.settings = () => {
     const f = $('#importFile');
@@ -1307,7 +1435,7 @@
     const cnt = { boss: 0, gold: 0, red: 0 };
     CHS.forEach(ch => { const s = chState(ch).state; if (s !== 'none') cnt.boss++; if (s === 'gold' || s === 'red') cnt.gold++; if (s === 'red') cnt.red++; });
     let h = `<div class="pagehead"><div><div class="eyebrow">сюжет</div><h1>Путь</h1><div class="small muted" style="max-width:640px">Две книги — два акта. Каждая глава: темы, повторение и босс — настоящие вопросы экзаменов 2015–2026 по этой главе.</div></div>
-      <div class="row">${ntBtn(nt)}<button class="btn" data-a="bookDue" ${due ? '' : 'disabled'}>↻ Повторить (${due})</button>${loreBtn()}</div></div>`;
+      <div class="row">${ntBtn(nt)}${dailyBtn('btn')}${loreBtn()}</div></div>`;
     h += `<div class="card pathsum"><div class="grow" style="min-width:260px">${topicBar(ALL_TOPICS, { big: true, title: 'Изучено тем' })}</div>
       <div class="pathstats">${[['boss', '☠', 'боссов повержено', true], ['gold', '◆', 'золотых глав', cnt.gold > 0], ['red', '✶', 'багровых глав', cnt.red > 0]].map(([k, i, l, known]) => `<div class="pst ${k} ${known ? '' : 'unknown'}"><span>${known ? i : '?'}</span><b><span data-count="${cnt[k]}">${cnt[k]}</span>/${CHS.length}</b><small>${known ? l : '???'}</small></div>`).join('')}</div></div>`;
     TT.books.forEach((b, bi) => {
@@ -1569,10 +1697,23 @@
   function studySummary(st) {
     if (!st) return { total: 0, done: 0, weak: 0, types: 0, stillBad: [], finished: false, perfect: false };
     const total = st.cls.reduce((x, c) => x + c.items.length, 0);
-    const done = st.cls.filter(c => c.status === 'done').length, weak = st.cls.filter(c => c.status === 'weak').length;
-    const stillBad = Object.keys(st.failed).filter(id => (st.reviewed[id] || 0) < 4);
     const finished = !!st.meta && !studyNext(st);
+    // after the run the spaced reviews keep counting: a failed question later solved at 4–5 is fixed, and a
+    // weak type is fixed once any of its questions is
+    const later = id => { const c = C[id]; return st.meta && c && c.last.t >= st.meta.t0 ? c.lastConf : 0; };
+    st.cls.forEach(c => { if (c.status === 'weak' && c.items.some(x => later(x.id) >= 4)) { c.status = 'done'; c.fixed = true; } });
+    const done = st.cls.filter(c => c.status === 'done').length, weak = st.cls.filter(c => c.status === 'weak').length;
+    const stillBad = Object.keys(st.failed).filter(id => Math.max(st.reviewed[id] || 0, later(id)) < 4);
     return { total, done, weak, types: st.cls.length, stillBad, finished, perfect: finished && !weak && !stillBad.length };
+  }
+  // what closes the weak spots of a finished run: its failed questions, and a fresh question of each weak type
+  function studyFixIds(st, sm) {
+    const ids = sm.stillBad.slice();
+    st.cls.filter(c => c.status === 'weak' && !c.items.some(x => ids.includes(x.id))).forEach(c => {
+      const fresh = c.items.filter(x => !c.used.includes(x.id) && status(x.id) !== 'retired').sort((a, b) => b.d - a.d)[0];
+      ids.push((fresh || c.items.slice().sort((a, b) => ((C[a.id] || {}).lastConf || 0) - ((C[b.id] || {}).lastConf || 0))[0]).id);
+    });
+    return ids;
   }
   function studyMasteredCount() { return Object.keys(S.study).filter(g => { const st = studyState(g); return st && studySummary(st).finished; }).length; }
   function avgBookTime() { const t = LIVE.filter(a => TBY[a.q] && a.time > 0); return t.length ? t.reduce((x, a) => x + a.time, 0) / t.length : 180; }
@@ -1605,7 +1746,8 @@
       <div class="studylist">${st.cls.map(c => `<div class="row small"><span class="st-t ${c.status}"></span><span class="grow">${esc(c.name)}</span><span class="muted">${c.used.length}/${c.items.length} задач${c.fails ? ` · ошибок: ${c.fails}` : ''}</span></div>`).join('')}</div>
       ${g.sec ? (() => { const ts = topicState(g.sec); return `<div class="row small" style="margin-top:8px">${topicChip(g.sec)}<span class="muted">учебник ${Math.round(ts.book * 100)}%${ts.exN ? ` · экзамен ${ts.good}/${ts.exN} на 4–5` : ''}</span>${ts.exN && ts.good < ts.exN ? `<button class="btn sm pri" data-a="startCode" data-code="${g.sec}">Закрепить экзаменом</button>` : ''}</div>`; })() : ''}
       ${sm.stillBad.length ? `<div class="small" style="margin-top:6px">Остались нерешёнными: ${sm.stillBad.map(id => `<a href="#" data-a="preview" data-id="${id}">№${TBY[id].n}</a>`).join(', ')} — они придут в повторение по интервалам.</div>` : ''}
-      <div class="row" style="margin-top:8px">${sm.finished ? `<button class="btn sm" data-a="study" data-g="${s.study}" data-restart="1">Пройти тему заново</button>` : `<button class="btn sm pri" data-a="study" data-g="${s.study}">Продолжить изучение</button>`}</div></div>`;
+      ${sm.finished && !sm.perfect ? `<div class="small" style="margin-top:6px">${L('Упражнение засчитается освоенным, когда слабые места будут решены на 4–5 — здесь или в повторении.', 'The exercise counts as mastered once its weak spots are solved at 4–5, here or in a review.')}</div>` : ''}
+      <div class="row" style="margin-top:8px">${sm.finished ? `${sm.perfect ? '' : `<button class="btn sm pri" data-a="studyFix" data-g="${s.study}">${L('Закрепить слабые места', 'Fix the weak spots')} (${studyFixIds(st, sm).length})</button>`}<button class="btn sm" data-a="study" data-g="${s.study}" data-restart="1">Пройти тему заново</button>` : `<button class="btn sm pri" data-a="study" data-g="${s.study}">Продолжить изучение</button>`}</div></div>`;
   }
   function studyHelp() {
     openModal(`<div class="box narrow"><div class="row"><h2 class="grow" style="margin:0">Как работает режим изучения</h2><button class="btn sm ghost" data-a="closeModal">✕</button></div>
@@ -1620,6 +1762,116 @@
       </ul>
       <p class="small muted">Состояние темы пересчитывается из попыток: если сессию изучения не засчитать или удалить, тема откатится назад.</p></div>`);
   }
+
+  /* ================= DAILY REVIEW ================= */
+  // Review is automatic: one queue a day, sized to a time budget (settings: reviewMin), most important first.
+  // What is remembered is a skill, not a single question ("card"):
+  //   - an exercise question type (study.js): reviewed with a different question of that type each time, at the
+  //     hardest level you have solved, so it tests the method and not a remembered answer;
+  //   - a chapter revision exercise: one of its questions;
+  //   - an exam question in the context it was solved in (a topic's parts, a boss fight's chapter, or whole).
+  // Each card has a stability S (days until recall drops to 90%), replayed from the attempts. One 5 holds a new
+  // card only about a week; it has to succeed again at growing gaps (a week, three weeks, two months…). A failure
+  // cuts S to a third and brings the card back the next day with the same question; a success on an easier
+  // question than the type's level counts as one grade less. A card is due once recall falls below 85%.
+  const R_DUE = 0.85;
+  const recall = (s, t) => Math.pow(0.9, t / Math.max(s, 0.1));
+  const typeMap = () => memo('typemap', () => {
+    const by = {}, types = {};
+    Object.keys(STUDY).forEach(gid => (studySpec(gid) || []).forEach((c, k) => {
+      const key = `t:${gid}#${k}`, ds = c.items.map(x => x.d);
+      types[key] = { key, gid, name: c.name, items: c.items, minD: Math.min(...ds), maxD: Math.max(...ds) };
+      c.items.forEach(x => { by[x.id] = { key, d: x.d }; });
+    }));
+    return { by, types };
+  });
+  function cardKey(a) {
+    const q = QBY[a.q];
+    if (q) return `x:${a.q}|${attCtx(a) || ''}`;
+    const t = TBY[a.q]; if (!t) return null;
+    const ty = typeMap().by[a.q]; if (ty) return ty.key;
+    return TG[t.g].kind === 'rev' ? `r:${t.g}` : `i:${a.q}`;
+  }
+  function cardGrade(a) {
+    const ty = typeMap().by[a.q];
+    if (ty && a.conf >= 4 && ty.d < typeMap().types[ty.key].maxD) return a.conf - 1;
+    return a.conf;
+  }
+  function cardStep(c, a) {
+    const day = dayOf(a.t), g = cardGrade(a);
+    if (!c.reps) c.S = [0, 0.4, 0.8, 1.5, 3, 5][g];
+    else if (day === c.day) { if (g <= 2) { c.S = Math.min(c.S, 0.5); c.lapses++; } else if (g >= 4) c.S = Math.max(c.S, 2); }
+    else {
+      const R = recall(c.S, day - c.day);
+      if (g <= 2) { c.S = Math.max(0.5, c.S * 0.3); c.lapses++; }
+      else c.S = Math.min(365, c.S * (1 + [0, 0, 0, 0.2, 0.9, 1.5][g] * (1 + 2.5 * (1 - R))));
+    }
+    c.reps++; c.day = day; c.g = g; c.lastId = a.q; c.ids.add(a.q);
+  }
+  // every card with its state, replayed from the attempts
+  const reviewCards = () => memo('cards', () => {
+    const M = {};
+    LIVE.forEach(a => { const k = cardKey(a); if (!k) return; cardStep(M[k] || (M[k] = { k, S: 0, day: 0, reps: 0, lapses: 0, g: 0, ids: new Set(), lastId: null }), a); });
+    const td = today();
+    Object.values(M).forEach(c => { c.R = recall(c.S, td - c.day); c.dueDay = c.day + Math.max(1, Math.ceil(c.S * Math.log(R_DUE) / Math.log(0.9))); });
+    return M;
+  });
+  // the question a card is reviewed with (and the parts, for an exam card)
+  function cardPick(c) {
+    if (c.k.startsWith('x:')) { const [id, ctx] = c.k.slice(2).split('|'); return status(id) === 'retired' ? null : { id, ctx: ctx || null }; }
+    const live = id => status(id) !== 'retired';
+    // after a failure the same question comes back, to check that it is understood now
+    if (c.g <= 2 && c.lastId && live(c.lastId)) return { id: c.lastId };
+    if (c.k.startsWith('t:')) {
+      const ty = typeMap().types[c.k];
+      const solved = ty.items.filter(x => C[x.id] && C[x.id].hist.some(h => h.conf >= 4)).map(x => x.d);
+      const level = solved.length ? Math.max(...solved) : ty.minD, recent = today() - 3;
+      const free = ty.items.filter(x => live(x.id));
+      free.sort((a, b) => Math.abs(a.d - level) - Math.abs(b.d - level) || (a.id === c.lastId) - (b.id === c.lastId)
+        || (C[a.id] && dayOf(C[a.id].last.t) > recent) - (C[b.id] && dayOf(C[b.id].last.t) > recent) || (C[a.id] ? C[a.id].last.t : 0) - (C[b.id] ? C[b.id].last.t : 0));
+      return free[0] ? { id: free[0].id } : null;
+    }
+    const ids = [...c.ids].filter(live).sort((a, b) => (a === c.lastId) - (b === c.lastId) || C[a].last.t - C[b].last.t);
+    return ids[0] ? { id: ids[0] } : null;
+  }
+  const cardTopic = c => {
+    if (c.k.startsWith('t:')) return TG[typeMap().types[c.k].gid].sec;
+    if (c.k.startsWith('x:')) { const [id, ctx] = c.k.slice(2).split('|'); return ctx && !ctx.startsWith('ch:') ? ctx : codesOf(QBY[id])[0]; }
+    return null;
+  };
+  // minutes a card takes: textbook questions by your own pace, exam parts by their marks
+  function cardMins(c, pick) {
+    const q = QBY[pick.id], bt = avgBookTime() / 60;
+    if (!q) return c.k.startsWith('r:') ? bt * 1.4 : bt;
+    const n = partsOf(q).length ? ctxParts(q, pick.ctx).length / qUnits(q).length : 1;
+    return Math.max(3, q.marks * n); // the paper pace: about a mark a minute
+  }
+  // minutes of review already done today (sessions started from the daily queue)
+  const reviewedToday = () => LIVE.filter(a => dayOf(a.t) === today() && S.sessions[a.sess] && S.sessions[a.sess].daily).reduce((x, a) => x + (a.time || 0), 0) / 60;
+  function dailyPlan() {
+    return memo('daily', () => {
+      const budget = Math.max(5, +S.settings.reviewMin || 30), done = reviewedToday(), left = Math.max(0, budget - done);
+      const due = Object.values(reviewCards()).filter(c => c.R < R_DUE);
+      // most at risk first; cards you keep failing and topics the papers ask often go ahead
+      const prio = c => (R_DUE - c.R) / R_DUE + 0.15 * Math.min(3, c.lapses) + Math.min(0.3, 20 * (FREQ[cardTopic(c)] || 0) / (FREQ_TOTAL || 1));
+      due.sort((a, b) => prio(b) - prio(a));
+      const out = []; let mins = 0, exMins = 0;
+      for (const c of due) {
+        if (mins >= left) break;
+        const pick = cardPick(c); if (!pick) continue;
+        const m = cardMins(c, pick), exam = !!QBY[pick.id];
+        // exam questions are long: they take at most about half of the day's review (always room for one part)
+        if (m > left + 5 || (exam && exMins + m > Math.max(left * 0.5, 25))) continue;
+        out.push(Object.assign({ c, m, topic: cardTopic(c) }, pick)); mins += m; if (exam) exMins += m;
+      }
+      // interleaved: the same topic never twice in a row when it can be helped
+      const order = [];
+      while (out.length) { const prev = order.length ? order[order.length - 1].topic : null; const k = out.findIndex(x => !x.topic || x.topic !== prev); order.push(out.splice(k < 0 ? 0 : k, 1)[0]); }
+      return { items: order, mins: Math.round(mins), budget, done: Math.round(done), due: due.length, waiting: Math.max(0, due.length - order.length) };
+    });
+  }
+  // what the next days hold: cards falling due per day (for the forecast chart)
+  const reviewForecast = () => Object.values(reviewCards()).map(c => ({ due: c.R < R_DUE ? today() : c.dueDay, retired: false }));
 
   /* ================= TOPICS & CHAPTERS ================= */
   // A topic is a textbook section. It counts as studied when its exercises are mastered: the adaptive study
@@ -1638,7 +1890,8 @@
       const p = prog(ids);
       const st = S.study[gid] && STUDY[gid] ? studyState(gid) : null, sm = st ? studySummary(st) : null;
       let v = Math.min(1, p.m / 0.6);
-      if (sm) v = sm.finished ? 1 : Math.max(v, 0.95 * sm.done / Math.max(1, sm.types));
+      // a finished run masters the exercise only without weak spots: failed questions and types must be fixed first
+      if (sm) v = sm.perfect ? 1 : Math.max(v, 0.95 * sm.done / Math.max(1, sm.types));
       return { v, done: v >= 1, any: p.done > 0 || !!(st && st.n), sm };
     });
   }
@@ -1682,15 +1935,16 @@
     return `<span class="tchip ${lv}" title="Учебник ${Math.round(s.book * 100)}%${s.exN ? ` · экзамен ${s.good}/${s.exN} на 4–5` : ''}${lv === 'done' ? ' · полностью: все задачи темы и экзамена на 4–5' : ''}">${lv === 'full' ? '★ ' : lv === 'done' ? '✓ ' : ''}${TST[lv]}</span>`;
   }
   // exam pills of a topic (ctx = its code) or of a chapter boss (ctx = 'ch:<key>'): coloured by the rating in
-  // that context; solved only somewhere else = a light outline; a gold dot = passed in every topic it belongs to
+  // that context; solved only somewhere else = a light outline; a gold dot = passed in every topic it belongs to.
+  // Without a context a pill is coloured once every part is solved; a question solved in part has a dashed outline.
   function examPills(qs, ctx) {
     const isCh = String(ctx || '').startsWith('ch:'), key = isCh ? ctx.slice(3) : null;
     return `<div class="pills">${qs.map(q => {
-      const a = !ctx ? (C[q.id] || {}).last : isCh ? chAtt(q, key) : ctxAtt(q, ctx);
-      const v = !a ? null : !ctx ? a.conf : isCh ? Math.min(...codesOf(q).filter(c => chOfCode(c) === key).map(c => partConf(q, a, c))) : partConf(q, a, ctx);
-      const els = ctx && elsewhere(q, a), full = qFull(q), s = status(q.id);
-      const tip = `${qTitle(q)}${v ? ' — ' + CONF[Math.round(v)].n : els ? ' — решён в другой теме: реши здесь, чтобы засчиталось' : ''}${full ? ' · ★ пройден во всех темах' : ''}`;
-      return `<button class="pill xp ${v ? 'cf' + Math.round(v) : ''} ${els ? 'else' : ''} ${full ? 'qall' : ''} ${s === 'due' ? 'due' : ''}" data-a="preview" data-id="${q.id}" ${ctx ? `data-ctx="${ctx}"` : ''} title="${esc(tip)}">’${String(q.year).slice(2)} P${q.paper}·${q.q}</button>`; }).join('')}</div>`;
+      const a = !ctx ? null : isCh ? chAtt(q, key) : ctxAtt(q, ctx);
+      const v = !ctx ? qConf(q) || null : !a ? null : isCh ? chConf(q, key) || null : partConf(q, a, ctx);
+      const els = ctx && elsewhere(q, a), part = !ctx && qPartial(q), full = qFull(q), s = status(q.id);
+      const tip = `${qTitle(q)}${v ? ' — ' + CONF[Math.round(v)].n : els ? ' — решён в другой теме: реши здесь, чтобы засчиталось' : part ? L(` — решено подвопросов ${qDoneN(q)} из ${qUnits(q).length}`, ` — ${qDoneN(q)} of ${qUnits(q).length} sub-questions solved`) : ''}${full ? ' · ★ пройден во всех темах' : ''}`;
+      return `<button class="pill xp ${v ? 'cf' + Math.round(v) : ''} ${els || part ? 'else' : ''} ${full ? 'qall' : ''} ${s === 'due' ? 'due' : ''}" data-a="preview" data-id="${q.id}" ${ctx ? `data-ctx="${ctx}"` : ''} title="${esc(tip)}">’${String(q.year).slice(2)} P${q.paper}·${q.q}</button>`; }).join('')}</div>`;
   }
   // Chapter = level with a boss at the end. Beat the boss: every topic studied and every revision and exam
   // question of the chapter last rated 4–5. Gold: every question of the chapter (exercises too) rated 4–5.
@@ -1699,7 +1953,7 @@
     return memo('ch:' + ch.key, () => {
       const codes = chTopics(ch), ts = topicSum(codes), ex = chExamQs(ch);
       const lc = id => (C[id] ? C[id].lastConf : 0);
-      const exConf = q => { const a = chAtt(q, ch.key); return a ? Math.min(...codesOf(q).filter(c => codes.includes(c)).map(c => partConf(q, a, c))) : 0; };
+      const exConf = q => chConf(q, ch.key);
       const exOk = ex.filter(q => exConf(q) >= 4).length, exTried = ex.filter(q => chAtt(q, ch.key)).length;
       const exState = q => (exConf(q) >= 4 ? 'hit' : chAtt(q, ch.key) ? 'tried' : C[q.id] ? 'else' : '');
       const revOk = ch.revItems.filter(id => lc(id) >= 4).length;
@@ -1736,7 +1990,7 @@
     ['Затмение', 'Eclipse', 48000, ['#fff3d1', '#3a2a08'], '#ffcf6a', '#c8952c', 'eclipse'],
     ['Сверхновая', 'Supernova', 62000, ['#fff4e8', '#ff2d6f'], '#ff7a3d', '#ff4d6d', 'nova'],
     ['Сингулярность', 'Singularity', 80000, ['#efe6ff', '#2a0a5e'], '#a46bff', '#8f5cff', 'sing'],
-    ['Бесконечность', 'Infinity', null, ['#ffffff', '#c9d3ff'], '#ffffff', '#8a5cff', 'inf'],
+    ['Апофеоз', 'Apotheosis', null, ['#fff4f4', '#5c0010'], '#ff1f3d', '#ff2a45', 'god'],
   ];
   const RANKS = RANK_DEF.map(([n, en, xp, c, g, ink, skin], i) => ({ i, n, en, xp, skin: skin || null, tier: i, T: { n, c, g, ink } }));
   // the milestones of the legendary ranks: [what, how many] (ach = a share of all achievement steps)
@@ -1778,7 +2032,7 @@
       let live = 0; RANKS.forEach(r => { if (rankReqs(r, F, xp).every(q => q.ok)) live = r.i; });
       let i = RANK_FLOOR ? Math.max(live, Math.min(+S.rankHi || 0, RANKS.length - 1)) : live;
       // local demo only: preview any rank (bm_demo_rank = 0…15)
-      if (ACC && ACC.demo) { let d = null; try { d = localStorage.getItem('bm_demo_rank'); } catch (e) { /* ignore */ } if (d && RANKS[+d]) i = +d; }
+      if (!ACC || ACC.demo) { let d = null; try { d = localStorage.getItem('bm_demo_rank'); } catch (e) { /* ignore */ } if (d && RANKS[+d]) i = +d; }
       const r = RANKS[i], nx = RANKS[i + 1] || null, req = nx ? rankReqs(nx, F, xp, r.xp || 0) : [];
       return { xp, r, nx, live, req, F, p: nx ? Math.min(...req.map(q => (q.ok ? 1 : q.frac))) : 1 };
     });
@@ -1790,10 +2044,6 @@
   const radial = (n, r1, r2, col, w, off = 0, op = 1) => { let s = ''; for (let j = 0; j < n; j++) { const a = (off + j * 360 / n) * Math.PI / 180; s += `<line x1="${f2(60 + r1 * Math.cos(a))}" y1="${f2(60 + r1 * Math.sin(a))}" x2="${f2(60 + r2 * Math.cos(a))}" y2="${f2(60 + r2 * Math.sin(a))}"/>`; } return `<g stroke="${col}" stroke-width="${w}" opacity="${op}">${s}</g>`; };
   const orbit = (R, rad, col, dur, rev) => `<g class="sp ${rev ? 'rk-spinr' : 'rk-spin'}" style="animation-duration:${dur}s"><circle cx="60" cy="${60 - R}" r="${rad}" fill="${col}"/></g>`;
   const prng = j => { const x = Math.sin(j * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
-  // Bernoulli's lemniscate — the ∞ of the last rank
-  function lemni(a = 46, cx = 60, cy = 60) { let d = ''; for (let j = 0; j <= 96; j++) { const t = j / 96 * 2 * Math.PI, s = Math.sin(t), q = 1 + s * s; d += (j ? 'L' : 'M') + f2(cx + a * Math.cos(t) / q) + ',' + f2(cy + a * s * Math.cos(t) / q); } return d + 'Z'; }
-  const RAINBOW = ['#ff3d6e', '#ffb340', '#ffe14d', '#4dff9f', '#4dd2ff', '#8a5cff'];
-  const stops = cols => cols.map((c, j) => `<stop offset="${f2(j / (cols.length - 1))}" stop-color="${c}"/>`).join('');
   // the four legendary emblems are drawn each in its own way, not as a star with layers
   function legendArt(r, id, mini) {
     const P = (ang, rr, c = 60) => { const t = ang * Math.PI / 180; return f2(c + rr * Math.cos(t)) + ',' + f2(c + rr * Math.sin(t)); };
@@ -1835,15 +2085,23 @@
           <path d="M6,60 A54,13 0 0 0 114,60" fill="none" stroke="url(#${id}d)" stroke-width="5"/>
         </g>`;
     }
-    const lm = lemni(mini ? 52 : 46);
-    return `<defs><linearGradient id="${id}g" x1="0" y1="0" x2="1" y2="0">${stops(RAINBOW)}</linearGradient><radialGradient id="${id}h"><stop offset="0" stop-color="#fff" stop-opacity=".3"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
-      ${mini ? '' : `<path id="${id}t" d="M60,60 m-53,0 a53,53 0 1,1 106,0 a53,53 0 1,1 -106,0" fill="none"/>`}</defs>
-      <circle cx="60" cy="60" r="46" fill="url(#${id}h)"/>
-      ${mini ? '' : [0, 1, 2].map(j => `<circle class="sp rk-wave" style="animation-delay:${j}s" cx="60" cy="60" r="30" fill="none" stroke="#fff" stroke-width="1"/>`).join('') + `<g class="sp rk-spinr" style="animation-duration:30s"><text font-size="5.4" letter-spacing="2.2" fill="#fff" font-family="Unbounded,sans-serif" opacity=".85"><textPath href="#${id}t">∞ BEDAREV MATH ∞ BEDAREV MATH ∞ BEDAREV MATH ∞</textPath></text></g>` + orbit(57, 1.8, '#fff', 9) + orbit(49, 1.4, '#ffe14d', 13, true)}
-      <path d="${lm}" fill="none" stroke="url(#${id}g)" stroke-width="13" opacity=".25" stroke-linejoin="round"/>
-      <path d="${lm}" fill="none" stroke="url(#${id}g)" stroke-width="6.5" stroke-linejoin="round"/>
-      <path class="rk-flow" d="${lm}" fill="none" stroke="#fff" stroke-width="2.2" pathLength="100" stroke-dasharray="10 40" stroke-linecap="round"/>
-      <path class="rk-tw" d="${starPath(4, 8, 1.3, -90, 60, 60)}" fill="#fff"/>`;
+    // the last rank, godhood in crimson: wheels within wheels covered in eyes, a crown of thorns and a pillar of light
+    // round one burning eye
+    const eye = (x, y, w, d = 0) => `<g transform="translate(${f2(x)} ${f2(y)})"><g class="rk-blink" style="animation-delay:${f2(d)}s"><path d="M${-w},0 Q0,${f2(-w * 0.66)} ${w},0 Q0,${f2(w * 0.66)} ${-w},0Z" fill="#fff4f4"/><circle r="${f2(w * 0.44)}" fill="#ff1f3d"/><ellipse rx="${f2(w * 0.1)}" ry="${f2(w * 0.4)}" fill="#120003"/></g></g>`;
+    let thorns = ''; const n = mini ? 24 : 40;
+    for (let j = 0; j < n; j++) { const a = j * 360 / n, len = j % 2 ? 43 + prng(j) * 6 : 52 + prng(j + 3) * 6, w = j % 2 ? 1.5 : 2.3; thorns += `<path d="M${P(a - w, 32)} L${P(a, len)} L${P(a + w, 32)}Z"/>`; }
+    const ring = (rot, dur, rev, k) => { let eyes = ''; if (!mini) for (let j = 0; j < 5; j++) { const t = (j * 72 + k * 24) * Math.PI / 180; eyes += eye(60 + 45 * Math.cos(t), 60 + 13 * Math.sin(t), 3.4, j * 1.3 + k); }
+      return `<g class="sp ${rev ? 'rk-spinr' : 'rk-spin'}" style="animation-duration:${dur}s"><g transform="rotate(${rot} 60 60)"><ellipse cx="60" cy="60" rx="45" ry="13" fill="none" stroke="url(#${id}r)" stroke-width="${mini ? 2.6 : 2}"/>${eyes}</g></g>`; };
+    return `<defs><radialGradient id="${id}k"><stop offset="0" stop-color="#fff4f4"/><stop offset=".2" stop-color="#ff5a6e"/><stop offset=".46" stop-color="#ff1f3d" stop-opacity=".6"/><stop offset=".76" stop-color="#5c0010" stop-opacity=".3"/><stop offset="1" stop-color="#5c0010" stop-opacity="0"/></radialGradient>
+        <linearGradient id="${id}r" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5c0010"/><stop offset=".5" stop-color="#ff1f3d"/><stop offset="1" stop-color="#ffd0d6"/></linearGradient>
+        <linearGradient id="${id}b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
+      <circle cx="60" cy="60" r="58" fill="url(#${id}k)"/>
+      <g class="sp rk-spin" style="animation-duration:120s" fill="#ff1f3d" opacity=".85">${thorns}</g>
+      ${mini ? '' : `<g class="sp rk-spinr" style="animation-duration:180s" fill="#7a0012" opacity=".7"><g transform="rotate(4.5 60 60)">${thorns}</g></g><circle class="sp rk-spinr" style="animation-duration:90s" cx="60" cy="60" r="57" fill="none" stroke="#ff1f3d" stroke-width=".7" stroke-dasharray="6 3 1 3" opacity=".8"/>`}
+      <rect class="rk-breathe" x="58.8" y="0" width="2.4" height="120" fill="url(#${id}b)" opacity=".8"/>
+      ${ring(0, mini ? 30 : 24, false, 0)}${mini ? '' : ring(60, 34, true, 1) + ring(-60, 44, false, 2)}
+      <circle cx="60" cy="60" r="${mini ? 17 : 20}" fill="#0a0002" stroke="#ff1f3d" stroke-width="1.6"/>
+      ${eye(60, 60, mini ? 13 : 15, 0.4)}`;
   }
   // rank emblem: the higher the rank, the more layers and motion
   function emblem(r, size = 64, mini = false, lock = false) {
@@ -1891,7 +2149,7 @@
     return `<a class="rcard t${x.r.i + 1}${legendCls(x.r)}${o.compact ? ' compact' : ''}" href="#stats" data-a="statsGo" data-v="ranks" style="${rankStyle(x.r)}">${emblem(x.r, o.size || 104)}
       <div class="grow" style="min-width:0"><div class="eyebrow">${x.r.skin ? L('легендарный ранг', 'legendary rank') : L('ранг', 'rank')} · ${x.r.i + 1}/${RANKS.length}</div><div class="rname rn t${x.r.i + 1}">${esc(rankName(x.r))}</div>
         <div class="tiny muted"><span data-count="${x.xp}">${x.xp}</span> XP</div>
-        ${x.nx ? `<div class="rbar"><i style="width:${Math.round(x.p * 100)}%"></i></div><div class="tiny muted">${L('до', 'to')} «${esc(nextRankName(x))}»: ${esc(reqText(x.req))}</div>` : `<div class="tiny" style="margin-top:8px">${L('Высший ранг. Пройдено всё — бесконечность покорена.', 'The highest rank. Everything done — infinity conquered.')}</div>`}</div></a>`;
+        ${x.nx ? `<div class="rbar"><i style="width:${Math.round(x.p * 100)}%"></i></div><div class="tiny muted">${L('до', 'to')} «${esc(nextRankName(x))}»: ${esc(reqText(x.req))}</div>` : `<div class="tiny" style="margin-top:8px">${L('Высший ранг. Выше — только Экзаменатор.', 'The highest rank. Above it there is only the Examiner.')}</div>`}</div></a>`;
   }
   const rankDates = () => { const w = {}; (S.events || []).forEach(e => { if (e.k === 'rank' && !w[e.r]) w[e.r] = e.t; }); return w; };
   function rankLadder() {
@@ -1941,14 +2199,14 @@
     eclipse: L('Все 22 босса повержены. Солнце закрыто — над интерфейсом взошла корона затмения.', 'All 22 bosses beaten. The sun is covered, and an eclipse corona now rises over the interface.'),
     nova: L('Все 22 главы золотые. Звезда взорвалась — её свет теперь горит в интерфейсе.', 'All 22 chapters gold. The star has exploded, and its light now burns through the interface.'),
     sing: L('Половина глав багровые, три четверти достижений собраны. Всё вокруг падает к одной точке — к тебе.', 'Half the chapters crimson, three quarters of the achievements collected. Everything now falls toward one point: you.'),
-    inf: L('Все главы багровые и 90% достижений. Ты прошёл всё, что здесь есть. Дальше — только бесконечность.', 'Every chapter crimson and 90% of the achievements. You have done everything here. Beyond this, only infinity.'),
+    god: L('Все 22 главы багровые, 90% достижений. Предел смертных пройден: над интерфейсом раскрылись огненные колёса, и все их глаза теперь твои.', 'All 22 chapters crimson, 90% of the achievements. The mortal limit is behind you: wheels of fire open over the interface, and every eye on them is yours.'),
   }[k]);
   function rankUpNow(r) {
     const el = document.createElement('div');
     el.className = 'rankup' + (r.skin ? ` ru-legend ru-${r.skin}` : ''); el.setAttribute('style', rankStyle(r)); el.setAttribute('data-notr', '');
-    const cols = { eclipse: ['#ffcf6a', '#fff3cf', '#ff9d2e'], nova: ['#fff', '#ffd36e', '#ff2d6f', '#4dd2ff', '#ff7a3d'], sing: ['#a46bff', '#e9ddff', '#ff7ad9', '#ffd27a'], inf: RAINBOW }[r.skin];
+    const cols = { eclipse: ['#ffcf6a', '#fff3cf', '#ff9d2e'], nova: ['#fff', '#ffd36e', '#ff2d6f', '#4dd2ff', '#ff7a3d'], sing: ['#a46bff', '#e9ddff', '#ff7ad9', '#ffd27a'], god: ['#ff1f3d', '#ff5a6e', '#fff4f4', '#ff1f3d', '#7a0012'] }[r.skin];
     let sp = ''; for (let j = 0; j < (r.skin ? 90 : 46); j++) sp += `<i style="--a:${Math.round(Math.random() * 360)}deg;--d:${Math.round(150 + Math.random() * (r.skin ? 480 : 320))}px;--s:${(0.4 + Math.random()).toFixed(2)};animation-delay:${(Math.random() * (r.skin ? 1.2 : 0.35)).toFixed(2)}s${cols ? `;background:${cols[j % cols.length]}` : ''}"></i>`;
-    const fx = { eclipse: '<div class="ru-corona"></div><div class="ru-flash"></div>', nova: '<div class="ru-flash"></div><div class="ru-shock"></div><div class="ru-shock" style="animation-delay:.3s"></div><div class="ru-shock" style="animation-delay:.6s"></div>', sing: '<div class="ru-disk"></div><div class="ru-disk r2"></div>', inf: `<div class="ru-aurora"></div><svg class="ru-lemni" viewBox="0 0 120 120" aria-hidden="true"><path d="${lemni(54)}" pathLength="100"/></svg><div class="ru-flash"></div>` }[r.skin] || '';
+    const fx = { eclipse: '<div class="ru-corona"></div><div class="ru-flash"></div>', nova: '<div class="ru-flash"></div><div class="ru-shock"></div><div class="ru-shock" style="animation-delay:.3s"></div><div class="ru-shock" style="animation-delay:.6s"></div>', sing: '<div class="ru-disk"></div><div class="ru-disk r2"></div>', god: `<div class="ru-pillar"></div><svg class="ru-wheels" viewBox="0 0 120 120" aria-hidden="true">${[[0, 'rk-spin', 9], [60, 'rk-spinr', 13], [-60, 'rk-spin', 17]].map(([a, c, d]) => `<g class="${c}" style="animation-duration:${d}s"><ellipse cx="60" cy="60" rx="56" ry="16" transform="rotate(${a} 60 60)"/></g>`).join('')}</svg><div class="ru-flash"></div>` }[r.skin] || '';
     const nx = RANKS[r.i + 1], x = rankInfo();
     const sub = r.skin ? legendText(r.skin) : nx ? `${L('Следующий', 'Next')} — «${'???'}»${x.nx === nx && x.req.length ? ': ' + esc(reqText(x.req)) : ''}` : '';
     el.innerHTML = `${fx}<div class="ru-rays"></div><div class="ru-sp">${sp}</div><div class="ru-in"><div class="ru-cap">${r.skin ? L('легендарный ранг', 'legendary rank') : L('новый ранг', 'new rank')} · ${r.i + 1}/${RANKS.length}</div>${emblem(r, 230)}<div class="ru-name rn t${r.i + 1}">${esc(rankName(r))}</div><div class="ru-sub">${sub}</div>${r.skin ? `<div class="ru-note">${L('Интерфейс изменился. Вернуть прежний вид можно в настройках.', 'The interface has changed. You can switch back in settings.')}</div>` : ''}<button class="btn pri lg">${L('Продолжить', 'Continue')}</button></div>`;
@@ -1962,11 +2220,17 @@
     nova: () => '<div class="fx-nova"><i class="b1"></i><i class="b2"></i><i class="b3"></i><i class="shock"></i><i class="shock s2"></i><i class="core"></i></div>',
     sing: () => { let dots = ''; for (let j = 0; j < 60; j++) { const a = j * 0.55, rr = 90 + j * 1.8; dots += `<circle cx="${f2(200 + rr * Math.cos(a))}" cy="${f2(200 + rr * Math.sin(a))}" r="${f2(0.8 + (j % 3) * 0.6)}" fill="#d3b8ff" opacity="${f2(0.25 + (j % 4) * 0.15)}"/>`; }
       return `<div class="fx-sing"><svg viewBox="0 0 400 400"><defs><radialGradient id="fxh"><stop offset=".3" stop-color="#7b4dff" stop-opacity="0"/><stop offset=".36" stop-color="#7b4dff" stop-opacity=".4"/><stop offset="1" stop-color="#7b4dff" stop-opacity="0"/></radialGradient><linearGradient id="fxd" x1="0" x2="1"><stop offset="0" stop-color="#fff"/><stop offset=".3" stop-color="#ffd27a"/><stop offset=".62" stop-color="#ff7ad9"/><stop offset="1" stop-color="#6b3dff" stop-opacity=".35"/></linearGradient></defs><circle cx="200" cy="200" r="200" fill="url(#fxh)"/><g class="fx-spin fast">${dots}</g><g transform="rotate(-16 200 200)"><ellipse cx="200" cy="200" rx="185" ry="42" fill="none" stroke="url(#fxd)" stroke-width="12" opacity=".85"/><ellipse class="rk-flow fx-flow" cx="200" cy="200" rx="185" ry="42" fill="none" stroke="#fff" stroke-width="2" pathLength="100" stroke-dasharray="4 12" opacity=".6"/><path d="M110,200 A90,90 0 0 1 290,200" fill="none" stroke="url(#fxd)" stroke-width="10"/><circle cx="200" cy="200" r="72" fill="#000" stroke="#fff2d6" stroke-width="2"/><path d="M15,200 A185,42 0 0 0 385,200" fill="none" stroke="url(#fxd)" stroke-width="12"/></g></svg></div>`; },
-    inf: () => `<div class="fx-aur"><i></i><i></i><i></i><i></i></div><div class="fx-lem"><svg viewBox="0 0 120 120"><defs><linearGradient id="fxg" x1="0" x2="1">${stops(RAINBOW)}</linearGradient></defs><path d="${lemni(54)}" fill="none" stroke="url(#fxg)" stroke-width="1.4" opacity=".55"/><path class="rk-flow fx-flow" d="${lemni(54)}" fill="none" stroke="#fff" stroke-width="1" pathLength="100" stroke-dasharray="6 44" stroke-linecap="round"/></svg></div>`,
+    god: () => {
+      const eye = (x, y, w, d) => `<g transform="translate(${f2(x)} ${f2(y)})"><g class="fx-blink" style="animation-delay:${f2(d)}s"><path d="M${-w},0 Q0,${f2(-w * 0.66)} ${w},0 Q0,${f2(w * 0.66)} ${-w},0Z" fill="#ffe9ec"/><circle r="${f2(w * 0.44)}" fill="#ff1f3d"/><ellipse rx="${f2(w * 0.1)}" ry="${f2(w * 0.4)}" fill="#120003"/></g></g>`;
+      const ring = (rot, cls, k) => { let e = ''; for (let j = 0; j < 7; j++) { const t = (j * 360 / 7 + k * 17) * Math.PI / 180; e += eye(200 + 150 * Math.cos(t), 200 + 44 * Math.sin(t), 8, j * 1.7 + k * 2.3); } return `<g class="${cls}"><g transform="rotate(${rot} 200 200)"><ellipse cx="200" cy="200" rx="150" ry="44" fill="none" stroke="#ff1f3d" stroke-width="2.4" opacity=".75"/>${e}</g></g>`; };
+      let thorns = ''; for (let j = 0; j < 56; j++) { const a = j * 360 / 56, len = j % 2 ? 150 : 178 + prng(j) * 14, w = j % 2 ? 1.2 : 1.8, t = d => (a + d) * Math.PI / 180; thorns += `<path d="M${f2(200 + 110 * Math.cos(t(-w)))},${f2(200 + 110 * Math.sin(t(-w)))} L${f2(200 + len * Math.cos(t(0)))},${f2(200 + len * Math.sin(t(0)))} L${f2(200 + 110 * Math.cos(t(w)))},${f2(200 + 110 * Math.sin(t(w)))}Z"/>`; }
+      let ash = ''; for (let j = 0; j < 22; j++) ash += `<i style="--x:${f2(prng(j) * 100)}%;--s:${f2(2 + prng(j + 5) * 3)}px;--t:${f2(14 + prng(j + 9) * 16)}s;--d:${f2(-prng(j + 2) * 30)}s;--w:${f2((prng(j + 7) - 0.5) * 14)}vw"></i>`;
+      return `<div class="fx-veil"></div><div class="fx-god"><svg viewBox="0 0 400 400"><defs><radialGradient id="fxgk"><stop offset=".08" stop-color="#fff4f4" stop-opacity=".9"/><stop offset=".2" stop-color="#ff1f3d" stop-opacity=".45"/><stop offset=".55" stop-color="#5c0010" stop-opacity=".18"/><stop offset="1" stop-color="#5c0010" stop-opacity="0"/></radialGradient></defs><circle cx="200" cy="200" r="200" fill="url(#fxgk)"/><g class="fx-spin" fill="#ff1f3d" opacity=".3">${thorns}</g>${ring(0, 'fx-spin fx-w1', 0)}${ring(60, 'fx-spinr fx-w2', 1)}${ring(-60, 'fx-spin fx-w3', 2)}<circle cx="200" cy="200" r="34" style="fill:var(--bg)" stroke="#ff1f3d" stroke-width="2"/>${eye(200, 200, 24, 0.5)}</svg></div><div class="fx-ash">${ash}</div>`;
+    },
   };
   function rankSkin() {
     if (!hasPlan('pro')) return '';
-    const x = rankInfo(), pick = S.settings.rankSkin || 'auto';
+    const x = rankInfo(), pick = S.settings.rankSkin === 'inf' ? 'god' : S.settings.rankSkin || 'auto';
     if (pick === 'off') return '';
     const r = RANKS.find(q => q.skin === pick);
     return r && r.i <= x.r.i ? pick : x.r.skin || '';
@@ -2011,8 +2275,13 @@
   const bSway = (x, y, d, dur = 6, delay = 0) => `<g class="b-sway" style="transform-origin:${x}px ${y}px;animation-duration:${dur}s;animation-delay:${delay}s">${d}</g>`;
   const wave = (x0, y0, x1, y1, amp, n) => { let s = `M${x0},${y0}`; const dx = (x1 - x0) / (n * 2), dy = (y1 - y0) / (n * 2); for (let j = 1; j <= n * 2; j++) s += ` Q${f2(x0 + dx * (j - 0.5) + (j % 2 ? amp : -amp) * (dy ? 1 : 0))},${f2(y0 + dy * (j - 0.5) + (j % 2 ? -amp : amp) * (dx ? 1 : 0))} ${f2(x0 + dx * j)},${f2(y0 + dy * j)}`; return s; };
   const MOTIF = {
-    poly: c => `${[[-70, 0], [0, -16], [70, 0]].map(([dx, dy], j) => bSway(120 + dx, 150, `<path d="M${120 + dx * 0.4},170 Q${120 + dx * 0.8},${130 + dy} ${120 + dx},${104 + dy}"/><circle cx="${120 + dx}" cy="${88 + dy}" r="${22 - j % 2 * -4}" fill="#0b0b0e"/>${bEye(120 + dx - 8, 86 + dy, 6, c, j * 0.7)}${bEye(120 + dx + 8, 86 + dy, 6, c, j * 0.7 + 0.2)}<path d="M${120 + dx - 10},${100 + dy} q10,8 20,0" stroke-width="1"/>`, 7, j)).join('')}
-      <path d="M58,60 Q30,120 58,180" stroke-width="2.4"/><path d="M182,60 Q210,120 182,180" stroke-width="2.4"/><path d="M60,196 C90,150 150,150 180,196" stroke-width="1.6"/><text x="200" y="66" font-size="14" fill="${c}" stroke="none" font-family="Unbounded">ⁿ</text>`,
+    // a knot of polynomial graphs through shared roots, and the three-eyed head where they cross
+    poly: c => {
+      const g = rs => { let d = ''; for (let x = 32; x <= 208; x += 4) { const y = 150 - rs.reduce((p, r) => p * (x - r) / 58, 1) * 42; d += `${d ? 'L' : 'M'}${x},${f2(Math.max(30, Math.min(214, y)))}`; } return d; };
+      const sets = [[52, 90, 150, 188], [52, 150, 188], [90, 150], [52, 90, 188], [90, 188], [52, 120, 188]];
+      return `<line x1="28" y1="150" x2="212" y2="150" opacity=".35"/>${sets.map((rs, j) => bSway(120, 150, `<path d="${g(rs)}" stroke-width="${j ? 1.1 : 2.2}" opacity="${f2(1 - j * 0.12)}"/>`, 6 + j, j * 0.6)).join('')}${[52, 90, 150, 188].map(x => `<circle cx="${x}" cy="150" r="3.4" fill="${c}"/>`).join('')}
+      <path d="M120,52 L150,70 L150,104 L120,124 L90,104 L90,70Z" fill="#0b0b0e" stroke-width="1.9"/><path d="M120,52 V40 M150,70 l10,-8 M90,70 l-10,-8" stroke-width="1.4"/>${bEye(107, 82, 7.5, c, 0)}${bEye(133, 82, 7.5, c, 0.3)}${bEye(120, 104, 8.5, c, 0.6)}<text x="196" y="60" font-size="15" fill="${c}" stroke="none" font-family="Unbounded">ⁿ</text>`;
+    },
     disc: c => `<path d="M60,70 Q120,250 180,70" stroke-width="2.6"/><path d="M74,78 Q120,214 166,78" stroke-width=".8" opacity=".6"/>${[0, 1, 2, 3, 4, 5, 6, 7].map(j => { const x = 82 + j * 11; const y = 128 + Math.pow((x - 120) / 38, 2) * -28 + 34; return `<path d="M${x},${f2(y - 8)} L${x + 4},${f2(y + 6)} L${x + 8},${f2(y - 8)}" fill="#0b0b0e" stroke-width=".9"/>`; }).join('')}
       <path d="M120,26 L146,70 L94,70Z" stroke-width="1.6"/>${bEye(96, 94, 11, c, 0)}${bEye(144, 94, 11, c, 0.3)}<line x1="40" y1="180" x2="200" y2="180" opacity=".5"/><circle cx="76" cy="180" r="3" fill="${c}"/><circle cx="164" cy="180" r="3" fill="${c}"/>`,
     serpent: c => `<circle cx="120" cy="120" r="62" opacity=".35"/><line x1="58" y1="120" x2="182" y2="120" opacity=".3"/><line x1="120" y1="58" x2="120" y2="182" opacity=".3"/>
@@ -2025,10 +2294,20 @@
       ${bSway(56, 120, '<path d="M56,120 C30,110 22,80 30,60 M30,60 l-8,-6 M30,60 l2,-10 M30,60 l8,-6"/>', 6)}${bSway(184, 120, '<path d="M184,120 C210,110 218,80 210,60 M210,60 l-8,-6 M210,60 l2,-10 M210,60 l8,-6"/>', 6, 1)}`,
     tri: c => `<path d="M120,34 L208,186 L32,186Z" stroke-width="2"/><path d="M120,186 L76,110 L164,110Z" stroke-width="1.2"/><path d="M98,148 L142,148 L120,110Z" opacity=".5"/><path d="M76,186 L54,148 L98,148Z" opacity=".4"/><path d="M164,186 L142,148 L186,148Z" opacity=".4"/>
       <path d="M120,74 L104,100 L136,100Z" fill="#0b0b0e"/>${bEye(120, 92, 10, c, 0)}${bSway(120, 34, '<path d="M120,34 L92,8 M120,34 L148,8" stroke-width="1.4"/><circle cx="92" cy="8" r="2" fill="currentColor"/>', 8)}<path d="M40,180 a14,14 0 0,0 10,-14" opacity=".8"/>`,
-    tangent: c => `<path d="M24,170 C70,170 90,60 120,90 S170,170 216,70" stroke-width="2.6"/>${[0, 1, 2, 3, 4, 5, 6, 7, 8].map(j => { const x = 36 + j * 21, y = 168 - Math.sin(j / 8 * Math.PI) * 70 - (j > 4 ? (j - 4) * 10 : 0); return bSway(x, y, `<line x1="${x - 18}" y1="${f2(y + 12)}" x2="${x + 18}" y2="${f2(y - 12)}" opacity=".75"/>`, 4 + j % 3, j * 0.3); }).join('')}
-      <circle cx="120" cy="92" r="20" fill="#0b0b0e" stroke-width="1.6"/>${bEye(120, 92, 12, c, 0)}<text x="160" y="40" font-size="13" fill="${c}" stroke="none" font-family="Unbounded">ε→0</text>`,
+    // a funnel falling into the pit it never reaches; secants close in on the tangent at its eye
+    tangent: c => {
+      const f = x => 46 + 2600 / (Math.abs(x - 120) + 18);
+      let d = ''; for (let x = 24; x <= 216; x += 3) d += `${d ? 'L' : 'M'}${x},${f2(Math.min(194, f(x)))}`;
+      const px = 168, py = f(px), m = -2600 / Math.pow(px - 102, 2), seg = k => { const s = m + k * 0.55; return `<line x1="${px - 74}" y1="${f2(py - s * 74)}" x2="${px + 46}" y2="${f2(py + s * 46)}" stroke-width="${k ? 0.9 : 2.2}" opacity="${f2(k ? 0.75 - k * 0.14 : 1)}"/>`; };
+      return `${[0, 1, 2, 3, 4].map(j => `<ellipse cx="120" cy="${198 + j * 3}" rx="${76 - j * 15}" ry="${10 - j * 1.8}" opacity="${f2(0.7 - j * 0.12)}" ${j === 4 ? 'fill="#050507"' : ''}/>`).join('')}
+      <path d="${d}" stroke-width="2.6"/><line x1="120" y1="40" x2="120" y2="196" stroke-dasharray="2 5" opacity=".55"/>
+      ${[4, 3, 2, 1].map(k => bSway(px, py, seg(k), 4 + k, k * 0.4)).join('')}${seg(0)}
+      <circle cx="${px}" cy="${f2(py)}" r="17" fill="#0b0b0e" stroke-width="1.6"/>${bEye(px, f2(py), 11, c, 0)}<text x="28" y="48" font-size="13" fill="${c}" stroke="none" font-family="Unbounded">h→0</text>`;
+    },
+    // two halves of one face: the sine and the cosine of the same angle
     twins: c => `<path d="M118,40 C70,44 56,96 64,140 C70,176 96,200 118,204 Z" fill="#0b0b0e" stroke-width="1.8"/><path d="M122,40 C170,44 184,96 176,140 C170,176 144,200 122,204 Z" fill="#0b0b0e" stroke-width="1.8"/>
-      ${bEye(96, 104, 10, c, 0)}${bEye(144, 104, 10, c, 2.4)}<path d="M84,150 Q100,170 112,150" stroke-width="1.2"/><path d="M128,150 Q140,132 156,150" stroke-width="1.2"/><line x1="120" y1="30" x2="120" y2="214" stroke-dasharray="3 4" opacity=".6"/><path d="M70,70 l-14,-24 M170,70 l14,-24" stroke-width="1.4"/>`,
+      ${bEye(96, 104, 10, c, 0)}${bEye(144, 104, 10, c, 2.4)}<path d="${wave(76, 154, 112, 154, 6, 2)}" stroke-width="1.4"/><path d="${wave(128, 154, 164, 154, -6, 2)}" stroke-width="1.4"/><path d="M88,126 l8,10 M152,126 l-8,10" stroke-width="1" opacity=".6"/>
+      <line x1="120" y1="30" x2="120" y2="214" stroke-dasharray="3 4" opacity=".6"/><path d="M70,70 l-14,-24 M170,70 l14,-24" stroke-width="1.4"/><path d="M104,44 A18,18 0 0,0 136,44" stroke-width="1" opacity=".7"/>`,
     spiral: c => { let s = '', x = 120, y = 120, r = 64, a = 0; for (let j = 0; j < 12; j++) { s += `<circle cx="${f2(x)}" cy="${f2(y)}" r="${f2(r)}" opacity="${f2(1 - j * 0.07)}"/>`; a += 1.05; x += r * 0.35 * Math.cos(a); y += r * 0.35 * Math.sin(a); r *= 0.72; } return `<g class="b-spin">${s}</g>${bEye(120, 120, 13, c, 0)}${[0, 1, 2, 3, 4].map(j => bSway(120, 120, `<path d="M120,120 ${wave(120, 120, 120 + 100 * Math.cos(j * 1.26), 120 + 100 * Math.sin(j * 1.26), 6, 3).slice(9)}" opacity=".45"/>`, 7 + j, j)).join('')}`; },
     histo: c => `<path d="M30,60 Q120,20 210,60 L210,90 L30,90Z" fill="#0b0b0e" stroke-width="1.6"/>${[18, 30, 42, 52, 46, 34, 22].map((h, j) => `<path d="M${42 + j * 23},90 l11.5,${h} l11.5,-${h}" fill="#0b0b0e" stroke-width="1.2"/>`).join('')}
       <path d="M30,200 Q120,220 210,200 L210,170 L30,170Z" fill="#0b0b0e" stroke-width="1.6"/>${[14, 24, 36, 40, 32, 20, 12].map((h, j) => `<path d="M${42 + j * 23},170 l11.5,-${h} l11.5,${h}" fill="#0b0b0e" stroke-width="1.2"/>`).join('')}
@@ -2038,9 +2317,11 @@
     log: c => `${[0, 1, 2, 3].map(j => bSway(120, 130, `<path d="M120,130 C${120 + (j - 1.5) * 40},${150 + j * 4} ${120 + (j - 1.5) * 70},${190} ${120 + (j - 1.5) * 50},${226}" stroke-width="2"/>`, 5 + j, j * 0.5)).join('')}
       <path d="M40,190 C44,100 70,70 120,62 C170,70 196,100 200,190" stroke-width="1"/><path d="M76,120 C76,84 164,84 164,120 C164,150 76,150 76,120Z" fill="#0b0b0e" stroke-width="2"/>${bEye(102, 112, 9, c, 0)}${bEye(138, 112, 9, c, 0.6)}
       ${[0, 1, 2, 3, 4, 5].map(j => `<path d="M${92 + j * 10},132 l5,10 l5,-10" fill="#0b0b0e" stroke-width=".8"/>`).join('')}<path d="M206,40 V200 M224,40 V200" opacity=".6"/>${[0, 1, 2, 3, 4, 5, 6].map(j => `<line x1="206" x2="224" y1="${50 + j * 22}" y2="${50 + j * 22}" opacity=".6"/>`).join('')}`,
-    king: c => `<path d="M76,74 L84,40 L102,62 L120,30 L138,62 L156,40 L164,74Z" fill="#0b0b0e" stroke-width="1.8"/><circle cx="120" cy="30" r="3" fill="${c}"/><ellipse cx="120" cy="124" rx="48" ry="56" fill="#0b0b0e" stroke-width="1.4" opacity=".85"/>
-      <ellipse cx="120" cy="124" rx="48" ry="56" stroke-dasharray="3 6" class="b-spin" opacity=".6"/>${bEye(100, 112, 10, c, 0)}${bEye(140, 112, 10, c, 0.2)}<path d="M96,150 Q120,166 144,150" stroke-width="1.2"/>
-      <g class="b-spin">${[0, 1, 2, 3].map(j => `<path d="M${f2(120 + 86 * Math.cos(j * Math.PI / 2))},${f2(124 + 86 * Math.sin(j * Math.PI / 2))} a86,86 0 0,1 ${f2(-86 * Math.cos(j * Math.PI / 2) + 86 * Math.cos((j + 1) * Math.PI / 2))},${f2(-86 * Math.sin(j * Math.PI / 2) + 86 * Math.sin((j + 1) * Math.PI / 2))}" opacity=".5" stroke-dasharray="4 4"/>`).join('')}</g><text x="194" y="60" font-size="18" fill="${c}" stroke="none" font-family="Unbounded" font-style="italic">i</text>`,
+    // the ruler of the axis that is not there: a crowned mask split by the imaginary axis, i orbiting through 1, i, −1, −i
+    king: c => `<line x1="120" y1="6" x2="120" y2="234" stroke-dasharray="2 5" opacity=".7"/><line x1="24" y1="120" x2="216" y2="120" opacity=".22"/>
+      <g class="b-spin"><circle cx="120" cy="120" r="90" stroke-dasharray="4 6" opacity=".45"/>${[['1', 0], ['−i', 90], ['−1', 180], ['i', 270]].map(([t, a]) => { const x = 120 + 90 * Math.cos(a * Math.PI / 180), y = 120 + 90 * Math.sin(a * Math.PI / 180); return `<circle cx="${f2(x)}" cy="${f2(y)}" r="10" fill="#0b0b0e" stroke-width="1.2"/><text x="${f2(x)}" y="${f2(y + 3.5)}" font-size="9.5" text-anchor="middle" fill="${c}" stroke="none" font-family="Unbounded" font-style="italic">${t}</text>`; }).join('')}</g>
+      <path d="M80,72 L85,34 L102,56 L120,18 L138,56 L155,34 L160,72Z" fill="#0b0b0e" stroke-width="1.8"/>${[[85, 34], [120, 18], [155, 34]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="3.2" fill="${c}"/>`).join('')}
+      <path d="M82,76 L158,76 Q160,150 120,198 Q80,150 82,76Z" fill="#0b0b0e" stroke-width="1.7"/><path d="M120,76 V198" stroke-width=".9" opacity=".65"/>${bEye(102, 108, 10.5, c, 0)}${bEye(138, 108, 10.5, c, 0.25)}<path d="M92,132 l10,12 M148,132 l-10,12 M108,168 h24" stroke-width="1" opacity=".7"/>`,
     enlarge: c => `${[1, 0.78, 0.56, 0.34].map((k, j) => `<path d="M${f2(120)},${f2(120 - 92 * k)} L${f2(120 + 80 * k)},${f2(120 + 50 * k)} L${f2(120 - 80 * k)},${f2(120 + 50 * k)}Z" opacity="${f2(1 - j * 0.18)}" ${j === 3 ? 'fill="#0b0b0e"' : ''} stroke-width="${f2(2 - j * 0.35)}"/>`).join('')}
       ${[[120, 28], [200, 170], [40, 170]].map(([x, y]) => `<line x1="120" y1="120" x2="${x}" y2="${y}" stroke-dasharray="2 4" opacity=".7"/>`).join('')}${bEye(120, 116, 12, c, 0)}<circle cx="120" cy="120" r="2" fill="${c}"/>`,
     reaper: c => `<path d="M150,30 C110,28 104,70 116,118 C128,166 122,206 84,210" stroke-width="4" stroke-linecap="round"/><path d="M150,30 C176,30 196,48 200,70 C176,54 160,52 150,30" fill="#0b0b0e" stroke-width="1.6"/>
@@ -2048,7 +2329,13 @@
       <circle cx="126" cy="80" r="16" fill="#0b0b0e" stroke-width="1.4"/>${bEye(126, 80, 10, c, 0)}`,
     peaks: c => `<path d="M14,200 L60,90 L92,150 L130,46 L168,140 L196,100 L226,200Z" fill="#0b0b0e" stroke-width="2"/><path d="M60,90 L72,118 M130,46 L146,92 M196,100 L206,128" opacity=".6"/>
       ${bEye(60, 104, 8, c, 0)}${bEye(130, 66, 10, c, 0.5)}${bEye(196, 114, 7, c, 1)}<line x1="40" y1="90" x2="80" y2="90" opacity=".8"/><line x1="110" y1="46" x2="150" y2="46" opacity=".8"/><line x1="72" y1="150" x2="112" y2="150" opacity=".8"/><line x1="148" y1="140" x2="188" y2="140" opacity=".8"/>`,
-    usurer: c => { let s = '', a = 0, r = 14; for (let j = 0; j < 9; j++) { const x = 120 + (12 + j * 9) * Math.cos(a), y = 120 + (12 + j * 9) * Math.sin(a); s += `<circle cx="${f2(x)}" cy="${f2(y)}" r="${f2(r)}" fill="#0b0b0e" stroke-width="1.2"/><text x="${f2(x)}" y="${f2(y + r * 0.35)}" font-size="${f2(r)}" text-anchor="middle" fill="${c}" stroke="none" font-family="Unbounded">€</text>`; a += 0.9; r *= 1.12; } return `<g class="b-spin">${s}</g><circle cx="120" cy="120" r="20" fill="#0b0b0e" stroke-width="2"/>${bEye(120, 120, 12, c, 0)}${bSway(120, 40, '<path d="M120,40 V14 M120,40 c-14,0 -14,14 0,14" stroke-width="1.6"/>', 6)}`; },
+    // compound interest: coins on an exponential spiral, each further out and bigger than the last, round an eye
+    usurer: c => {
+      let s = '', d = '';
+      for (let t = 0; t <= 8.2; t += 0.2) { const R = 12 * Math.pow(1.29, t), a = t * 0.95 - 1.2; d += `${d ? 'L' : 'M'}${f2(120 + R * Math.cos(a))},${f2(120 + R * Math.sin(a))}`; }
+      for (let j = 1; j <= 8; j++) { const R = 12 * Math.pow(1.29, j), a = j * 0.95 - 1.2, x = 120 + R * Math.cos(a), y = 120 + R * Math.sin(a), r = 4 + j * 1.9; s += `<circle cx="${f2(x)}" cy="${f2(y)}" r="${f2(r)}" fill="#0b0b0e" stroke-width="1.3"/><text x="${f2(x)}" y="${f2(y + r * 0.36)}" font-size="${f2(r * 1.05)}" text-anchor="middle" fill="${c}" stroke="none" font-family="Unbounded">€</text>`; }
+      return `<g class="b-spin"><path d="${d}" stroke-width="1.6" opacity=".7"/>${s}</g><circle cx="120" cy="120" r="18" fill="#0b0b0e" stroke-width="2"/>${bEye(120, 120, 11, c, 0)}`;
+    },
     poly3d: c => `<g class="b-spin">${polyPath(6, 80, -90, 120, 120).replace(/^/, '<path d="').replace(/$/, '" stroke-width="1.8"/>')}<path d="M120,40 L120,120 L189,160 M120,120 L51,160" stroke-width="1.2"/><path d="M51,80 L120,120 M189,80 L120,120" opacity=".5" stroke-dasharray="3 3"/><path d="${polyPath(3, 46, -90, 120, 120)}" opacity=".6"/></g>
       ${bEye(96, 104, 8, c, 0)}${bEye(144, 104, 8, c, 0.4)}${bEye(120, 150, 8, c, 0.8)}`,
     tree: c => { const br = (x, y, a, l, d) => { if (!d) return bEye(x, y, 4.5, c, d + x % 3 * 0.3); const x1 = x + l * Math.cos(a), y1 = y + l * Math.sin(a), x2 = x + l * Math.cos(a + (d > 1 ? 0.55 : 0.4)), y2 = y + l * Math.sin(a + (d > 1 ? 0.55 : 0.4)); return `<line x1="${f2(x)}" y1="${f2(y)}" x2="${f2(x1)}" y2="${f2(y1)}"/><line x1="${f2(x)}" y1="${f2(y)}" x2="${f2(x2)}" y2="${f2(y2)}"/>${br(x1, y1, a - 0.35, l * 0.7, d - 1)}${br(x2, y2, a + 0.55, l * 0.7, d - 1)}`; };
@@ -2060,6 +2347,8 @@
     null: c => `<path d="M72,40 Q120,22 168,40 Q186,120 168,180 Q120,214 72,180 Q54,120 72,40Z" fill="#0b0b0e" stroke-width="2"/><path d="M50,60 L38,60 L38,180 L50,180 M190,60 L202,60 L202,180 L190,180" stroke-width="2.4"/>
       ${bEye(120, 104, 22, c, 0)}<path d="M92,160 L148,160" stroke-width="2"/>${[0, 1, 2, 3, 4, 5, 6].map(j => `<line x1="${96 + j * 8}" y1="156" x2="${96 + j * 8}" y2="164"/>`).join('')}<text x="104" y="62" font-size="14" fill="${c}" stroke="none" font-family="Unbounded">H₀</text>`,
   };
+  // the test copy can draw any boss for a contact sheet (127.0.0.1 only)
+  if (TEST) { window.__bossArt = (key, size, state) => bossArt(TCH[key], size, state); window.__rankUp = i => rankUpNow(RANKS[i]); window.__review = () => ({ plan: dailyPlan(), cards: reviewCards() }); window.__rank = () => { const x = rankInfo(); return { shown: x.r.i, live: x.live, hi: S.rankHi, snap: S.snap && S.snap.r, ev: (S.events || []).filter(e => e.k === "rank").map(e => e.r) }; }; }
   function bossArt(ch, size = 220, state = 'alive') {
     const B = BOSS[ch.key] || BOSS['1-1'], id = 'bs' + (++EMB), h = B.h, mini = size < 100;
     const col = state === 'gold' ? '#ffcf4d' : state === 'red' ? '#ff2a3d' : `hsl(${h} 92% 62%)`, deep = state === 'gold' ? '#6b4a00' : state === 'red' ? '#4a0008' : `hsl(${h} 85% 18%)`;
@@ -2140,7 +2429,8 @@
   // event (history page) and, for the big ones, a full-screen celebration. The first run rebuilds the past
   // day by day from the attempts.
   function snapNow() {
-    const s = { r: rankInfo().r.i, ch: {}, rv: {}, tp: {}, f: finalOpen() ? 1 : 0 };
+    // the real rank (never the ?rank= preview, which only changes what is shown): history and rank-ups follow it
+    const s = { r: Math.max(rankInfo().live, Math.min(+S.rankHi || 0, RANKS.length - 1)), ch: {}, rv: {}, tp: {}, f: finalOpen() ? 1 : 0 };
     CHS.forEach(ch => { s.ch[ch.key] = CH_ORD[chState(ch).state]; if (bossKnown(ch)) s.rv[ch.key] = 1; });
     TOPICS.forEach(t => { const x = topicState(t.code); if (x.status === 'done') s.tp[t.code] = x.full ? 2 : 1; });
     return s;
@@ -2306,8 +2596,8 @@
     const rate = ts.done / span, need = left ? remainT / left : Infinity;
     const proj = Math.min(ts.total, Math.floor(ts.done + rate * left));
     const finish = rate > 0 ? new Date(Date.now() + Math.ceil(remainT / rate) * DAY) : null;
-    const bk = prog(BOOK_ORDER), exDone = Q.filter(q => C[q.id]).length;
-    const remainTasks = (bk.total - bk.done) + (Q.length - exDone);
+    const bk = prog(BOOK_ORDER), [exU, exUT] = unitsOf(Q);
+    const remainTasks = (bk.total - bk.done) + (exUT - exU);
     const timed = LIVE.filter(a => a.time > 0), avgMin = timed.length ? timed.reduce((x, a) => x + a.time, 0) / 60 / timed.length : 3;
     const hours = remainTasks * 0.55 * avgMin / 60;
     const todayN = LIVE.filter(a => dayOf(a.t) === td).length;
@@ -2345,7 +2635,7 @@
         ${cell(proj < ts.total ? 'red' : 'ok', 'прогноз к экзамену', `${proj}<small>/${ts.total}</small>`, proj < ts.total ? `${ts.total - proj} ${plural(ts.total - proj, 'тема', 'темы', 'тем')} останутся неизученными` : 'успеваешь')}
         ${cell(todayN ? '' : 'red', 'сегодня', `<span>${todayN}</span>`, todayN ? `${plural(todayN, 'задача', 'задачи', 'задач')}. Мало не бывает.` : 'Ноль. Часы идут.')}
         ${cell('', 'осталось работы', `≈${Math.round(hours)}<small>ч</small>`, `≈ ${left ? (hours / left).toFixed(1) : '∞'} ч в день · ${remainTasks} задач не тронуто`)}
-        ${cell('', 'экзаменационные вопросы', `${exDone}<small>/${Q.length}</small>`, `${Q.length - exDone} настоящих вопросов с экзаменов ты ещё не видел`)}
+        ${cell('', L('подвопросы экзаменов', 'exam sub-questions'), `${exU}<small>/${exUT}</small>`, L(`${exUT - exU} подвопросов настоящих экзаменов ты ещё не решал`, `${exUT - exU} sub-questions of real papers you have not solved yet`))}
       </div>
       <div class="dverdict">${verdict}</div>
       <div class="dcal"><div class="dc-h"><b>Учебный год</b><span><i class="pre"></i>до старта <i class="ok"></i>занимался <i class="x"></i>пусто <i class="f"></i>впереди</span></div>${cal}</div>
@@ -2679,8 +2969,9 @@
     return memo('aw', () => {
       const L = LIVE;
       const uniq = new Set(L.map(a => a.q));
-      let uniqExam = 0, uniqBook = 0;
-      uniq.forEach(id => { if (QBY[id]) uniqExam++; else uniqBook++; });
+      // exam questions count once every part is solved
+      let uniqExam = Q.filter(qComplete).length, uniqBook = 0;
+      uniq.forEach(id => { if (!QBY[id]) uniqBook++; });
       const dayCount = {}, dayTime = {};
       L.forEach(a => { const d = dayOf(a.t); dayCount[d] = (dayCount[d] || 0) + 1; dayTime[d] = (dayTime[d] || 0) + (a.time || 0); });
       const days = Object.keys(dayCount).map(Number).sort((a, b) => a - b);
@@ -2727,7 +3018,7 @@
   }
   const ACH = [
     { id: 'uniq', g: '∑', name: 'Решатель', d: 'разных задач решено', t: [10, 50, 200, 500, 1000, 2000, 3000], v: s => s.uniq },
-    { id: 'exam', g: '§', name: 'Знаток экзаменов', d: 'разных экзаменационных вопросов', t: [5, 25, 75, 150, 228], v: s => s.uniqExam },
+    { id: 'exam', g: '§', name: 'Знаток экзаменов', d: L('экзаменационных вопросов, решённых целиком', 'exam questions solved whole'), t: [5, 25, 75, 150, 228], v: s => s.uniqExam },
     { id: 'book', g: '¶', name: 'Книжный червь', d: 'разных задач из учебников', t: [25, 100, 400, 1000, 2000, 3009], v: s => s.uniqBook },
     { id: 'bosses', g: '☠', name: 'Охотник на боссов', d: 'боссов повержено', t: [1, 3, 8, 15, 22], v: s => s.bosses },
     { id: 'gold', g: '◆', name: 'Золотой стандарт', d: 'золотых глав (все задачи на 4–5)', t: [1, 3, 8, 15, 22], v: s => s.gold },
@@ -2767,9 +3058,15 @@
     return memo('xp', () => {
       const seen = new Set(); let tasks = 0;
       LIVE.forEach(a => {
+        const q = QBY[a.q];
+        if (q) {
+          // an exam attempt is worth the share of the question it covered; the first-time bonus goes to new parts
+          const us = attUnits(q, a), n = qUnits(q).length, fresh = us.filter(u => !seen.has(a.q + '|' + u)).length;
+          tasks += Math.round(([0, 2, 4, 6, 9, 12][a.conf] * us.length / n + 3 * fresh / n) * q.marks / 20);
+          us.forEach(u => seen.add(a.q + '|' + u)); return;
+        }
         const base = [0, 2, 4, 6, 9, 12][a.conf] + (seen.has(a.q) ? 0 : 3);
-        let mult = 1;
-        if (TBY[a.q]) { const g = TG[TBY[a.q].g]; mult = g.kind === 'rev' ? 1 + TIER[g.tier].w / 2 : 1; } else if (QBY[a.q]) mult = QBY[a.q].marks / 20;
+        const g = TG[TBY[a.q].g], mult = g.kind === 'rev' ? 1 + TIER[g.tier].w / 2 : 1;
         tasks += Math.round(base * mult); seen.add(a.q);
       });
       let chal = 0; Object.values(S.challenges).forEach(l => l.forEach(r => { if (!sessOff(r.sess)) chal += 15 * r.stars; }));
@@ -2843,8 +3140,8 @@
       <div class="grid" style="grid-template-columns:minmax(0,1fr) 300px;gap:16px;margin-top:12px" id="pvgrid">
         <div>
           <div class="seg" style="margin-bottom:8px"><button class="${pvTab === 'q' ? 'on' : ''}" data-a="pvTab" data-v="q" data-id="${id}">Вопрос</button>${q.ms ? `<button class="${pvTab === 'ms' ? 'on' : ''}" data-a="pvTab" data-v="ms" data-id="${id}">Решение</button>` : ''}</div>
-          ${(() => { const cut = pvTab === 'ms' ? null : cutFor(q, pvCtx);
-            return (cut ? cutBar(cut, pvFull, 'pvCut', id) : '') + `<div class="paper">${pvTab === 'ms' && q.ms ? imgTag(q.ms, q.msSize, 'Marking scheme') : cut && !pvFull ? givenSheet(cut) + imgTag(cut.img, cut.size, qTitle(q)) : imgTag(q.img, q.size, qTitle(q))}</div>`; })()}
+          ${(() => { const cut = cutFor(q, pvCtx), ms = pvTab === 'ms' && q.ms;
+            return (cut ? cutBar(cut, pvFull, 'pvCut', id) : '') + `<div class="paper">${ms ? (cut && cut.ms && !pvFull ? imgTag(cut.ms, cut.msSize, 'Marking scheme') : imgTag(q.ms, q.msSize, 'Marking scheme')) : cut && !pvFull ? givenSheet(cut) + imgTag(cut.img, cut.size, qTitle(q)) : imgTag(q.img, q.size, qTitle(q))}</div>`; })()}
         </div>
         <div>
           ${(() => { const ctx = pvCtx || (qTopics(q).length === 1 ? qTopics(q)[0] : null), lbl = !ctx ? '' : ctx.startsWith('ch:') ? ` · бой с боссом главы ${TCH[ctx.slice(3)] ? TCH[ctx.slice(3)].n : ''}` : ` · в теме ${SEC[ctx] ? SEC[ctx].n : ctx}`;
@@ -2983,6 +3280,22 @@
     tagDel: (el, e) => { e.preventDefault(); const id = el.dataset.id; const q = QBY[id]; S.tags[id] = codesOf(q).filter(c => c !== el.dataset.code); save(); preview(id); },
     tagReset: el => { delete S.tags[el.dataset.id]; save(); preview(el.dataset.id); },
     dueNow: el => { const id = el.dataset.id; const c = C[id]; if (!c) return; c.last.iv = Math.max(0, today() - dayOf(c.last.t)); rebuild(); save(); (TBY[id] ? previewBook : preview)(id); toast('Добавлено в повторение на сегодня'); },
+    diskBackups: async () => {
+      let list = [];
+      try { list = await (await fetch('/progress/backups', { cache: 'no-store' })).json(); } catch (e) { toast(L('Сервер не отвечает', 'The server does not answer')); return; }
+      const when = b => { const m = b.name.match(/^(day|drop)-(\d{4}-\d\d-\d\d)(?:_(\d\d)(\d\d))?/); if (!m) return esc(b.name); const d = new Date(m[2] + 'T12:00:00').toLocaleDateString(LOC(), { day: 'numeric', month: 'short', year: 'numeric' }); return m[1] === 'day' ? `${d} · ${L('итог дня', 'end of day')}` : `${d} ${m[3]}:${m[4]} · ${L('перед сохранением с меньшим числом попыток', 'before a save with fewer attempts')}`; };
+      openModal(`<div class="box" style="max-width:640px"><div class="row"><h2 class="grow" style="margin:0">${L('Резервные копии на диске', 'Backups on disk')}</h2><button class="btn sm ghost" data-a="closeModal">✕</button></div>
+        <p class="small muted">${L('«Добавить» сливает копию с текущим прогрессом (ничего не теряется). «Вернуть» заменяет текущий прогресс копией; текущий при этом остаётся в копиях.', '«Add» merges the backup into the current progress (nothing is lost). «Restore» replaces the current progress with the backup; the current one stays among the backups.')}</p>
+        ${list.length ? `<div class="hist">${list.map(b => `<div class="row"><span class="grow small">${when(b)}</span><span class="tiny muted">${Math.round(b.size / 1024)} KB</span><button class="btn sm" data-a="diskRestore" data-n="${esc(b.name)}" data-m="merge">${L('Добавить', 'Add')}</button><button class="btn sm ghost" data-a="diskRestore" data-n="${esc(b.name)}" data-m="replace">${L('Вернуть', 'Restore')}</button></div>`).join('')}</div>` : `<p class="small">${L('Копий пока нет — первая появится после первого сохранения.', 'No backups yet: the first appears after the first save.')}</p>`}</div>`);
+    },
+    diskRestore: async el => {
+      let d = null;
+      try { d = await (await fetch('/progress/backups/' + encodeURIComponent(el.dataset.n), { cache: 'no-store' })).json(); } catch (e) { /* below */ }
+      if (!d || !d.version || !Array.isArray(d.attempts)) { toast(L('Копия не читается', 'The backup cannot be read')); return; }
+      if (el.dataset.m === 'merge') { const n = S.attempts.length; mergeState(d); rebuild(); save(); closeModal(); render(); toast(L(`Добавлено попыток: ${S.attempts.length - n}`, `Attempts added: ${S.attempts.length - n}`)); return; }
+      if (!ask(L(`Заменить текущий прогресс (${S.attempts.length} попыток) копией (${d.attempts.length} попыток)?`, `Replace the current progress (${S.attempts.length} attempts) with the backup (${d.attempts.length} attempts)?`))) return;
+      await diskNow(); delete d.savedAt; localStorage.setItem(KEY, JSON.stringify(d)); S = load(); await diskNow(); location.reload();
+    },
     export: () => { S.lastExport = Date.now(); save(); download(`bedarev-math-progress-${stamp()}.json`, JSON.stringify(S, null, 1), 'application/json'); render(); },
     exportCsv: () => {
       const rows = [['date', 'question', 'year', 'paper', 'q', 'section', 'marks', 'confidence', 'parts', 'score', 'time_sec', 'interval_days', 'topics']];
@@ -3003,7 +3316,7 @@
       if (ask(L('Аккаунт удалён. Стереть и прогресс в этом браузере?', 'The account is deleted. Erase the progress in this browser too?'))) { try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ } }
       location.href = '../index.html';
     },
-    resetAll: () => { if (!ask('Удалить весь прогресс? Это нельзя отменить (если нет резервной копии).')) return; if (!ask('Точно удалить?')) return; S = fresh(); rebuild(); save(); applyTheme(); render(); toast('Прогресс удалён'); if (hasPlan('max')) ACC.sb.from('progress').delete().eq('user_id', ACC.user.id).then(() => { }); },
+    resetAll: () => { if (!ask('Удалить весь прогресс? Это нельзя отменить (если нет резервной копии).')) return; if (!ask('Точно удалить?')) return; S = fresh(); rebuild(); save(); diskNow(); applyTheme(); render(); toast('Прогресс удалён'); if (ACC && hasPlan('max')) ACC.sb.from('progress').delete().eq('user_id', ACC.user.id).then(() => { }); },
   };
   const BOOK_IDX = {}; BOOK_ORDER.forEach((id, i) => { BOOK_IDX[id] = i; });
   function orderList(ids, order) {
@@ -3066,19 +3379,29 @@
       let t = '';
       if (book) { const n = VF.codes.length + VF.rev.length; t = VF.codes.length === 1 && !VF.rev.length ? ': ' + SEC[VF.codes[0]].n + ' ' + SEC[VF.codes[0]].name : n ? `: ${n} ${plural(n, 'раздел', 'раздела', 'разделов')}` : ' · учебники'; }
       else t = BF.codes.length === 1 ? ': ' + secShort(BF.codes[0]) + ' ' + SEC[BF.codes[0]].name : BF.codes.length ? `: ${BF.codes.length} ${plural(BF.codes.length, 'тема', 'темы', 'тем')}` : ' · экзамены';
-      startSession(orderList(ids, order).slice(0, limit), names[mode] + t);
+      startSession(orderList(ids, order).slice(0, limit), names[mode] + t, { review: mode === 'due' || mode === 'weak' });
     },
     statsSrc: el => { statsSrc = el.dataset.v; render(); },
     statsGo: el => { statsTab = el.dataset.v || 'over'; closeModalSilently(); go('stats'); },
     setOpt: el => { const k = el.dataset.k, v = el.dataset.v; if (S.settings[k] === v) return; S.settings[k] = v; save(); if (k === 'lang') { location.reload(); return; } applyTheme(); render(); },
     lang: () => { S.settings.lang = EN() ? 'ru' : 'en'; save(); location.reload(); },
-    startDueAll: () => { startSession(dueAll().slice(0, 40), 'Повторение: учебник и экзамены'); },
+    startDaily: () => {
+      const p = dailyPlan(); if (!p.items.length) { toast(L('На сегодня повторять нечего', 'Nothing to review today')); return; }
+      startSession(p.items.map(x => x.id), L('Повторение на сегодня', 'Review for today'), { review: true, daily: true, ctxs: p.items.map(x => x.ctx || null) });
+    },
+    ivRetire: () => { R.iv = R.iv === null ? undefined : null; render(); },
+    studyFix: el => {
+      const gid = el.dataset.g, st = studyState(gid), sm = studySummary(st), g = TG[gid], sec = g.sec ? SEC[g.sec] : null;
+      const ids = studyFixIds(st, sm); if (!ids.length) { toast(L('Слабых мест не осталось', 'No weak spots left')); render(); return; }
+      startSession(ids, `${L('Закрепление', 'Fixing')}: ${sec ? sec.n + ' ' + sec.name : groupTitle(g)}`, { review: true });
+    },
+    startDueAll: () => { startSession(dueAll().slice(0, 40), 'Повторение: учебник и экзамены', { review: true }); },
     startWeak: () => {
       const st = computeStats('all');
       const weak = st.items.filter(it => C[it.id] && C[it.id].lastConf <= 2 && status(it.id) !== 'retired').map(it => it.id);
       const topCodes = st.prio.slice(0, 3).map(p => p.code);
       const extra = shuffle(Q.filter(q => !weak.includes(q.id) && status(q.id) !== 'retired' && codesOf(q).some(c => topCodes.includes(c)) && (!C[q.id] || C[q.id].lastConf <= 3)).map(q => q.id));
-      startSession(shuffle(weak).concat(extra).slice(0, 10), 'Слабые места');
+      startSession(shuffle(weak).concat(extra).slice(0, 10), 'Слабые места', { review: true });
     },
     bossFight: el => {
       const ch = TCH[el.dataset.ch]; if (!ch) return;
@@ -3113,7 +3436,9 @@
       if (!nx) {
         save();
         const s0 = { study: gid, qids: [] }; examFinale(s0);
-        if (s0.qids.length && sec) { startSession(s0.qids, `Экзамен по теме: ${sec.n} ${sec.name}`); return; }
+        if (s0.qids.length && sec) { startSession(s0.qids, `Экзамен по теме: ${sec.n} ${sec.name}`, { ctx: g.sec }); return; }
+        const st = studyState(gid), sm = studySummary(st);
+        if (!sm.perfect) { ACT.studyFix({ dataset: { g: gid } }); return; }
         toast('Тема уже пройдена — её можно пройти заново'); render(); return;
       }
       startSession([nx.id], `Изучение: ${sec ? sec.n + ' ' + sec.name : groupTitle(g)}${g.part ? ' (' + g.part + ')' : ''}`, { study: gid });
@@ -3139,6 +3464,7 @@
     if (f === 'topicSort') { topicSort = el.value; render(); }
     if (f === 'iv') { S.settings.iv[el.dataset.v] = Math.max(0, parseInt(el.value, 10) || 0); save(); }
     if (f === 'goal' || f === 'newPerDay') { S.settings[f] = Math.max(1, parseInt(el.value, 10) || 1); save(); }
+    if (f === 'reviewMin') { S.settings.reviewMin = Math.max(5, parseInt(el.value, 10) || 30); save(); }
     if (f === 'theme') { S.settings.theme = el.value; save(); applyTheme(); }
     if (f === 'imgw') { S.settings.imgw = +el.value; save(); render(); }
   });
@@ -3199,6 +3525,7 @@
     ACC.afterCheckout((st, plan) => { SUBS = null; render(); toast(st === 'success' ? L(`Оплата прошла — тариф ${PLAN_LABEL[plan]} активен.`, `Payment done — ${PLAN_LABEL[plan]} is active.`) : L('Оплата отменена — ничего не списано.', 'Checkout cancelled — nothing was charged.')); });
     addEventListener('visibilitychange', () => { if (document.hidden && SYNC.t) { clearTimeout(SYNC.t); SYNC.t = null; syncNow(); } });
   }
+  else diskLoad();
 
   /* ================= ENGLISH MODE ================= */
   // The interface is written in Russian. In English mode every Russian phrase that reaches the page is replaced

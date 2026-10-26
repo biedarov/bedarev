@@ -230,16 +230,17 @@ button.chip{cursor:pointer}
 .rn.t13{background-image:linear-gradient(90deg,#c8952c,#fff3cf,#ffcf6a,#c8952c)}
 .rn.t14{background-image:linear-gradient(90deg,#ff2d6f,#ffb36b,#fff4e8,#ffb36b,#ff2d6f)}
 .rn.t15{background-image:linear-gradient(90deg,#8f5cff,#efe6ff,#ff7ad9,#8f5cff)}
+.rn.t16{background-image:linear-gradient(90deg,#ff1f3d,#ff6b7d,#fff4f4,#ff6b7d,#ff1f3d)}
 .ru-name.rn{text-shadow:none;filter:drop-shadow(0 0 26px var(--g))}
 /* legendary rank cards are night pieces in either theme */
 .legend.rcard,.legend.lstep.got{--text:#f2eff8;--muted:rgba(242,239,248,.62);--border:rgba(255,255,255,.14);color:var(--text);border-color:color-mix(in srgb,var(--g) 55%,transparent)}
 .lg-eclipse.rcard,.lg-eclipse.lstep.got{background:radial-gradient(circle at 16% 50%,rgba(255,207,106,.3),transparent 55%),radial-gradient(circle at 100% 0%,rgba(255,157,46,.14),transparent 45%),#0c0a07}
 .lg-nova.rcard,.lg-nova.lstep.got{background:radial-gradient(circle at 14% 50%,rgba(255,122,61,.38),transparent 50%),radial-gradient(circle at 88% 8%,rgba(255,45,111,.32),transparent 50%),radial-gradient(circle at 70% 115%,rgba(77,210,255,.24),transparent 50%),#0d0710}
 .lg-sing.rcard,.lg-sing.lstep.got{background:radial-gradient(circle at 16% 50%,#000 0 9%,rgba(164,107,255,.42) 12%,transparent 42%),radial-gradient(ellipse 80% 60% at 100% 100%,rgba(255,122,217,.14),transparent),#07040f}
-.lg-inf.rcard,.lg-inf.lstep.got{background:linear-gradient(115deg,rgba(255,61,110,.24),rgba(255,225,77,.16),rgba(77,255,159,.16),rgba(77,210,255,.22),rgba(138,92,255,.28),rgba(255,61,110,.24)) 0 0/300% 100%,#06060b;animation:rainbow 16s linear infinite}
-.lg-inf.rcard{border-color:transparent;background:linear-gradient(115deg,rgba(255,61,110,.24),rgba(255,225,77,.16),rgba(77,255,159,.16),rgba(77,210,255,.22),rgba(138,92,255,.28),rgba(255,61,110,.24)) 0 0/300% 100% padding-box,linear-gradient(#06060b,#06060b) padding-box,linear-gradient(90deg,#ff3d6e,#ffb340,#ffe14d,#4dff9f,#4dd2ff,#8a5cff,#ff3d6e) 0 0/300% 100% border-box}
+.lg-god.rcard,.lg-god.lstep.got{background:radial-gradient(circle at 16% 50%,rgba(255,244,244,.22) 0 5%,rgba(255,31,61,.38) 10%,transparent 46%),radial-gradient(ellipse 90% 70% at 100% 120%,rgba(255,31,61,.2),transparent 60%),#0a0002}
+.lg-god.rcard{border-color:#ff1f3d;box-shadow:0 0 0 1px rgba(255,31,61,.35),0 18px 50px -22px #ff1f3d}
 .legend.rcard .rbar{background:rgba(255,255,255,.12)}
-.lg-inf.rcard .rbar i{background:linear-gradient(90deg,#ff3d6e,#ffb340,#ffe14d,#4dff9f,#4dd2ff,#8a5cff);box-shadow:0 0 12px #fff8}
+.lg-god.rcard .rbar i{background:linear-gradient(90deg,#5c0010,#ff1f3d,#fff4f4);box-shadow:0 0 12px rgba(255,31,61,.8)}
 .rhints{margin-top:14px}
 .rhint{display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:11px;text-decoration:none;color:var(--text);font-size:.88rem;border:1px solid transparent;transition:border-color .2s,background .2s}
 .rhint+.rhint{margin-top:4px}
@@ -283,6 +284,7 @@ button.chip{cursor:pointer}
 .embw{display:inline-grid;place-items:center;position:relative;flex:none;isolation:isolate}
 .embw .emb{overflow:visible;display:block}
 .emb .sp{transform-box:view-box;transform-origin:60px 60px}
+.emb .rk-blink{transform-box:fill-box;transform-origin:center;animation:blink 6s infinite}
 .emb .rk-tw{transform-box:fill-box;transform-origin:center;animation:rktw 2.8s ease-in-out infinite}
 .rk-spin{animation:rkspin 24s linear infinite}
 .rk-spinr{animation:rkspinr 24s linear infinite}
@@ -300,16 +302,16 @@ button.chip{cursor:pointer}
 .embw.t4,.embw.t5,.embw.t6{filter:drop-shadow(0 0 5px color-mix(in srgb,var(--g) 55%,transparent))}
 .embw.t7,.embw.t8,.embw.t9{filter:drop-shadow(0 0 9px color-mix(in srgb,var(--g) 70%,transparent))}
 .embw.t10{filter:drop-shadow(0 0 11px color-mix(in srgb,var(--g) 75%,transparent))}
-.embw.t11{animation:hueglow 9s linear infinite}
-.embw.t12{filter:drop-shadow(0 0 12px var(--g));animation:glitch 7s steps(1) infinite}
+.embw.t11{filter:drop-shadow(0 0 10px var(--g))}
+.embw.t12{filter:drop-shadow(0 0 12px var(--g))}
 .embw.t13{filter:drop-shadow(0 0 14px rgba(255,207,106,.75))}
-.embw.t14{animation:novaglow 2.6s ease-in-out infinite}
+.embw.t14{filter:drop-shadow(0 0 14px rgba(255,90,90,.85))}
 .embw.t15{filter:drop-shadow(0 0 14px rgba(164,107,255,.8))}
-.embw.t16{animation:hueglow 6s linear infinite}
+.embw.t16{filter:drop-shadow(0 0 12px var(--g))}
 .embw.t10::before,.embw.t11::before,.embw.t12::before,.embw.lg::before{content:"";position:absolute;inset:-16%;border-radius:50%;z-index:-1;filter:blur(14px);animation:rkspin 6s linear infinite;opacity:.35;
   background:conic-gradient(from 0deg,var(--g),transparent 30%,var(--g) 50%,transparent 80%,var(--g))}
 .embw.t15::before{opacity:.55;background:radial-gradient(circle,#000 30%,rgba(164,107,255,.7) 45%,transparent 70%);animation:none}
-.embw.t16::before{opacity:.6;background:conic-gradient(from 0deg,#ff3d6e,#ffb340,#ffe14d,#4dff9f,#4dd2ff,#8a5cff,#ff3d6e)}
+.embw.t16::before{opacity:.7;background:radial-gradient(circle,rgba(255,244,244,.5) 0 12%,#ff1f3d 30%,rgba(92,0,16,.6) 52%,transparent 70%);animation:none}
 @keyframes novaglow{0%,100%{filter:drop-shadow(0 0 8px rgba(255,122,61,.7))}50%{filter:drop-shadow(0 0 20px rgba(255,45,111,.95))}}
 .rk-flow{animation:rkflow 3s linear infinite}
 @keyframes rkflow{to{stroke-dashoffset:-100}}
@@ -341,7 +343,7 @@ button.chip{cursor:pointer}
 /* legendary rank-ups: each its own event */
 .ru-legend .ru-cap{letter-spacing:.6em}
 .ru-legend .btn.pri{background:var(--g);border-color:transparent;color:#0b0a0e;box-shadow:0 10px 34px -10px var(--g)}
-.ru-inf .btn.pri{background:linear-gradient(90deg,#ff3d6e,#ffb340,#ffe14d,#4dff9f,#4dd2ff,#8a5cff) 0 0/200% 100%;animation:rainbow 5s linear infinite}
+.ru-god .btn.pri{background:linear-gradient(90deg,#5c0010,#ff1f3d,#ffd0d6,#ff1f3d,#5c0010) 0 0/200% 100%;color:#fff;animation:rainbow 4s linear infinite}
 .ru-note{font-size:.8rem;opacity:.55;max-width:440px}
 .ru-flash{position:absolute;inset:0;z-index:2;pointer-events:none;background:#fff;animation:ruFlash 1.2s ease-out both}
 @keyframes ruFlash{from{opacity:1}to{opacity:0}}
@@ -365,15 +367,18 @@ button.chip{cursor:pointer}
 @keyframes ruSuck{0%{transform:rotate(var(--a)) translateX(calc(var(--d) * 1.7)) scale(var(--s));opacity:0}25%{opacity:1}100%{transform:rotate(calc(var(--a) + 220deg)) translateX(0) scale(0);opacity:0}}
 .ru-sing .ru-in{animation:ruSwirl 1.4s var(--ease) both}
 @keyframes ruSwirl{from{transform:scale(.2) rotate(-90deg);opacity:0;filter:blur(12px)}to{transform:none;opacity:1;filter:none}}
-.ru-inf{background:#04040a}
-.ru-aurora{position:absolute;inset:-25%;pointer-events:none;filter:blur(24px);animation:aurora 12s ease-in-out infinite alternate;
-  background:radial-gradient(40% 30% at 30% 30%,rgba(255,61,110,.4),transparent),radial-gradient(40% 30% at 72% 26%,rgba(77,210,255,.4),transparent),radial-gradient(45% 35% at 52% 72%,rgba(138,92,255,.42),transparent),radial-gradient(35% 25% at 20% 76%,rgba(77,255,159,.28),transparent),radial-gradient(30% 25% at 82% 70%,rgba(255,225,77,.25),transparent)}
-@keyframes aurora{to{transform:rotate(14deg) scale(1.18)}}
-.ru-lemni{position:absolute;left:50%;top:44%;width:150vmin;height:150vmin;margin:-75vmin;overflow:visible;pointer-events:none}
-.ru-lemni path{fill:none;stroke:#fff;stroke-width:.5;opacity:.35;stroke-dasharray:100;stroke-dashoffset:100;animation:ruDraw 2.6s var(--ease) .3s forwards}
-@keyframes ruDraw{to{stroke-dashoffset:0}}
-.ru-inf .ru-flash{background:conic-gradient(from 0deg,#ff3d6e,#ffb340,#ffe14d,#4dff9f,#4dd2ff,#8a5cff,#ff3d6e);mix-blend-mode:screen;animation-duration:1.6s}
-.ru-inf .ru-rays{background:repeating-conic-gradient(from 0deg,rgba(255,255,255,.13) 0 4deg,transparent 4deg 14deg)}
+.ru-god{background:#050001}
+.ru-god .ru-flash{background:radial-gradient(circle at 50% 44%,#fff 0,#ff1f3d 32%,#3a0008 72%);animation-duration:1.5s}
+.ru-god .ru-rays{background:repeating-conic-gradient(from 0deg,rgba(255,31,61,.17) 0 2deg,transparent 2deg 9deg)}
+.ru-god .ru-sp i{clip-path:circle(50%);box-shadow:0 0 10px 2px rgba(255,31,61,.6);animation:ruRise 3s cubic-bezier(.2,.6,.3,1) infinite}
+@keyframes ruRise{0%{transform:translate(calc((var(--d) - 390px) * 1.3),34vh) scale(var(--s));opacity:0}12%{opacity:1}100%{transform:translate(calc((var(--d) - 390px) * 1.1),-64vh) scale(.2);opacity:0}}
+.ru-god .ru-in{animation:ruAscend 1.7s var(--ease) both}
+@keyframes ruAscend{from{transform:translateY(70px) scale(.7);opacity:0;filter:blur(14px) brightness(3)}to{transform:none;opacity:1;filter:none}}
+.ru-pillar{position:absolute;left:50%;top:-10%;bottom:-10%;width:3px;margin-left:-1.5px;pointer-events:none;background:linear-gradient(transparent,#fff 30%,#fff 70%,transparent);box-shadow:0 0 50px 16px rgba(255,31,61,.55);transform-origin:50% 44%;animation:ruPillar 1.8s var(--ease) both}
+@keyframes ruPillar{from{transform:scaleY(0);opacity:0}30%{opacity:1}to{transform:scaleY(1);opacity:.75}}
+.ru-wheels{position:absolute;left:50%;top:44%;width:130vmin;height:130vmin;margin:-65vmin;overflow:visible;pointer-events:none;opacity:.55;animation:ruIn 2s .4s both}
+.ru-wheels g{transform-box:view-box;transform-origin:60px 60px}
+.ru-wheels ellipse{fill:none;stroke:#ff1f3d;stroke-width:.35}
 
 /* ---------- legendary rank skins: html[data-rank] ---------- */
 #rankfx{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
@@ -383,7 +388,7 @@ button.chip{cursor:pointer}
 [data-rank="eclipse"]{--rk1:#d9a43a;--rk2:#ffe3a0}
 [data-rank="nova"]{--rk1:#ff2d6f;--rk2:#ffa35c}
 [data-rank="sing"]{--rk1:#7b4dff;--rk2:#e0ccff}
-[data-rank="inf"]{--rk1:#8a5cff;--rk2:#4dd2ff}
+[data-rank="god"]{--rk1:#ff1f3d;--rk2:#ffd0d6}
 [data-rank] .tab::after{background:linear-gradient(90deg,var(--rk1),var(--rk2),var(--rk1))}
 [data-rank] #top::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1.5px;pointer-events:none;background:linear-gradient(90deg,transparent,var(--rk1),var(--rk2),var(--rk1),transparent);background-size:200% 100%;animation:rainbow 9s linear infinite}
 [data-rank] .brand .logo{background:linear-gradient(100deg,var(--text) 42%,var(--rk1) 48%,var(--rk2) 50%,var(--rk1) 52%,var(--text) 58%);background-size:300% 100%;animation:rainbow 10s linear infinite}
@@ -391,13 +396,14 @@ button.chip{cursor:pointer}
 [data-rank] .rchip{background:#0b0a0e;color:#f4f0ff;border-color:var(--rk1);box-shadow:0 0 16px -4px var(--rk1)}
 [data-rank] .btn.pri{box-shadow:0 8px 24px -10px var(--rk1)}
 [data-rank="eclipse"] .brand .spark{clip-path:none;border-radius:50%;background:var(--bg);box-shadow:0 0 0 1.5px var(--rk1),0 0 9px 2px var(--rk2);animation:none}
-[data-rank="nova"] .brand .spark{background:radial-gradient(#fff,#ffb36b 45%,#ff2d6f);animation:twk 4s var(--ease) infinite,novaglow 2.4s ease-in-out infinite}
+[data-rank="nova"] .brand .spark{background:radial-gradient(#fff,#ffb36b 45%,#ff2d6f);animation:twk 4s var(--ease) infinite;filter:drop-shadow(0 0 4px #ff7a3d)}
 [data-rank="sing"] .brand .spark{clip-path:none;border-radius:50%;background:#000;box-shadow:0 0 0 1.5px var(--rk2),0 0 10px 3px var(--rk1);animation:rkpulse 3s ease-in-out infinite}
-[data-rank="inf"] .brand .logo{background:linear-gradient(90deg,#ff3d6e,#ffb340,#ffe14d,#4dff9f,#4dd2ff,#8a5cff,#ff3d6e);background-size:300% 100%;animation:rainbow 9s linear infinite}
-[data-rank="inf"] .brand .spark{background:conic-gradient(#ff3d6e,#ffb340,#ffe14d,#4dff9f,#4dd2ff,#8a5cff,#ff3d6e)}
-[data-rank="inf"] .tab::after,[data-rank="inf"] #top::after{background:linear-gradient(90deg,#ff3d6e,#ffb340,#ffe14d,#4dff9f,#4dd2ff,#8a5cff,#ff3d6e);background-size:200% 100%;animation:rainbow 5s linear infinite}
-[data-rank="inf"] #top::after{height:2px}
-[data-rank="inf"] .rchip{border-color:transparent;background:linear-gradient(#0b0a0e,#0b0a0e) padding-box,linear-gradient(90deg,#ff3d6e,#ffb340,#ffe14d,#4dff9f,#4dd2ff,#8a5cff,#ff3d6e) 0 0/300% 100% border-box;animation:rainbow 6s linear infinite;box-shadow:0 0 18px -4px #8a5cff}
+[data-rank="god"] .brand .logo{background:linear-gradient(100deg,var(--text) 40%,#5c0010 45%,#ff1f3d 48%,#fff4f4 50%,#ff1f3d 52%,#5c0010 55%,var(--text) 60%);background-size:300% 100%;animation:rainbow 7s linear infinite}
+[data-rank="god"] .brand .spark{background:radial-gradient(circle,#fff 0 22%,#ff1f3d 60%,#7a0012)}
+[data-rank="god"] #top::after{height:2px;background:linear-gradient(90deg,transparent,#5c0010,#ff1f3d,#fff4f4,#ff1f3d,#5c0010,transparent);background-size:200% 100%;animation:rainbow 6s linear infinite}
+[data-rank="god"] .rchip{background:#0a0002;color:#ffe9ec;border-color:#ff1f3d;box-shadow:0 0 18px -3px #ff1f3d,inset 0 0 12px -6px #ff1f3d}
+[data-rank="god"] .btn.pri{background:linear-gradient(135deg,#ff2a45,#b3001e);border-color:#ff1f3d;color:#fff;box-shadow:0 10px 28px -12px #ff1f3d}
+[data-rank="god"] body{background-image:radial-gradient(70% 45% at 85% -8%,rgba(255,31,61,.2),transparent 70%)}
 .fx-spin,.fx-spinr{transform-box:view-box;transform-origin:200px 200px;animation:rkspin 160s linear infinite}
 .fx-spinr{animation-name:rkspinr;animation-duration:230s}
 .fx-spin.fast{animation-duration:40s}
@@ -415,14 +421,35 @@ button.chip{cursor:pointer}
 @keyframes novaB{to{transform:scale(1.16) rotate(12deg)}}
 @keyframes novaShock{0%{transform:scale(.1);opacity:0}4%{opacity:1}60%,100%{transform:scale(2.6);opacity:0}}
 .fx-sing{right:-15vw;top:-15vw;width:min(58vw,800px);aspect-ratio:1;opacity:.85}
-.fx-aur{left:-10%;right:-10%;top:-12vh;height:62vh;filter:blur(46px);opacity:.42}
-.fx-aur i{position:absolute;width:46%;height:70%;border-radius:50%;animation:aurA 18s ease-in-out infinite alternate}
-.fx-aur i:nth-child(1){left:0;top:0;background:#ff3d6e}
-.fx-aur i:nth-child(2){left:26%;top:12%;background:#4dff9f;animation-duration:22s;animation-direction:alternate-reverse}
-.fx-aur i:nth-child(3){left:50%;top:-6%;background:#4dd2ff;animation-duration:26s}
-.fx-aur i:nth-child(4){left:70%;top:14%;background:#8a5cff;animation-duration:20s;animation-direction:alternate-reverse}
-@keyframes aurA{to{transform:translate(8vw,6vh) scale(1.2)}}
-.fx-lem{right:-8vw;top:-6vw;width:min(62vw,880px);aspect-ratio:1;opacity:.6}
+.fx-god{right:-13vw;top:-15vw;width:min(60vw,840px);aspect-ratio:1;opacity:.8;will-change:transform;animation:fxturn 300s linear infinite}
+.fx-god .fx-w1{animation-duration:70s}.fx-god .fx-w2{animation-duration:95s}.fx-god .fx-w3{animation-duration:130s}
+.fx-blink{transform-box:fill-box;transform-origin:center;animation:blink 7s infinite}
+.fx-veil{inset:0;background:radial-gradient(120% 55% at 50% 118%,rgba(255,31,61,.16),transparent 62%)}
+.fx-ash{inset:0}
+.fx-ash i{position:absolute;left:var(--x);bottom:-12px;width:calc(var(--s) * 3);height:calc(var(--s) * 3);border-radius:50%;background:radial-gradient(circle,#ffd0d6,#ff3d55 30%,transparent 65%);will-change:transform,opacity;opacity:0;animation:ashUp var(--t) linear var(--d) infinite}
+@keyframes ashUp{0%{transform:translate(0,0);opacity:0}8%{opacity:.85}70%{opacity:.55}100%{transform:translate(var(--w),-105vh);opacity:0}}
+/* legendary skins without the stutter (same look):
+   - the header is solid, not a blur of what moves under it;
+   - the background grid stays still;
+   - a decor turns as a whole layer (the GPU does that), never by repainting the shapes inside its picture;
+   - the aurora glows by soft gradients, not by a live blur filter. */
+[data-rank] #top{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--bg)}
+[data-rank] body::before{animation:none}
+/* emblem glows stand still (an animated filter is recomputed every frame) and the tab underlines do not shimmer */
+[data-rank] .tab::after{animation:none!important}
+/* the small emblem in the header chip stands still: a moving picture under a glow filter is repainted every frame */
+.rchip .emb *,.rchip .embw::before,.rchip .embw{animation:none!important}
+#rankfx svg,#rankfx svg *{animation:none!important}
+.fx-ecl,.fx-sing,.fx-lem{will-change:transform;animation:fxturn 240s linear infinite}
+.fx-lem{animation-duration:400s}
+@keyframes fxturn{to{transform:rotate(360deg)}}
+.fx-nova i{will-change:transform}
+.fx-aur{filter:none}
+.fx-aur i{will-change:transform;width:60%;height:95%}
+.fx-aur i:nth-child(1){background:radial-gradient(closest-side,#ff3d6e,transparent)}
+.fx-aur i:nth-child(2){background:radial-gradient(closest-side,#4dff9f,transparent)}
+.fx-aur i:nth-child(3){background:radial-gradient(closest-side,#4dd2ff,transparent)}
+.fx-aur i:nth-child(4){background:radial-gradient(closest-side,#8a5cff,transparent)}
 .burst{position:fixed;z-index:90;pointer-events:none;width:0;height:0}
 .burst i{position:absolute;width:11px;height:11px;margin:-5.5px;background:var(--c5);clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%);animation:pop .85s var(--ease) forwards}
 @keyframes pop{0%{transform:translate(0,0) scale(.2) rotate(0);opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(1) rotate(var(--r));opacity:0}}
@@ -585,6 +612,7 @@ td.cellbar{min-width:110px}
 .cell:hover{transform:scale(1.18)}
 .cell.due{outline:2px solid var(--cdue);outline-offset:-2px}
 .cell.none{background:none;cursor:default}
+.cell.part{background:transparent;color:var(--text);border:1.5px dashed var(--else);line-height:19px}
 
 /* ---------- modal / toast ---------- */
 #modal{position:fixed;inset:0;background:rgba(6,6,9,.6);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);z-index:50;display:flex;align-items:flex-start;justify-content:center;padding:28px 12px;overflow:auto;animation:ruIn .25s ease both}
@@ -747,7 +775,6 @@ tr.sessdetail td{background:var(--panel2)}
 .cc-boss{width:62px;height:62px;border-radius:14px;background:radial-gradient(circle,#15151b,#060608);display:grid;place-items:center;flex:none;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
 .cc-boss .boss-svg *,.chrow-art .boss-svg *{animation:none!important}
 .cc-boss .boss-svg .b-eye,.chrow-art .boss-svg .b-eye{animation:blink 7s infinite!important}
-.chapcard:hover .cc-boss .boss-svg .b-body{animation:breathe 2.5s ease-in-out infinite!important}
 .hpmini{height:6px;border-radius:99px;background:color-mix(in srgb,var(--c1) 14%,var(--panel2));overflow:hidden}
 .hpmini i{display:block;height:100%;background:linear-gradient(90deg,#ff2a3d,#ff7a59);box-shadow:0 0 10px #ff2a3d88;transform-origin:left}
 .hpmini.dark{background:rgba(255,255,255,.08)}
@@ -963,7 +990,9 @@ tr.sessdetail td{background:var(--panel2)}
   background:radial-gradient(130% 120% at 100% 30%,hsl(var(--bh) 55% 13%),#0b0b0e 58%,#070709);border:1px solid rgba(255,255,255,.07);box-shadow:0 14px 34px -22px rgba(0,0,0,.7);transition:transform .35s var(--ease),border-color .35s,box-shadow .35s}
 .cc:hover{transform:translateY(-4px);border-color:hsl(var(--bh) 70% 55% / .5);box-shadow:0 26px 50px -26px hsl(var(--bh) 80% 40% / .8)}
 .cc-bg{position:absolute;right:-70px;top:50%;width:260px;height:260px;margin-top:-130px;z-index:-1;opacity:.5;pointer-events:none;-webkit-mask-image:radial-gradient(circle at 55% 50%,#000 35%,transparent 72%);mask-image:radial-gradient(circle at 55% 50%,#000 35%,transparent 72%);transition:opacity .45s,transform .7s var(--ease);will-change:transform}
-.cc:hover .cc-bg{opacity:.85;transform:scale(1.07) translateX(-8px)}
+.cc:hover .cc-bg{opacity:.85}
+/* calm hover: the boss picture behind a card does not grow or breathe, and the crimson glitch jolt stays on the chapter page */
+.cc-bg .boss-svg.red,.cc-boss .boss-svg.red{animation:none}
 .cc-bg .boss-svg *,.ch-bg .boss-svg *{animation:none!important}
 .cc-bg .boss-svg .b-eye,.ch-bg .boss-svg .b-eye{animation:blink 7s infinite!important}
 .cc-head{display:flex;align-items:flex-start;justify-content:space-between}
@@ -1117,7 +1146,7 @@ tr.sessdetail td{background:var(--panel2)}
 .cc.unknown .cc-bn{color:var(--muted)}
 /* revealed: the boss itself, in colour, on the right */
 .cc.s-none:not(.unknown) .cc-bg{width:176px;height:176px;margin-top:-88px;right:-12px;opacity:.95;-webkit-mask-image:radial-gradient(circle,#000 58%,transparent 74%);mask-image:radial-gradient(circle,#000 58%,transparent 74%)}
-.cc.s-none:not(.unknown):hover .cc-bg{transform:scale(1.07)}
+
 /* beaten: the boss sleeps behind the whole card */
 .cc.s-boss .cc-bg,.cc.s-gold .cc-bg,.cc.s-red .cc-bg{width:330px;height:330px;margin-top:-165px;right:-96px}
 .cc.s-boss .cc-bg{opacity:.3;filter:none}
@@ -1348,6 +1377,6 @@ body.focus #top *,body.focus #top *::before,body.focus #top *::after{animation-p
 <script src="study_ids.js?v=1"></script>
 <script src="sol_ids.js?v=1"></script>
 <script src="i18n.js?v=20261040"></script>
-<script src="app.js?v=20261058"></script>
+<script src="app.js?v=20261059"></script>
 </body>
 </html>
