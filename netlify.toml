@@ -1,8 +1,8 @@
-# math.bedarev.com (Netlify) publishes only the _math folder of this repo.
-# GitHub Pages (bedarev.com, the portfolio) skips folders that start with "_", so the site is not served twice.
+# The maths site is the math folder of this repo: GitHub Pages serves it at bedarev.com/math/,
+# and Netlify (math.bedarev.com, if it is switched on again) publishes the same folder.
 # Leave "Base directory" empty in the Netlify settings: this file then applies as written.
 [build]
-  publish = "_math"
+  publish = "math"
 
 [[headers]]
   for = "/*"
