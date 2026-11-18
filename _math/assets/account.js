@@ -13,22 +13,24 @@
   };
   const lang = () => (store.get('bm_lang') === 'ru' ? 'ru' : 'en');
   const RANK = { none: 0, free: 1, pro: 2, max: 3 };
-  let session = null, plan = 'none';
+  // allow: the chapters an account is opened on (profiles.allow, set by the owner), null = everything
+  let session = null, plan = 'none', allow = null;
   const subs = [];
   const emit = ev => subs.forEach(f => { try { f(ev); } catch (e) { console.error(e); } });
   // the last known plan, so the page does not flash "free" while the real one loads
-  const cachedPlan = uid => { try { const c = JSON.parse(store.get('bm_plan')); return c && c.uid === uid ? c.plan : 'free'; } catch (e) { return 'free'; } };
+  const cachedPlan = uid => { try { const c = JSON.parse(store.get('bm_plan')); allow = c && c.uid === uid ? c.allow || null : null; return c && c.uid === uid ? c.plan : 'free'; } catch (e) { allow = null; return 'free'; } };
   // a saved session means a known user: start from their cached plan before Supabase restores the session
   let uidHint = null, planKnown = false;
   try { const t = JSON.parse(store.get('sb-' + new URL(C.url).hostname.split('.')[0] + '-auth-token')); if (t && t.user) { uidHint = t.user.id; plan = cachedPlan(t.user.id); } } catch (e) { /* no saved session */ }
 
   async function refreshPlan() {
     if (!session) { plan = 'none'; return plan; }
-    const { data, error } = await sb.rpc('my_plan');
+    const [{ data, error }, a] = await Promise.all([sb.rpc('my_plan'), sb.rpc('my_allow')]);
     if (error || !data) return plan;
-    store.set('bm_plan', JSON.stringify({ uid: session.user.id, plan: data }));
+    const al = a && !a.error && Array.isArray(a.data) ? a.data : null, alWas = JSON.stringify(allow);
+    store.set('bm_plan', JSON.stringify({ uid: session.user.id, plan: data, allow: al }));
     // the first answer always reaches the page: until then the plan is only the cached guess
-    if (data !== plan || !planKnown) { plan = data; planKnown = true; emit('plan'); }
+    if (data !== plan || JSON.stringify(al) !== alWas || !planKnown) { plan = data; allow = al; planKnown = true; emit('plan'); }
     return plan;
   }
 
@@ -36,7 +38,7 @@
     sb.auth.onAuthStateChange((event, s) => {
       const was = session ? session.user.id : null;
       session = s || null;
-      if (!session) { plan = 'none'; if (event === 'SIGNED_OUT') { store.del('bm_plan'); store.del('bm_study_cache'); } }
+      if (!session) { plan = 'none'; allow = null; if (event === 'SIGNED_OUT') { store.del('bm_plan'); store.del('bm_study_cache'); } }
       else if (was !== session.user.id) plan = cachedPlan(session.user.id);
       if (event === 'INITIAL_SESSION') resolve(session);
       // Supabase asks not to await other calls inside this callback
@@ -71,6 +73,7 @@
     get planKnown() { return planKnown; },
     get user() { return session ? session.user : null; },
     get plan() { return plan; },
+    get allow() { return allow; },
     has: need => RANK[plan] >= RANK[need],
     on: f => subs.push(f),
     refreshPlan,
