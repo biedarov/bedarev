@@ -73,6 +73,11 @@ nav .lang{padding:0 14px 0 6px;font-size:12.5px;justify-self:auto}
   -webkit-mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.35) 18%,#000 42%),linear-gradient(0deg,transparent 0%,#000 16%);-webkit-mask-composite:source-in;
   mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.35) 18%,#000 42%),linear-gradient(0deg,transparent 0%,#000 16%);mask-composite:intersect;
   filter:drop-shadow(0 0 1px rgba(0,0,0,.35));transition:transform .6s var(--ease)}
+/* German and Japanese: the figure stands in the middle of its picture, so only the edges and the bottom fade */
+.peek.de img,.peek.ja img{right:6px;
+  -webkit-mask-image:linear-gradient(0deg,transparent 0%,#000 20%);mask-image:linear-gradient(0deg,transparent 0%,#000 20%);-webkit-mask-composite:source-over;mask-composite:add}
+.peek.ja img{right:24px}
+:root[data-theme="dark"] .peek.de img,:root[data-theme="dark"] .peek.ja img{filter:drop-shadow(0 0 .8px rgba(255,255,255,.55))}
 /* quick, even unblur on appear; even blur-out on hide */
 .pk{position:absolute;inset:0;opacity:0;filter:blur(14px);transition:filter .6s linear,opacity .6s linear}
 .pk.up{opacity:1;filter:blur(0)}

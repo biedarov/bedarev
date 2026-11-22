@@ -112,7 +112,8 @@ function revBtn(){
 }
 
 /* ---------- illustration ---------- */
-const PEEK = '<div class="peek" aria-hidden="true"><div class="pk"><img src="/l/img/girl.webp" alt=""></div></div>';
+const GIRL = {zh: '/l/img/girl.webp', de: '/l/img/girl_de.webp', ja: '/l/img/girl_ja.webp'};
+const peek = () => { const k = GIRL[S.lang] ? S.lang : 'zh'; return `<div class="peek ${k}" aria-hidden="true"><div class="pk"><img src="${GIRL[k]}" alt=""></div></div>`; };
 function reveal(pk, img){ let done = false; const go = () => { if (done) return; done = true; requestAnimationFrame(() => pk.classList.add('up')); setTimeout(() => pk.classList.add('up'), 60); };
   setTimeout(go, 300); img?.decode?.().then(go).catch(go); }
 function setGirl(on){
@@ -121,7 +122,7 @@ function setGirl(on){
   if (!on) { const pk = $('.pk', top); if (pk) { pk.classList.add('out'); pk.classList.remove('up'); }
     setTimeout(() => { $('.peek', top)?.remove(); top.classList.add('nogirl'); }, pk ? 650 : 0); }
   else if (!$('.peek', top)) { top.classList.remove('nogirl');
-    setTimeout(() => { top.insertAdjacentHTML('afterbegin', PEEK); reveal($('.pk', top), $('.peek img', top)); }, 750); }
+    setTimeout(() => { top.insertAdjacentHTML('afterbegin', peek()); reveal($('.pk', top), $('.peek img', top)); }, 750); }
 }
 
 /* ---------- home ---------- */
@@ -137,7 +138,7 @@ function home(){
       <span class="r">${x.note ? `<span>${x.note}</span>` : ''}${(x.links || []).map(([u, l]) => `<a class="mini" href="${esc(u)}" target="_blank" rel="noopener">${l}</a>`).join('')}</span></div>`;
   const tmr = g => { const s = {Фонетика: 'phon', Лексика: 'anki'}[g]; if (!s) return ''; const run = S.timer?.s === s; return `<button class="mini ${run ? 'on' : ''}" data-timer="${s}">${run ? '■ стоп' : '▶ таймер'}</button>`; };
   show(`<div class="stack">
-    <section class="card top ${S.settings.girl === false ? 'nogirl' : ''}" aria-label="Статистика">${S.settings.girl === false ? '' : PEEK}
+    <section class="card top ${S.settings.girl === false ? 'nogirl' : ''}" aria-label="Статистика">${S.settings.girl === false ? '' : peek()}
       <div class="rings">${S.lang === 'ja' && JA ? ring(JA.words.filter(w => w.s === 'known').length, JA.words.length, '') + ring(jaLessonsDone(), 23, 'уроков') : S.lang === 'de' && DE ? ring(DE.words.filter(w => w.s === 'known').length, DE.words.length, '') + ring(deLessonsDone(), 30, 'уроков') : ring(lw, WORDS.length, '') + ring(nl, nL, 'уроков')}</div>
       <div class="nums">
         <div class="fr"><div class="frac"><b class="num">${h2(tod)}<i>${tod > yes ? '↑' : tod && tod < yes ? '↓' : ''}</i></b><hr><span>часы</span></div>
