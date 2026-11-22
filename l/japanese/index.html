@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ru" data-site="ja" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Japanese</title>
+<meta name="theme-color" content="#07080a">
+<link rel="icon" href="/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600;700;800&family=Manrope:wght@500;600;700;800&family=Noto+Serif+SC:wght@600&family=Klee+One:wght@600&display=swap">
+<link rel="stylesheet" href="/l/app.css?v=019be30d">
+</head>
+<body>
+<nav aria-label="Разделы">
+  <a href="#words" data-tab="words">Word List</a>
+  <a href="#lessons" data-tab="lessons">Lessons</a>
+  <div class="bw"><a href="#home" data-tab="home" class="brand">japanese</a>
+    <div class="menu" role="menu" aria-label="Языки"><span class="hl" aria-hidden="true"></span>
+      <a class="lang" data-lang="zh" role="menuitem"><i class="zh">中</i>Mandarin</a>
+      <a class="lang" data-lang="de" role="menuitem"><i>De</i>German</a>
+      <a class="lang" data-lang="ja" role="menuitem"><i class="zh">日</i>Japanese</a>
+    </div></div>
+  <a href="#stats" data-tab="stats">Statistics</a>
+  <button id="gear" aria-label="Настройки">Settings</button>
+</nav>
+<main id="app"></main>
+<div class="card pop hide" id="pop" role="dialog" aria-label="Настройки"><span class="eye">иллюстрация</span><div class="seg" id="gi"><button data-v="1">Показать</button><button data-v="0">Убрать</button></div><span class="eye">тема</span><div class="seg" id="th"><button data-v="light">Светлая</button><button data-v="dark">Тёмная</button></div></div>
+<aside class="card fly" id="fly" aria-live="polite"></aside>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs id="sprite"></defs></svg>
+<script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5.0/dist/hanzi-writer.min.js"></script>
+<script src="/l/app.js?v=e68e1c32"></script>
+</body>
+</html>
