@@ -46,7 +46,7 @@ nav::before{content:"";position:absolute;inset:0 -100vw;z-index:-1;background:co
 nav a,nav button{justify-self:center;background:none;border:0;padding:4px 6px;font-size:12.5px;font-weight:700;color:var(--mute);position:relative;transition:color .2s}
 nav a:hover,nav button:hover,nav a[aria-current]{color:var(--ink)}
 nav a[aria-current]::after{content:"";position:absolute;left:6px;right:6px;bottom:-1px;height:2px;border-radius:2px;background:var(--ink);animation:grow .35s var(--ease)}
-nav .brand{font-family:var(--display);font-size:14px;font-weight:800;color:var(--ink);letter-spacing:-.02em}
+nav .brand{overflow:clip;overflow-clip-margin:3px;white-space:nowrap;font-family:var(--display);font-size:14px;font-weight:800;color:var(--ink);letter-spacing:-.02em}
 .bw{justify-self:center;position:relative;display:flex;justify-content:center}
 .bw::after{content:"";position:absolute;left:-60px;right:-60px;top:100%;height:16px}
 .menu{position:absolute;top:calc(100% + 10px);left:50%;display:flex;gap:3px;padding:5px;border-radius:16px;border:1px solid color-mix(in srgb,var(--ink) 16%,transparent);
@@ -67,21 +67,18 @@ nav .lang{padding:0 14px 0 6px;font-size:12.5px;justify-self:auto}
 .lang.on i{background:var(--inv);color:var(--ink);border-color:var(--inv)}
 .lang:focus-visible{outline:none;color:var(--ink)}
 .lang[aria-disabled="true"]{cursor:default}
-/* she peeks over the top edge of the stats card: rises from behind its bottom edge, hair fades into the card */
-.peek{position:absolute;right:0;bottom:0;width:330px;height:calc(100% + 30px);overflow:hidden;border-bottom-right-radius:26px;pointer-events:none;z-index:0}
-.peek img{position:absolute;right:-18px;bottom:-4px;height:100%;width:auto;transform:translate3d(var(--px,0px),var(--py,0px),0);
-  -webkit-mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.35) 18%,#000 42%),linear-gradient(0deg,transparent 0%,#000 16%);-webkit-mask-composite:source-in;
-  mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.35) 18%,#000 42%),linear-gradient(0deg,transparent 0%,#000 16%);mask-composite:intersect;
-  filter:drop-shadow(0 0 1px rgba(0,0,0,.35));transition:transform .6s var(--ease)}
+/* the figure steps out of the stats card: same height, same head size in every language */
+.peek{position:absolute;right:0;bottom:0;width:290px;height:calc(100% + 46px);overflow:hidden;pointer-events:none;z-index:0}
+.peek img{position:absolute;right:34px;bottom:0;height:100%;width:auto;transform:translate3d(var(--px,0px),var(--py,0px),0);filter:drop-shadow(0 0 1px rgba(0,0,0,.35));transition:transform .6s var(--ease)}
+:root[data-theme="dark"] .peek img{filter:drop-shadow(0 0 .8px rgba(255,255,255,.6))}
+.peek:not(.ja) img{bottom:-8px;height:calc(100% + 2px)}
 /* Japanese: the whole figure, kneeling over the lower edge of the card */
-.peek.ja{width:290px;height:calc(100% + 74px);bottom:-28px;border-radius:0}
-.peek.ja img{right:0;bottom:0;-webkit-mask-image:none;mask-image:none}
-:root[data-theme="dark"] .peek.ja img{filter:drop-shadow(0 0 .8px rgba(255,255,255,.6))}
+.peek.ja{height:calc(100% + 74px);bottom:-28px}
+.peek.ja img{right:0}
 /* quick, even unblur on appear; even blur-out on hide */
 .pk{position:absolute;inset:0;opacity:0;filter:blur(14px);transition:filter .6s linear,opacity .6s linear}
 .pk.up{opacity:1;filter:blur(0)}
 .pk.out{opacity:0;filter:blur(14px);transition:filter .45s linear,opacity .45s linear}
-:root[data-theme="dark"] .peek img{opacity:.94}
 .top{overflow:visible}
 .top>:not(.peek){position:relative;z-index:1}
 @media (max-width:1000px){.peek{display:none}}
@@ -96,6 +93,7 @@ nav .lang{padding:0 14px 0 6px;font-size:12.5px;justify-self:auto}
 .rev.none:hover svg{transform:none}
 .rev.none em{background:none;color:var(--mute);border:1px solid var(--line);font-family:var(--ui);font-size:11.5px;font-weight:700}
 nav .brand::after{display:none!important}
+nav .brand i{display:inline-block;font-style:normal;will-change:transform}
 
 .btn{height:40px;padding:0 18px;border-radius:12px;border:1px solid var(--line);background:var(--c1);font-weight:800;font-size:13px;display:inline-flex;align-items:center;gap:8px;transition:transform .15s,border-color .2s}
 .btn:hover{border-color:var(--ink)} .btn:active{transform:scale(.97)}
@@ -178,7 +176,8 @@ select,input[type=text]{font:inherit;font-weight:600;height:34px;padding:0 10px;
 .row .py{font-weight:700}
 .row .en{color:var(--mute);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .row.learned .en{color:var(--ink)}
-.cells{display:flex;gap:3px}
+.cells{display:flex;flex-wrap:wrap;gap:3px;align-items:center}
+.cells .lat{font-size:15px;font-weight:700;color:var(--mute);padding:0 3px}
 .cell{position:relative;flex:none;border:1px solid var(--dim);background:var(--c1)}
 .cell svg{display:block;width:100%;height:100%}
 .cell .g{stroke:var(--dim);stroke-width:16;stroke-dasharray:46 40}
@@ -187,6 +186,7 @@ select,input[type=text]{font:inherit;font-weight:600;height:34px;padding:0 10px;
 .pen{width:15px;height:15px}
 .ja{font-family:"Klee One",var(--zh)}
 .cell .t.ja{font-weight:600}
+.pt{font-weight:600;color:var(--ink);opacity:.62;white-space:nowrap}
 .stdot{width:8px;height:8px;border-radius:50%;justify-self:center}
 .stdot.known{background:var(--ink)} .stdot.learning{box-shadow:inset 0 0 0 2px var(--ink)} .stdot.new{box-shadow:inset 0 0 0 1px var(--dim)}
 /* German list: wider words, article set back, translation may wrap */
@@ -197,12 +197,14 @@ select,input[type=text]{font:inherit;font-weight:600;height:34px;padding:0 10px;
 .de .dp{font-size:12.5px;color:var(--mute);overflow-wrap:anywhere;hyphens:auto}
 .de .row .en{white-space:normal;line-height:1.35;color:var(--ink)}
 .dh span{font-size:11.5px;color:var(--mute);font-weight:700;margin-left:8px}
+.jp .lh,.jp .row{grid-template-columns:222px minmax(0,120px) minmax(0,1fr) 12px;gap:16px}
 /* wide screens: everything in the list is larger */
 @media (min-width:1500px){
   .wl .lh,.wl .row{grid-template-columns:200px 170px minmax(0,1fr) 24px;gap:22px}
   .wl .lh{padding:20px 26px 11px} .wl .dh{padding:22px 26px 9px} .wl .dh b{font-size:13px} .wl .dh span{font-size:13px}
   .wl .row{padding:8px 26px} .wl .row .py{font-size:19px} .wl .row .en{font-size:16.5px}
   .wl .eye{font-size:10.5px} .wl .pen{width:18px;height:18px} .wl .stdot{width:10px;height:10px}
+  .wl.jp .lh,.wl.jp .row{grid-template-columns:294px minmax(0,160px) minmax(0,1fr) 14px;gap:20px}
   .wl.de .lh,.wl.de .row{grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr) minmax(0,1.35fr) 14px;gap:22px}
   .wl.de .row{padding:11px 26px;contain-intrinsic-size:auto 48px} .wl.de .dw{font-size:18px} .wl.de .dp{font-size:15px} .wl.de .row .en{font-size:16px}
   .wl .tabs button{height:36px;font-size:13.5px} .wl .filters{padding:20px;gap:18px}
@@ -304,7 +306,7 @@ select,input[type=text]{font:inherit;font-weight:600;height:34px;padding:0 10px;
 @media (max-width:540px){
   nav a,nav button{font-size:11px;padding:4px 2px} nav .brand span{display:none}
   .fr{gap:24px} .ring{width:124px;height:124px} .ring b{font-size:34px}
-  .lh,.row{grid-template-columns:110px 1fr 16px} .lh .x,.row .en{display:none}
+  .lh,.row,.jp .lh,.jp .row{grid-template-columns:110px 1fr 16px} .lh .x,.row .en{display:none}
   .de .lh,.de .row{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 12px} .de .lh .x,.de .row .en{display:block} .de .lh .pl,.de .dp{display:none}
   .cal{grid-template-columns:repeat(10,14px)}
 }

@@ -26,7 +26,7 @@ let busy = false;
   const ref = db.collection('/l/data/users/' + id).doc('state40v2');
   const snap = await Promise.race([ref.get(), new Promise(r => setTimeout(() => r('t'), 10000))]); if (snap === 't') return;
   if (snap?.exists && snap.data()?.v === 2) S = Object.assign(DEF(), JSON.parse(JSON.stringify(snap.data()))); else await ref.set(JSON.parse(JSON.stringify(S)));
-  store = {save: s => ref.set(JSON.parse(JSON.stringify(s)))}; theme(); if (!busy && PLAN) route(true);
+  store = {save: s => ref.set(JSON.parse(JSON.stringify(s)))}; theme(); setLang(SITE || S.lang || 'zh'); brandTo(LANGS[S.lang]); if (!busy && PLAN) route(true);
 } catch (e) {} })();
 function syncGi(){ $$('#gi button').forEach(b => b.setAttribute('aria-pressed', (b.dataset.v === '1') === (S.settings.girl !== false))); }
 function theme(){ syncGi?.(); const t = S.settings.theme === 'light' ? 'light' : 'dark'; document.documentElement.dataset.theme = t; $$('#th button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === t)); }
@@ -112,7 +112,7 @@ function revBtn(){
 }
 
 /* ---------- illustration ---------- */
-const GIRL = {zh: '/l/img/girl.webp', de: '/l/img/girl.webp', ja: '/l/img/girl_ja.webp'};
+const GIRL = {zh: '/l/img/girl_zh.webp', de: '/l/img/girl_zh.webp', ja: '/l/img/girl_ja.webp'};
 const peek = () => { const k = GIRL[S.lang] ? S.lang : 'zh'; return `<div class="peek ${k}" aria-hidden="true"><div class="pk"><img src="${GIRL[k]}" alt=""></div></div>`; };
 function reveal(pk, img){ let done = false; const go = () => { if (done) return; done = true; requestAnimationFrame(() => pk.classList.add('up')); setTimeout(() => pk.classList.add('up'), 60); };
   setTimeout(go, 300); img?.decode?.().then(go).catch(go); }
@@ -172,7 +172,7 @@ function symbol(c){ if (sym.has(c) || !CH?.[c]) return; sym.add(c);
   s.innerHTML = `<g transform="translate(0,900) scale(1,-1)">${CH[c].s.map(p => `<path d="${p}"/>`).join('')}</g>`; $('#sprite').appendChild(s); }
 const G = '<line class="g" x1="512" y1="0" x2="512" y2="1024"/><line class="g" x1="0" y1="512" x2="1024" y2="512"/>';
 const wide = () => matchMedia('(min-width:1500px)').matches;
-function cells(h, size){ const n = [...h].length, W = wide() ? 200 : 150, z = size || (n <= 4 ? (wide() ? 46 : 34) : Math.max(20, Math.floor(W / n) - 4));
+function cells(h, size){ const z = size || (wide() ? 46 : 34);
   return `<span class="cells">${[...h].map(c => CH?.[c] ? (symbol(c), `<span class="cell" style="width:${z}px;height:${z}px"><svg viewBox="0 0 1024 1024">${G}<use class="k" href="#c${c.codePointAt(0).toString(16)}" x="70" y="70" width="884" height="884"/></svg></span>`)
     : `<span class="cell" style="width:${z}px;height:${z}px"><svg viewBox="0 0 1024 1024">${G}</svg><span class="t" style="font-size:${z * .55}px">${esc(c)}</span></span>`).join('')}</span>`; }
 let charsP; const loadChars = () => charsP ??= fetch('/l/data/chars.json').then(r => r.json()).then(x => CH = x);
@@ -262,11 +262,15 @@ const loadJa = () => jaP ??= fetch('/l/data/ja_words.json', {cache: 'no-cache'})
 const jaLessonsDone = () => { let n = 0; for (let l = 1; l <= 23; l++) { const ws = JA.words.filter(w => w.l === l); if (ws.length && ws.every(w => w.s === 'known')) n++; } return n; };
 const JF = {tab: 'w', lesson: 0, st: 'all', q: ''};
 const ST = {known: 'выучено', learning: 'учу', new: 'новое'};
-function jaCells(h){ const ch = [...h], n = ch.length, z = n <= 4 ? (wide() ? 46 : 34) : Math.max(18, Math.floor((wide() ? 196 : 146) / n) - (wide() ? 3 : 0));
-  return `<span class="cells">${ch.map(c => `<span class="cell" style="width:${z}px;height:${z}px"><svg viewBox="0 0 1024 1024">${G}</svg><span class="t ja" style="font-size:${z * .62}px">${esc(c)}</span></span>`).join('')}</span>`; }
+/* particles such as (〜を), (person に) are written without brackets */
+const PT = /[(（]((?!=)(?:[~〜～][^()（）]*|[^()（）]*[をにがとの]))[)）]/g;
+const jaE = e => esc(e).replace(PT, (m, x) => `<span class="pt ja">${x.replace(/[~～]/g, '〜')}</span>`);
+const KJ = /[\u3005\u3040-\u30ff\u3400-\u9fff〜～]/;
+function jaCells(h, size){ const z = size || (wide() ? 46 : 34); h = h.replace(PT, '$1').replace(/[~～]/g, '〜');   // every sign in a cell of the same size, long words go on to the next line
+  return `<span class="cells">${(h.match(/[\u3005\u3040-\u30ff\u3400-\u9fff〜～]|[^\u3005\u3040-\u30ff\u3400-\u9fff〜～]+/g) || []).map(c => !KJ.test(c) ? (c.trim() ? `<span class="lat">${esc(c.trim())}</span>` : '') : `<span class="cell" style="width:${z}px;height:${z}px"><svg viewBox="0 0 1024 1024">${G}</svg><span class="t ja" style="font-size:${z * .62}px">${esc(c)}</span></span>`).join('')}</span>`; }
 function jaWordlist(){
   const seg = (id, val, opts) => `<div class="seg" id="${id}">${opts.map(([v, l]) => `<button data-v="${v}" aria-pressed="${val === v}">${l}</button>`).join('')}</div>`;
-  show(`<div class="wl">
+  show(`<div class="wl jp">
     <div class="side"><div class="tabs">${[['w', 'Слова'], ['c', 'Кандзи']].map(([v, l]) => `<button data-tab="${v}" aria-pressed="${JF.tab === v}">${l}</button>`).join('')}</div>
       <div class="card filters">
         <label><span class="eye">урок</span><select id="fl"><option value="0">все</option>${[...Array(23)].map((_, i) => `<option value="${i + 1}" ${JF.lesson === i + 1 ? 'selected' : ''}>${i + 1}</option>`).join('')}</select></label>
@@ -289,7 +293,7 @@ function jaList(){
   let h = `<div class="lh"><span class="eye">слово</span><span class="eye">чтение</span><span class="eye x">перевод</span><span></span></div>`, cur = -1;
   for (const [w, i] of list) {
     if (w.l !== cur) { cur = w.l; h += `<div class="dh"><b>УРОК ${cur}</b></div>`; }
-    h += `<div class="row ${w.s === 'known' ? 'learned' : ''}" data-ji="${i}">${jaCells(w.h)}<span class="py ja">${esc(w.r)}</span><span class="en">${esc(w.e)}</span><span class="stdot ${w.s}" title="${ST[w.s]}"></span></div>`;
+    h += `<div class="row ${w.s === 'known' ? 'learned' : ''}" data-ji="${i}">${jaCells(w.h)}<span class="py ja">${esc(w.r.replace(PT, "$1"))}</span><span class="en">${jaE(w.e)}</span><span class="stdot ${w.s}" title="${ST[w.s]}"></span></div>`;
   }
   L.innerHTML = list.length ? h : h + '<p class="mute" style="padding:18px">Ничего не найдено.</p>';
   $$('.row', L).forEach(r => { r.onmouseenter = () => { if (matchMedia('(hover:hover)').matches) jaFly(r, src); }; r.onclick = () => jaFly(r, src); });
@@ -299,9 +303,9 @@ function jaFly(r, src){
   clearTimeout(flyT);
   const key = 'ja' + JF.tab + r.dataset.ji; if (key === flyKey) return; flyKey = key;
   $$('.row.sel').forEach(x => x.classList.remove('sel')); r.classList.add('sel');
-  const w = src[+r.dataset.ji], wasOn = fly.classList.contains('on'), n = [...w.h].length;
-  fly.innerHTML = `<div class="fh"><div><b class="ja" style="font-family:'Klee One',var(--zh);font-size:22px">${esc(w.r || w.h)}</b><span>${esc(w.e)}</span></div></div>
-    <div style="padding:18px;display:flex;justify-content:center">${jaCells(w.h).replace(/width:\d+px;height:\d+px/g, `width:${n > 4 ? 46 : 70}px;height:${n > 4 ? 46 : 70}px`).replace(/font-size:[\d.]+px/g, `font-size:${n > 4 ? 30 : 46}px`)}</div>
+  const w = src[+r.dataset.ji], wasOn = fly.classList.contains('on');
+  fly.innerHTML = `<div class="fh"><div><b class="ja" style="font-family:'Klee One',var(--zh);font-size:22px">${esc((w.r || w.h).replace(PT, '$1'))}</b><span>${jaE(w.e)}</span></div></div>
+    <div style="padding:18px;display:flex;justify-content:center">${jaCells(w.h, 56).replace('class="cells"', 'class="cells" style="justify-content:center"')}</div>
     ${w.x ? `<div style="padding:0 18px 14px;font-size:13px"><span class="eye">пример</span><p class="ja" style="font-family:'Klee One',var(--zh);font-size:16px;margin-top:4px">${esc(w.x)}</p></div>` : ''}
     <div style="padding:10px 18px 16px;border-top:1px solid var(--line);font-size:12px;color:var(--mute)">${ST[w.s]}${w.s === 'known' ? ` · интервал ${w.iv} дн.` : ''} · урок ${w.l}</div>`;
   if (innerWidth > 860) {
@@ -511,16 +515,52 @@ function stats(){
 { const bw = $('.bw');
   bw.addEventListener('click', () => { bw.classList.add('shut'); document.activeElement?.blur(); });
   bw.addEventListener('mouseleave', () => bw.classList.remove('shut')); }
-/* German and Japanese reuse the Mandarin site as a template for now: the switch renames the site */
-const LANGS = {zh: 'mandarin', de: 'german', ja: 'japanese'};
+/* German and Japanese reuse the Mandarin site as a template for now: the switch renames the site.
+   On bedarev.com/l/ every language has its own address (data-site is set there); on claude.ai it is only a state. */
+const LANGS = {zh: 'mandarin', de: 'german', ja: 'japanese'}, LK = Object.keys(LANGS);
+const SITE = document.documentElement.dataset.site;
+const calm = () => matchMedia('(prefers-reduced-motion: reduce)').matches || document.hidden;
 function setLang(k){
-  S.lang = LANGS[k] ? k : 'zh'; persist();
-  $('nav .brand').textContent = LANGS[S.lang];
+  S.lang = LANGS[k] ? k : 'zh';
   document.title = LANGS[S.lang][0].toUpperCase() + LANGS[S.lang].slice(1);
   $$('.lang[data-lang]').forEach(a => a.classList.toggle('on', a.dataset.lang === S.lang));
 }
-$$('.lang[data-lang]').forEach(a => { if (a.dataset.lang !== document.documentElement.dataset.site) { a.href = '/l/' + LANGS[a.dataset.lang] + '/'; return; } a.href = '#home'; a.addEventListener('click', e => { e.preventDefault(); setLang(a.dataset.lang); $('.bw').blur?.(); document.activeElement?.blur(); if (location.hash !== '#home' && location.hash) location.hash = 'home'; else route(); }); });
-setLang(document.documentElement.dataset.site);
+/* the title rolls letter by letter: the old word leaves upwards, the new one comes from below (or the other way round) */
+let brandN = 0;
+function brandTo(name, dir){
+  const b = $('nav .brand'), me = ++brandN; b.getAnimations().forEach(a => a.cancel());
+  if (!dir || calm()) { b.textContent = name; return; }
+  const spans = t => [...t].map(c => `<i aria-hidden="true">${c}</i>`).join(''), w0 = b.offsetWidth;
+  b.setAttribute('aria-label', name); b.innerHTML = spans(b.textContent);
+  $$('i', b).forEach((el, i) => el.animate([{transform: 'none', opacity: 1}, {transform: `translateY(${-115 * dir}%) rotate(${-8 * dir}deg)`, opacity: 0}], {duration: 190, delay: i * 14, easing: 'cubic-bezier(.6,0,.9,.4)', fill: 'forwards'}));
+  setTimeout(() => { if (me !== brandN) return;
+    b.innerHTML = spans(name); const w1 = b.offsetWidth;
+    b.animate([{width: w0 + 'px'}, {width: w1 + 'px'}], {duration: 480, easing: 'cubic-bezier(.2,.8,.2,1)'});
+    $$('i', b).forEach((el, i) => el.animate([{transform: `translateY(${115 * dir}%) rotate(${8 * dir}deg)`, opacity: 0}, {transform: 'none', opacity: 1}], {duration: 520, delay: i * 32, easing: 'cubic-bezier(.2,1.1,.3,1)', fill: 'backwards'}));
+    setTimeout(() => { if (me === brandN) b.textContent = name; }, 560 + name.length * 32);
+  }, 230);
+}
+/* the page: the old one slides away and blurs, the new cards arrive one after another from the other side */
+let switching = false, swN = 0;
+function switchLang(k, push){
+  if (!LANGS[k]) return;
+  if (k === S.lang && !switching) { if (push) { if (location.hash && location.hash !== '#home') location.hash = 'home'; else route(); } return; }
+  const dir = LK.indexOf(k) > LK.indexOf(S.lang) ? 1 : -1, me = ++swN, quiet = calm();
+  switching = true; setLang(k); persist(); brandTo(LANGS[k], dir); hideFly(true); keys(null);
+  if (push) try { history.pushState(null, '', (SITE ? '/l/' + LANGS[k] + '/' : location.pathname + location.search) + (SITE ? '' : '#home')); } catch (e) {}
+  const out = quiet ? null : app.animate([{opacity: 1, transform: 'none', filter: 'blur(0)'}, {opacity: 0, transform: `translateX(${-90 * dir}px) scale(.97)`, filter: 'blur(12px)'}], {duration: 240, easing: 'cubic-bezier(.5,0,.85,.3)', fill: 'forwards'});
+  setTimeout(() => { if (me !== swN) return;
+    switching = false; route(true); out?.cancel(); app.getAnimations().forEach(a => a.cancel());
+    if (quiet) return;
+    const box = app.firstElementChild, els = box ? ($('.top', box) ? [$('.top', box), $('.plan', box)] : [...box.children]) : [];
+    els.forEach((el, i) => el.animate([{opacity: 0, transform: `translateX(${130 * dir}px) scale(.97)`, filter: 'blur(14px)'}, {opacity: 1, transform: 'none', filter: 'blur(0)'}], {duration: 720, delay: i * 110, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'backwards'}));
+    $$('.task', box).forEach((el, i) => el.animate([{opacity: 0, transform: `translateX(${46 * dir}px)`}, {opacity: 1, transform: 'none'}], {duration: 560, delay: 260 + i * 55, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'backwards'}));
+  }, quiet ? 0 : 235);
+}
+$$('.lang[data-lang]').forEach(a => { const k = a.dataset.lang; a.href = SITE ? '/l/' + LANGS[k] + '/' : '#home';
+  a.addEventListener('click', e => { if (e.ctrlKey || e.metaKey || e.shiftKey || e.button) return; e.preventDefault(); $('.bw').blur?.(); document.activeElement?.blur(); switchLang(k, true); }); });
+if (SITE) addEventListener('popstate', () => { const k = LK.find(x => location.pathname.startsWith('/l/' + LANGS[x])); if (k && k !== S.lang) switchLang(k, false); });
+setLang(SITE || S.lang || 'zh'); brandTo(LANGS[S.lang]);
 
 /* ---------- settings ---------- */
 const pop = $('#pop');
@@ -532,7 +572,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') { pop.classL
 
 /* ---------- router ---------- */
 function route(silent){
-  if (!PLAN) return;
+  if (!PLAN || switching) return;
   const h = decodeURIComponent(location.hash.slice(1)) || 'home';
   const tab = /^(lesson|pinyin|review|start)/.test(h) ? 'lessons' : h.startsWith('words') ? 'words' : h;
   $$('nav a[data-tab]').forEach(a => a.dataset.tab === tab ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current'));
