@@ -68,13 +68,12 @@ nav .lang{padding:0 14px 0 6px;font-size:12.5px;justify-self:auto}
 .lang:focus-visible{outline:none;color:var(--ink)}
 .lang[aria-disabled="true"]{cursor:default}
 /* the figure steps out of the stats card: same height, same head size in every language */
-.peek{position:absolute;right:0;bottom:0;width:290px;height:calc(100% + 46px);overflow:hidden;pointer-events:none;z-index:0}
-.peek img{position:absolute;right:34px;bottom:0;height:100%;width:auto;transform:translate3d(var(--px,0px),var(--py,0px),0);filter:drop-shadow(0 0 1px rgba(0,0,0,.35));transition:transform .6s var(--ease)}
+/* every language the same way: the head 46px above the card, the figure centred in one column on the right, its feet on the card edge */
+.peek{position:absolute;right:16px;bottom:0;width:260px;height:calc(100% + 46px);overflow:hidden;pointer-events:none;z-index:0}
+.peek img{position:absolute;left:50%;top:0;height:100%;width:auto;translate:-50% 0;transform:translate3d(var(--px,0px),var(--py,0px),0);filter:drop-shadow(0 0 1px rgba(0,0,0,.35));transition:transform .6s var(--ease)}
 :root[data-theme="dark"] .peek img{filter:drop-shadow(0 0 .8px rgba(255,255,255,.6))}
-.peek:not(.ja) img{bottom:-8px;height:calc(100% + 2px)}
-/* Japanese: the whole figure, kneeling over the lower edge of the card */
+/* Japanese kneels: the same top line, her knees go a little over the edge */
 .peek.ja{height:calc(100% + 74px);bottom:-28px}
-.peek.ja img{right:0}
 /* quick, even unblur on appear; even blur-out on hide */
 .pk{position:absolute;inset:0;opacity:0;filter:blur(14px);transition:filter .6s linear,opacity .6s linear}
 .pk.up{opacity:1;filter:blur(0)}
