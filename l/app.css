@@ -72,8 +72,9 @@ nav .lang{padding:0 14px 0 6px;font-size:12.5px;justify-self:auto}
 .peek{position:absolute;right:16px;bottom:0;width:260px;height:calc(100% + 46px);overflow:hidden;pointer-events:none;z-index:0}
 .peek img{position:absolute;left:50%;top:0;height:100%;width:auto;translate:-50% 0;transform:translate3d(var(--px,0px),var(--py,0px),0);filter:drop-shadow(0 0 1px rgba(0,0,0,.35));transition:transform .6s var(--ease)}
 :root[data-theme="dark"] .peek img{filter:drop-shadow(0 0 .8px rgba(255,255,255,.6))}
-/* Japanese kneels: the same top line, her knees go a little over the edge */
-.peek.ja{height:calc(100% + 74px);bottom:-28px}
+/* one head size for all: the heads take 24.8% (zh), 22.7% (de), 25.7% (ja) of their pictures */
+.peek.de img{height:109.3%}
+.peek.ja img{height:96.5%;top:2.9%}
 /* quick, even unblur on appear; even blur-out on hide */
 .pk{position:absolute;inset:0;opacity:0;filter:blur(14px);transition:filter .6s linear,opacity .6s linear}
 .pk.up{opacity:1;filter:blur(0)}
