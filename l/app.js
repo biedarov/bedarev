@@ -222,7 +222,7 @@ function renderList(){
   $$('.row', L).forEach(r => { r.onmouseenter = () => { if (matchMedia('(hover:hover)').matches) openFly(r); }; r.onclick = () => openFly(r, true); });
   L.onmouseleave = () => { if (matchMedia('(hover:hover)').matches) hideFly(); };
 }
-let wrs = [], flyT, flyKey, spoken;
+let wrs = [], flyT, flyKey;
 const fly = $('#fly');
 fly.onmouseenter = () => clearTimeout(flyT);
 fly.onmouseleave = () => hideFly();
@@ -231,7 +231,9 @@ function hideFly(now){ clearTimeout(flyT); const go = () => { fly.classList.remo
   now ? go() : (flyT = setTimeout(go, 350)); }
 function openFly(r, tap){
   clearTimeout(flyT);
-  const key = r.dataset.h || r.dataset.c; if (key === flyKey) return; flyKey = key;
+  const key = r.dataset.h || r.dataset.c;
+  if (key === flyKey) { if (tap && AMAP?.w[key]) sayW(key, $('#fp')); return; }   // a click on the open row plays it again
+  flyKey = key;
   $$('.row.sel').forEach(x => x.classList.remove('sel')); r.classList.add('sel');
   const w = WORDS.find(x => x.h === key) || {h: key, p: (CH[key].py || []).join(', '), e: CH[key].def};
   const chs = [...w.h].filter(c => CH[c]), n = chs.length, wasOn = fly.classList.contains('on');
@@ -253,7 +255,7 @@ function openFly(r, tap){
       const hw = HanziWriter.create(el, c, {width: z, height: z, padding: z * .07, showCharacter: false, showOutline: true, outlineColor: cs.getPropertyValue('--line').trim(), strokeColor: cs.getPropertyValue('--ink').trim(),
         strokeAnimationSpeed: 1.2, delayBetweenStrokes: 160, delayBetweenLoops: 1400, charDataLoader: (ch, ok) => ok({strokes: CH[ch].s, medians: CH[ch].m, radStrokes: CH[ch].r})});
       setTimeout(() => hw.loopCharacterAnimation(), 250 + i * 450); wrs.push(hw); }); }
-  if ((touched || tap) && spoken !== w.h && AMAP.w[w.h]) { spoken = w.h; sayW(w.h, $('#fp')); }
+  if (tap && AMAP?.w[w.h]) sayW(w.h, $('#fp'));   // sound only on a click in the row, never on hover
 }
 
 /* ---------- Japanese word list (from the user's Anki deck; known = card in review) ---------- */
