@@ -112,7 +112,7 @@ function revBtn(){
 }
 
 /* ---------- illustration ---------- */
-const GIRL = {zh: '/l/img/girl_zh.webp', de: '/l/img/girl_zh.webp', ja: '/l/img/girl_ja.webp'};
+const GIRL = {zh: '/l/img/girl_zh.webp', de: '/l/img/girl_de2.webp', ja: '/l/img/girl_ja.webp'};
 const peek = () => { const k = GIRL[S.lang] ? S.lang : 'zh'; return `<div class="peek ${k}" aria-hidden="true"><div class="pk"><img src="${GIRL[k]}" alt=""></div></div>`; };
 function reveal(pk, img){ let done = false; const go = () => { if (done) return; done = true; requestAnimationFrame(() => pk.classList.add('up')); setTimeout(() => pk.classList.add('up'), 60); };
   setTimeout(go, 300); img?.decode?.().then(go).catch(go); }
