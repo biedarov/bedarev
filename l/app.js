@@ -60,7 +60,7 @@ const LP = () => ({zh: {start: PLAN_START, days: 40}, ja: {start: JA_START, days
 const pDayOf = (lang = S.lang, now = Date.now()) => { const p = LP()[lang]; return Math.max(1, Math.min(p.days, dIdx(p.start, isoD(dayDate(dayNo(now)))) + 1)); };
 const tgtD = (lang, k) => lang === 'zh' ? zhOrder().filter(x => x.day <= k).length : lang === 'ja' ? jaTgtD(k) : deTgtD(k);
 /* a plan day is done only when ALL of it is done: its topics, and in Chinese also its new words and its phonetics videos */
-function zhSyncDays(){ const A = akOn() ? AK.langs.zh : null; if (A?.days) for (const [d, dk] of Object.entries(A.days)) if (dk.nw === 0 && dk.tot > 0) (S.done[d] ??= {}).a2 = true; }
+function zhSyncDays(Z = akOn() ? AK : null){ const A = Z?.langs?.zh; if (A?.days) for (const [d, dk] of Object.entries(A.days)) if (dk.nw === 0 && dk.tot > 0) (S.done[d] ??= {}).a2 = true; }
 function dayDone(lang, k, L = learnedN(lang)){
   if (tgtD(lang, k) > L) return false;
   if (lang !== 'zh') return true;
@@ -85,12 +85,10 @@ function lexRows(lang){
   const A = akOn() ? AK.langs[lang] : null, t = A ? akTargets(AK) : {}, R = [];
   R.push({id: 'a1', t: 'Anki · повторения', man: !A, done: A ? A.due === 0 && A.rated > 0 : tickOn(lang, 'a1'), note: A ? (A.due ? 'осталось ' + A.due : 'готово') : ''});
   if (lang === 'zh') {
-    const pd = pDayOf('zh');
-    if (A?.days) for (let d = 1; d <= pd; d++) { const dk = A.days[d]; if (dk && dk.nw === 0 && dk.tot > 0) (S.done[d] ??= {}).a2 = true; }
+    const pd = planCur('zh');   // the day you are on: its words, and any older ones still new
     const owed = []; for (let d = 1; d <= pd; d++) if (words(d).length && !S.done[d]?.a2) owed.push(d);
     const left = A?.days ? Object.entries(A.days).filter(([d]) => +d <= pd).reduce((a, [, x]) => a + (x.nn || 0), 0) : owed.reduce((a, d) => a + words(d).length, 0);
-    const n = A?.days ? t.zh : left;
-    R.push({id: 'a2', t: n ? `Anki · ${n} новых слов` : 'Anki · новые слова', man: !A, go: '#words', done: A?.days ? left === 0 : !owed.length, note: left ? 'осталось ' + left : 'готово'});
+    R.push({id: 'a2', t: `Anki · новые слова · день ${pd}`, man: !A, go: '#words', done: A?.days ? left === 0 : !owed.length, note: left ? 'осталось ' + left : 'готово'});
   } else {
     const n = A && A.wNew != null ? (lang === 'ja' ? t.jaW : t.de) : null;
     R.push({id: 'a2', t: n != null ? `Anki · ${n} новых слов` : 'Anki · новые слова', man: n == null, go: '#words', done: n != null ? A.wIntro >= n : tickOn(lang, 'a2'), note: n != null ? (A.wIntro >= n ? 'готово' : 'осталось ' + (n - A.wIntro)) : ''});
@@ -187,7 +185,7 @@ function home(){
       tp.onmouseleave = () => { pim.style.setProperty('--px', '0px'); pim.style.setProperty('--py', '0px'); }; }
     $$('.chk[data-k]').forEach(b => b.onclick = e => { e.stopPropagation(); if (b.disabled) return; const k = b.dataset.k, d = +b.dataset.d; let on;
       if (d) { on = !S.done[d]?.[k]; (S.done[d] ??= {})[k] = on; const x = phonRows().find(r => r.id === k); if (x?.sec) { (S.time[t] ??= {}); S.time[t].phon = Math.max(0, (S.time[t].phon || 0) + (on ? x.sec : -x.sec)); } }   // a watched video counts its length
-      else { on = !tickOn(lang, k); tickSet(lang, k, on); if (lang === 'zh' && k === 'a2') { const pd = pDayOf('zh'); for (let j = 1; j <= pd; j++) if (on || j === pd) (S.done[j] ??= {}).a2 = on; } }
+      else { on = !tickOn(lang, k); tickSet(lang, k, on); if (lang === 'zh' && k === 'a2') { const pd = planCur('zh'); for (let j = 1; j <= pd; j++) if (on || j === pd) (S.done[j] ??= {}).a2 = on; } }
       persist(); b.closest('.task').classList.toggle('done', on); setTimeout(() => refresh(), 400); });
     $$('.task[data-go]').forEach(r => r.onclick = e => { if (!e.target.closest('a,button')) location.hash = r.dataset.go; });
   });
@@ -212,7 +210,7 @@ const stZh = w => (akOn() && AK.langs.zh?.st?.[w.h]) || (learned(w.d) ? 'known' 
 const WLA = {
   zh: {cls: '', grp: 'день', tabs: [['w', 'Слова'], ['c', 'Иероглифы']], rd: 'чтение', rdc: 'py', ph: 'pinyin · english', load: () => loadChars(), ok: () => !!CH,
     groups: () => PLAN.days.filter(x => !x.review).map(x => x.d), title: () => '',
-    items: tab => { if (tab === 'w') return WORDS.map(w => ({g: w.d, word: cells(w.h) + (w.a ? I.pen : ''), rd: esc(w.p), tr: esc(w.e), st: stZh(w), s: w.h + ' ' + strip(w.p) + ' ' + w.e.toLowerCase(), h: w.h}));
+    items: tab => { if (tab === 'w') return WORDS.map(w => ({g: w.d, word: cells(w.h), rd: esc(w.p) + (w.a ? ' ' + I.pen : ''), tr: esc(w.e), st: stZh(w), s: w.h + ' ' + strip(w.p) + ' ' + w.e.toLowerCase(), h: w.h}));
       const fd = new Map(), sc = {}; for (const w of WORDS) for (const c of w.h) if (CH[c]) { if (!fd.has(c)) fd.set(c, w.d); const x = stZh(w); sc[c] = sc[c] === 'known' || x === 'known' ? 'known' : sc[c] === 'learning' || x === 'learning' ? 'learning' : 'new'; }
       return [...fd].map(([c, d]) => ({g: d, word: cells(c, wide() ? 38 : 30), rd: esc((CH[c].py || []).join(', ')), tr: esc(CH[c].def), st: sc[c], s: c + ' ' + (CH[c].py || []).map(strip).join(' ') + ' ' + (CH[c].def || '').toLowerCase(), c})); } },
   ja: {cls: 'jp', grp: 'урок', tabs: [['w', 'Слова'], ['c', 'Кандзи']], rd: 'чтение', rdc: 'py ja', ph: 'かな · english', load: () => loadJa(), ok: () => !!JA,
@@ -772,7 +770,7 @@ const DE_START = '2026-11-23', DE_END = '2027-01-01', DE_DAYS = dIdx(DE_START, D
 const deDaysLeft = () => Math.max(1, dIdx(today(), DE_END) + 1);   // today included, as in Japanese
 const akTargets = A => {
   const t = {}, zh = A.langs.zh, de = A.langs.de, ja = A.langs.ja;
-  if (zh?.days) t.zh = Object.entries(zh.days).filter(([d]) => +d <= schedDay()).reduce((a, [, x]) => a + (x.nn || 0), 0) + (zh.intro || 0);   // every owed day's new words + today's
+  if (zh?.days) { zhSyncDays(A); const cd = planCur('zh'); t.zh = Object.entries(zh.days).filter(([d]) => +d <= cd).reduce((a, [, x]) => a + (x.nn || 0), 0) + (zh.intro || 0); }   // new words of every day up to the one you are on + today's
   if (de?.wNew != null) t.de = Math.ceil((de.wNew + de.wIntro) / deDaysLeft());
   if (ja?.wNew != null) { const dl = Math.max(1, dIdx(today(), JA_END) + 1); t.jaW = Math.ceil((ja.wNew + ja.wIntro) / dl); t.jaK = Math.ceil((ja.kNew + ja.kIntro) / dl); }
   return t;
