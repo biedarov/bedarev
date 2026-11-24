@@ -53,32 +53,46 @@ const PLAN_START = '2026-11-23', dateOfDay = d => addDays(PLAN_START, d - 1);
 const dIdx = (a, b) => Math.round((Date.parse(b + 'T12:00:00') - Date.parse(a + 'T12:00:00')) / 864e5);
 const schedDay = () => Math.max(1, Math.min(40, dIdx(PLAN_START, today()) + 1));   // the plan day that falls on today
 const words = d => WORDS.filter(w => w.d === d);
-function tasks(d){
-  const x = info(d), T = [], ph = PLAN.phonetics;
-  if (d <= ph.days[1]) {
-    const gs = (ph.schedule[String(d)] || []).map(n => ph.groups[n - 1]), st = ((d - 1) * ph.syllables.perDay) % ph.syllables.minutes;
-    const s1 = gs.reduce((a, g) => a + (g.sec || 0), 0);
-    T.push({id: 'ph1', g: 'Фонетика', t: gs.length ? 'Звуки · группы ' + gs.map(g => g.n).join(' и ') : 'Звуки · трудная группа', links: (gs.length ? gs : ph.groups).map(g => [g.video, 'гр. ' + g.n]), sec: s1, note: s1 ? Math.round(s1 / 60) + ' мин' : ''});
-    T.push({id: 'ph2', g: 'Фонетика', t: `Слоги · ${st}:00–${st + 10}:00`, links: [[ph.syllables.video + '&t=' + st * 60 + 's', 'видео']], sec: ph.syllables.perDay * 60, note: ph.syllables.perDay + ' мин'});
-  }
-  const n = words(d).length, b = PLAN.blocks.find(b => d >= b.days[0] && d <= b.days[1]);
-  const AL = S.lang === 'zh' && akOn() ? AK.langs.zh : null, own = d <= schedDay(), dk = AL?.days?.[d];   // Anki says what is done
-  if (AL && own && AL.due === 0 && AL.rated > 0) (S.done[d] ??= {}).a1 = true;
-  if (dk && n && dk.nw === 0 && dk.tot > 0) (S.done[d] ??= {}).a2 = true;
-  T.push({id: 'a1', g: 'Лексика', t: 'Anki · повторения', note: AL && own ? (AL.due ? `осталось ${AL.due}` : 'готово в Anki') : ''});
-  T.push({id: 'a2', g: 'Лексика', t: n ? `Anki · ${n} новых слов` : 'Повтори слова недели', go: n ? `#words-d${d}` : `#words-b${b.n}`, note: dk && n && dk.nw ? `осталось ${dk.nw}` : ''});
-  T.push({id: 'a3', g: 'Лексика', t: x.chars ? `Пропись · ${[...x.chars].length} иероглифов` : 'Пропись недели', go: x.chars ? `#words-d${d}` : `#words-b${b.n}`});
-  const due = gramDueN('zh');
-  T.push({id: 'g1', g: 'Грамматика', auto: true, t: x.lessons.length ? x.lessons.map(id => LES[id].title.split(' — ')[0]).join(' · ') : 'Повторение грамматики', note: due ? `↻ ${due}` : '', go: due || x.lessons.some(id => !passed(id)) ? '#s' : '#lessons'});
-  return T;
-}
-const gramDone = d => info(d).lessons.length ? info(d).lessons.every(passed) : !!S.done[d]?.g1;
-const done = (d, t) => t.auto ? gramDone(d) : !!S.done[d]?.[t.id];
-const frac = d => { const T = tasks(d); return T.filter(t => done(d, t)).length / T.length; };
-const complete = d => frac(d) >= 1;
-function curDay(){ for (let d = 1; d <= 40; d++) { if (!complete(d)) return d; if (S.doneOn[d] === today() && d < 40 && !S.done[d + 1]?._go && dateOfDay(d + 1) > today()) return d; } return 40; }
-function track(){ const d = curDay(); if (complete(d) && !S.doneOn[d]) S.doneOn[d] = today(); }
+/* ---------- plan: one model for every language ----------
+   Day 1 = the language's start date. Topics due by plan day k = tgtD(lang, k); words come from Anki.
+   «День N» = the first plan day not finished yet; the gap to today's date is the debt. */
+const LP = () => ({zh: {start: PLAN_START, days: 40}, ja: {start: JA_START, days: JA_DAYS}, de: {start: DE_START, days: DE_DAYS}});
+const pDayOf = (lang = S.lang, now = Date.now()) => { const p = LP()[lang]; return Math.max(1, Math.min(p.days, dIdx(p.start, isoD(dayDate(dayNo(now)))) + 1)); };
+const tgtD = (lang, k) => lang === 'zh' ? zhOrder().filter(x => x.day <= k).length : lang === 'ja' ? jaTgtD(k) : deTgtD(k);
+function planCur(lang = S.lang, now = Date.now()){ const L = learnedN(lang), s = pDayOf(lang, now); for (let k = 1; k <= s; k++) if (tgtD(lang, k) > L) return k; return s; }
+function track(){}   // the old 40-day ticks are gone; kept so older calls stay harmless
 const learned = d => !!S.done[d]?.a2;
+/* manual ticks (when Anki is not connected): per language and date */
+const tickOn = (lang, id) => !!S.tick?.[lang]?.[today()]?.[id];
+const tickSet = (lang, id, on) => { (((S.tick ??= {})[lang] ??= {})[today()] ??= {})[id] = on; };
+/* Chinese phonetics week: today's videos */
+function phonRows(){
+  const d = pDayOf('zh'), ph = PLAN.phonetics; if (d > ph.days[1]) return [];
+  const gs = (ph.schedule[String(d)] || []).map(n => ph.groups[n - 1]), st = ((d - 1) * ph.syllables.perDay) % ph.syllables.minutes, s1 = gs.reduce((a, g) => a + (g.sec || 0), 0);
+  return [{id: 'ph1', d, man: true, done: !!S.done[d]?.ph1, t: gs.length ? 'Звуки · группы ' + gs.map(g => g.n).join(' и ') : 'Звуки · трудная группа', links: (gs.length ? gs : ph.groups).map(g => [g.video, 'гр. ' + g.n]), sec: s1, note: s1 ? Math.round(s1 / 60) + ' мин' : ''},
+    {id: 'ph2', d, man: true, done: !!S.done[d]?.ph2, t: `Слоги · ${st}:00–${st + 10}:00`, links: [[ph.syllables.video + '&t=' + st * 60 + 's', 'видео']], sec: ph.syllables.perDay * 60, note: ph.syllables.perDay + ' мин'}];
+}
+/* Anki rows: the same for every language; with Anki connected they tick themselves, without it by hand */
+function lexRows(lang){
+  const A = akOn() ? AK.langs[lang] : null, t = A ? akTargets(AK) : {}, R = [];
+  R.push({id: 'a1', t: 'Anki · повторения', man: !A, done: A ? A.due === 0 && A.rated > 0 : tickOn(lang, 'a1'), note: A ? (A.due ? 'осталось ' + A.due : 'готово') : ''});
+  if (lang === 'zh') {
+    const pd = pDayOf('zh');
+    if (A?.days) for (let d = 1; d <= pd; d++) { const dk = A.days[d]; if (dk && dk.nw === 0 && dk.tot > 0) (S.done[d] ??= {}).a2 = true; }
+    const owed = []; for (let d = 1; d <= pd; d++) if (words(d).length && !S.done[d]?.a2) owed.push(d);
+    const left = A?.days ? Object.entries(A.days).filter(([d]) => +d <= pd).reduce((a, [, x]) => a + (x.nn || 0), 0) : owed.reduce((a, d) => a + words(d).length, 0);
+    const n = A?.days ? t.zh : left;
+    R.push({id: 'a2', t: n ? `Anki · ${n} новых слов` : 'Anki · новые слова', man: !A, go: '#words', done: A?.days ? left === 0 : !owed.length, note: left ? 'осталось ' + left : 'готово'});
+  } else {
+    const n = A && A.wNew != null ? (lang === 'ja' ? t.jaW : t.de) : null;
+    R.push({id: 'a2', t: n != null ? `Anki · ${n} новых слов` : 'Anki · новые слова', man: n == null, go: '#words', done: n != null ? A.wIntro >= n : tickOn(lang, 'a2'), note: n != null ? (A.wIntro >= n ? 'готово' : 'осталось ' + (n - A.wIntro)) : ''});
+    if (lang === 'ja' && A && t.jaK) R.push({id: 'a3', t: `Anki · ${t.jaK} ${pl(t.jaK, 'новый кандзи', 'новых кандзи', 'новых кандзи')}`, done: A.kIntro >= t.jaK, note: A.kIntro >= t.jaK ? 'готово' : 'осталось ' + (t.jaK - A.kIntro)});
+  }
+  return R;
+}
+/* words known / all, for the rings and the statistics */
+const wordStats = (lang = S.lang) => lang === 'ja' ? (JA ? {known: JA.words.filter(w => w.s === 'known').length, total: JA.words.length} : {known: 0, total: 1})
+  : lang === 'de' ? (DE ? {known: DE.words.filter(w => w.s === 'known').length, total: DE.words.length} : {known: 0, total: 1}) : {known: WORDS.filter(wKnown).length, total: WORDS.length};
 
 /* ---------- time ---------- */
 const sec = (date, k) => (S.time[date]?.[k] || 0) + (S.timer?.s === k && date === today() ? (Date.now() - S.timer.at) / 1000 : 0);
@@ -103,12 +117,6 @@ function show(html, cls = '', after, sec = ''){
 }
 
 /* ---------- grammar line on the home page ---------- */
-function revBtn(){
-  const n = gramDueN('zh');
-  if (n) return `<p><a class="rev" href="#s">${RV}<span>Повторение грамматики</span><em class="num">${n}</em></a></p>`;
-  const nx = Object.values(gMem('zh').cards).map(c => c.due).sort((a, b) => a - b)[0];
-  return '';
-}
 const RV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/></svg>';
 
 /* ---------- illustration ---------- */
@@ -125,43 +133,19 @@ function setGirl(on){
     setTimeout(() => { top.insertAdjacentHTML('afterbegin', peek()); reveal($('.pk', top), $('.peek img', top)); }, 750); }
 }
 
-/* ---------- home ---------- */
-/* Japanese has no 40-day plan: the right card is today's grammar (Genki's day queue) */
-function jaHomePlan(){
-  if (!JG) { loadJg().then(() => { if (JG && S.lang === 'ja' && /^#?(home)?$/.test(location.hash.replace('#', ''))) route(true); });
-    return `<section class="card plan" aria-label="Сегодня"><div class="day"><h1>Грамматика</h1><p class="mute" style="margin-top:8px">Загружаю…</p></div></section>`; }
-  const P = gPlanHead(), m = gMem('ja'), next = [...P.due.map(t => [t, 'повтор']), ...P.nw.map(t => [t, 'новая'])].slice(0, JA_MAX);   // 7 tasks a day in all: 3 Anki + 4 topics
-  const jd = jaCur(), debt = jaSched() - jd;
-  // Anki: reviews, and today's share of the words still new so that all are started by 1 January
-  const A = akOn() ? AK.langs.ja : null, dl = Math.max(1, dIdx(today(), JA_END) + 1), wt = A && A.wNew != null ? Math.ceil((A.wNew + A.wIntro) / dl) : null, kt = A && A.kNew != null ? Math.ceil((A.kNew + A.kIntro) / dl) : null;
-  const row = (done, title, note) => `<div class="task ${done ? 'done' : ''}"><button class="chk" disabled aria-label="${esc(title)}">${I.chk}</button><b>${title}</b><span class="r"><span>${note}</span></span></div>`;
-  const ak = A ? row(A.due === 0 && A.rated > 0, 'Anki · повторения', A.due ? 'осталось ' + A.due : 'готово') + (wt != null ? row(A.wIntro >= wt, `Anki · ${wt} новых слов`, A.wIntro >= wt ? 'готово' : 'осталось ' + (wt - A.wIntro)) : '')
-      + (kt ? row(A.kIntro >= kt, `Anki · ${kt} ${pl(kt, 'новый кандзи', 'новых кандзи', 'новых кандзи')}`, A.kIntro >= kt ? 'готово' : 'осталось ' + (kt - A.kIntro)) : '')
-    : row(false, 'Anki', 'открой Anki на компьютере');
+/* ---------- home: the same page in every language ---------- */
+function homePlan(lang){
+  const P = gPlanHead(), m = gMem(lang), cur = planCur(lang), debt = pDayOf(lang) - cur, next = [...P.due.map(t => [t, 'повтор']), ...P.nw.map(t => [t, 'новая'])];
+  const row = x => `<div class="task ${x.done ? 'done' : ''}" ${x.go ? `data-go="${x.go}"` : ''}><button class="chk" data-k="${x.id}" data-d="${x.d || ''}" ${x.man ? '' : 'disabled'} aria-label="${esc(x.t)}">${I.chk}</button><b>${esc(x.t)}</b><span class="r">${x.note ? `<span>${x.note}</span>` : ''}${(x.links || []).map(([u, l]) => `<a class="mini" href="${esc(u)}" target="_blank" rel="noopener">${l}</a>`).join('')}</span></div>`;
+  const ph = lang === 'zh' ? phonRows() : [];
   return `<section class="card plan" aria-label="Сегодня">
-    <div class="day"><h1 class="num">День ${jaCur()}<span>/${JA_DAYS}</span></h1><p class="mute" style="margin-top:8px">${P.head} · ${P.sub}</p>
-      <p style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap">${P.due.length + P.nw.length ? `<a class="btn main" href="#s">${P.did ? 'Продолжить' : 'Начать'}</a>` : ''}<a class="btn" href="#lessons">Все темы</a></p></div>
-    <div class="tasks"><div class="grp"><div class="gh"><span class="eye">лексика</span></div>${ak}</div>
+    <div class="day"><h1 class="num">День ${cur}<span>/${LP()[lang].days}</span></h1><p class="mute" style="margin-top:8px">${P.head} · ${P.sub}${debt > 0 ? ` · <span class="tbad">долг ${debt} ${pl(debt, 'день', 'дня', 'дней')}</span>` : ''}</p>
+</div>
+    <div class="tasks">${ph.length ? `<div class="grp"><div class="gh"><span class="eye">фонетика</span></div>${ph.map(row).join('')}</div>` : ''}
+      <div class="grp"><div class="gh"><span class="eye">лексика</span></div>${lexRows(lang).map(row).join('')}</div>
       <div class="grp q"><div class="gh"><span class="eye">${next.length ? 'грамматика на очереди' : 'грамматика'}</span></div>
       ${next.length ? next.map(([t, k]) => { const c = m.cards[t.id]; return `<a class="task" href="#t-${t.id}"><span class="gc ${c ? memClass(memOf(c)) : ''}" style="flex:none"></span><b>${rich(t.t)}</b><span class="r">${k === 'новая' ? '' : `<span>${k}${c ? ' · ' + pct(memOf(c)) + '%' : ''}</span>`}</span></a>`; }).join('')
-        : `<p class="mute" style="font-size:13px">${learnedN('ja')} из ${gTopics('ja').length} тем пройдено.</p>`}</div></div></section>`;
-}
-/* German: dated plan to 31 December — Anki words and Grammatik aktiv topics */
-function deHomePlan(){
-  if (!DG) { loadDg().then(() => { if (DG && S.lang === 'de' && /^#?(home)?$/.test(location.hash.replace('#', ''))) route(true); });
-    return `<section class="card plan" aria-label="Сегодня"><div class="day"><h1>Грамматика</h1><p class="mute" style="margin-top:8px">Загружаю…</p></div></section>`; }
-  const P = gPlanHead(), m = gMem('de'), next = [...P.due.map(t => [t, 'повтор']), ...P.nw.map(t => [t, 'новая'])].slice(0, JA_MAX);
-  const A = akOn() ? AK.langs.de : null, wt = A && A.wNew != null ? akTargets(AK).de : null;
-  const row = (done, title, note) => `<div class="task ${done ? 'done' : ''}"><button class="chk" disabled aria-label="${esc(title)}">${I.chk}</button><b>${title}</b><span class="r"><span>${note}</span></span></div>`;
-  const ak = A ? row(A.due === 0 && A.rated > 0, 'Anki · повторения', A.due ? 'осталось ' + A.due : 'готово') + (wt != null ? row(A.wIntro >= wt, `Anki · ${wt} новых слов`, A.wIntro >= wt ? 'готово' : 'осталось ' + (wt - A.wIntro)) : '')
-    : row(false, 'Anki', 'открой Anki на компьютере');
-  return `<section class="card plan" aria-label="Сегодня">
-    <div class="day"><h1 class="num">День ${deCur()}<span>/${DE_DAYS}</span></h1><p class="mute" style="margin-top:8px">${P.head} · ${P.sub}</p>
-      <p style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap">${P.due.length + P.nw.length ? `<a class="btn main" href="#s">${P.did ? 'Продолжить' : 'Начать'}</a>` : ''}<a class="btn" href="#lessons">Все темы</a></p></div>
-    <div class="tasks"><div class="grp"><div class="gh"><span class="eye">лексика</span></div>${ak}</div>
-      <div class="grp q"><div class="gh"><span class="eye">${next.length ? 'грамматика на очереди' : 'грамматика'}</span></div>
-      ${next.length ? next.map(([t, k]) => { const c = m.cards[t.id]; return `<a class="task" href="#t-${t.id}"><span class="gc ${c ? memClass(memOf(c)) : ''}" style="flex:none"></span><b>${esc(t.t)}</b><span class="r">${k === 'новая' ? '' : `<span>${k}${c ? ' · ' + pct(memOf(c)) + '%' : ''}</span>`}</span></a>`; }).join('')
-        : `<p class="mute" style="font-size:13px">${learnedN('de')} из ${gTopics('de').length} тем пройдено.</p>`}</div></div></section>`;
+        : `<p class="mute" style="font-size:13px">${learnedN(lang)} из ${gTopics(lang).length} тем пройдено.</p>`}</div></div></section>`;
 }
 /* phone: the queue shows as many whole rows as the screen holds (desktop: 7) */
 function fitQ(){
@@ -172,31 +156,17 @@ function fitQ(){
 }
 addEventListener('resize', () => fitQ());
 function home(){
-  track();
-  const d = curDay(), T = tasks(d), lw = WORDS.filter(wKnown).length, nL = Object.keys(LES).length, nl = Object.keys(LES).filter(passed).length;
-  const t = today(), tod = dayT(t), yes = dayT(addDays(t, -1)), tot = Object.keys(S.time).reduce((a, k) => a + dayT(k), 0);
+  const lang = S.lang, t = today(), tod = dayT(t), yes = dayT(addDays(t, -1)), tot = Object.keys(S.time).reduce((a, k) => a + dayT(k), 0), W = wordStats(lang);
   const ring = (v, max, lab) => { const r = 70, C = 2 * Math.PI * r; return `<div class="ring"><svg viewBox="0 0 156 156"><circle class="tr" cx="78" cy="78" r="${r}"/><circle class="pr" cx="78" cy="78" r="${r}" stroke-dasharray="${C}" stroke-dashoffset="${C}" data-to="${C * (1 - Math.min(1, v / max))}"/></svg><div class="c"><b class="num" data-count="${v}">0</b>${lab ? `<small>${lab}</small>` : ''}</div></div>`; };
-  const cal = PLAN.days.map(x => { const f = frac(x.d), bg = f >= 1 ? 'var(--ink)' : f > 0 ? `color-mix(in srgb,var(--ink) ${Math.round(20 + f * 50)}%,var(--c2))` : '';
-    return `<i class="${f > 0 ? 'f' : ''} ${x.d === d ? 'cur' : ''}" style="animation-delay:${300 + x.d * 12}ms;${bg ? 'background:' + bg : ''}" title="День ${x.d}"></i>`; }).join('');
-  // today's day by the date; what is left of earlier days comes first (one «Anki · повторения» for all); 7 tasks at most
-  const D = d, Q = tasks(d).map(x => ({...x, k: d}));   // the first unfinished day; the next one opens when it is done
-  const QS = Q.slice(0, 7), gs = [...new Set(QS.map(x => x.g))];
-  const row = x => `<div class="task ${done(x.k, x) ? 'done' : ''}" data-g="${x.g}" ${x.go ? `data-go="${x.go}"` : ''}><button class="chk" data-t="${x.id}" data-d="${x.k}" ${x.auto ? 'disabled' : ''} aria-label="${esc(x.t)}">${I.chk}</button><b>${esc(x.t)}</b>
-      <span class="r">${x.k < D ? `<span class="dk">день ${x.k}</span>` : ''}${x.note ? `<span>${x.note}</span>` : ''}${(x.links || []).map(([u, l]) => `<a class="mini" href="${esc(u)}" target="_blank" rel="noopener">${l}</a>`).join('')}</span></div>`;
-  const tmr = g => { const s = {Лексика: 'anki'}[g]; if (!s) return ''; const run = S.timer?.s === s; return `<button class="mini ${run ? 'on' : ''}" data-timer="${s}">${run ? '■ стоп' : '▶ таймер'}</button>`; };
-  show(`<div class="stack ${S.lang === 'ja' || S.lang === 'de' ? 'jah' : ''}">
+  show(`<div class="stack jah">
     <section class="card top ${S.settings.girl === false ? 'nogirl' : ''}" aria-label="Статистика">${S.settings.girl === false ? '' : peek()}
-      <div class="rings">${S.lang === 'ja' && JA ? ring(JA.words.filter(w => w.s === 'known').length, JA.words.length, '') + ring(JG ? learnedN('ja') : 0, 137, 'тем') : S.lang === 'de' && DE ? ring(DE.words.filter(w => w.s === 'known').length, DE.words.length, '') + ring(DG ? learnedN('de') : 0, 80, 'тем') : ring(lw, WORDS.length, '') + ring(nl, nL, 'уроков')}</div>
+      <div class="rings">${ring(W.known, W.total, '') + ring(learnedN(lang), gTopics(lang).length || 1, 'тем')}</div>
       <div class="nums">
         <div class="fr"><div class="frac"><b class="num">${h2(tod, innerWidth <= 600 ? 1 : 2)}<i>${tod > yes ? '↑' : tod && tod < yes ? '↓' : ''}</i></b><hr><span>часы</span></div>
           <div class="frac"><b class="num">${h2(tot, 1)}</b><hr><span>total</span></div></div>
         ${calHtml()}
       </div></section>
-    ${S.lang === 'ja' ? jaHomePlan() : S.lang === 'de' ? deHomePlan() : `<section class="card plan" aria-label="Сегодня">
-      <div class="day"><h1 class="num">День ${D}<span>/40</span></h1><div class="dprog"><b><i style="width:${Math.round(frac(D) * 100)}%"></i></b><span class="num">${T.filter(x => done(d, x)).length} из ${T.length}</span></div>${revBtn()}${complete(d) && d < 40 ? `<p style="margin-top:18px"><button class="btn main" id="next">День ${d + 1} →</button></p>` : ''}</div>
-      <div class="tasks">${gs.map(g => `<div class="grp" style="--n:${QS.filter(x => x.g === g).length}"><div class="gh"><span class="eye">${g}</span>${tmr(g)}</div>${QS.filter(x => x.g === g).map(row).join('')}</div>`).join('')}
-        </div>
-    </section>`}</div>`, 'home', () => {
+    ${homePlan(lang)}</div>`, 'home', () => {
     if (app.classList.contains('still')) { $$('.pr').forEach(c => c.style.strokeDashoffset = c.dataset.to); $$('[data-count]').forEach(el => el.textContent = el.dataset.count); }
     else setTimeout(() => {
       $$('.pr').forEach(c => c.style.strokeDashoffset = c.dataset.to);
@@ -207,13 +177,11 @@ function home(){
     if (pk) reveal(pk, pim);
     if (tp && pim && matchMedia('(hover:hover)').matches) { tp.onmousemove = e => { const r = tp.getBoundingClientRect(); pim.style.setProperty('--px', ((e.clientX - r.left) / r.width - .5) * -10 + 'px'); pim.style.setProperty('--py', ((e.clientY - r.top) / r.height - .5) * -6 + 'px'); };
       tp.onmouseleave = () => { pim.style.setProperty('--px', '0px'); pim.style.setProperty('--py', '0px'); }; }
-    $$('.chk[data-t]').forEach(b => b.onclick = e => { e.stopPropagation(); if (b.disabled) return; const k = b.dataset.t, dd = +b.dataset.d, on = !S.done[dd]?.[k];
-      for (let j = k === 'a1' ? d : dd; j <= dd; j++) { (S.done[j] ??= {})[k] = on; if (!complete(j)) delete S.doneOn[j]; }   // «повторения» counts for every owed day
-      const tk = tasks(dd).find(x => x.id === k), tt = today(); if (tk?.sec) { (S.time[tt] ??= {}); S.time[tt].phon = Math.max(0, (S.time[tt].phon || 0) + (on ? tk.sec : -tk.sec)); }   // a watched video counts its length
-      track(); persist(); b.closest('.task').classList.toggle('done', on); setTimeout(() => route(true), 500); });
-    $$('[data-timer]').forEach(b => b.onclick = () => { timer(b.dataset.timer); $$('[data-timer]').forEach(o => { const run = S.timer?.s === o.dataset.timer; o.classList.toggle('on', run); o.textContent = run ? '■ стоп' : '▶ таймер'; }); });
+    $$('.chk[data-k]').forEach(b => b.onclick = e => { e.stopPropagation(); if (b.disabled) return; const k = b.dataset.k, d = +b.dataset.d; let on;
+      if (d) { on = !S.done[d]?.[k]; (S.done[d] ??= {})[k] = on; const x = phonRows().find(r => r.id === k); if (x?.sec) { (S.time[t] ??= {}); S.time[t].phon = Math.max(0, (S.time[t].phon || 0) + (on ? x.sec : -x.sec)); } }   // a watched video counts its length
+      else { on = !tickOn(lang, k); tickSet(lang, k, on); if (lang === 'zh' && k === 'a2') { const pd = pDayOf('zh'); for (let j = 1; j <= pd; j++) if (on || j === pd) (S.done[j] ??= {}).a2 = on; } }
+      persist(); b.closest('.task').classList.toggle('done', on); setTimeout(() => refresh(), 400); });
     $$('.task[data-go]').forEach(r => r.onclick = e => { if (!e.target.closest('a,button')) location.hash = r.dataset.go; });
-    $('#next')?.addEventListener('click', () => { (S.done[d + 1] ??= {})._go = true; persist(); route(); });
   });
 }
 
@@ -229,51 +197,65 @@ function cells(h, size){ const z = size || (wide() ? 36 : 28);
     : `<span class="cell" style="width:${z}px;height:${z}px"><svg viewBox="0 0 1024 1024">${G}</svg><span class="t" style="font-size:${z * .55}px">${esc(c)}</span></span>`).join('')}</span>`; }
 let charsP; const loadChars = () => charsP ??= fetch('/l/data/chars.json').then(r => r.json()).then(x => CH = x);
 
-/* ---------- Word List ---------- */
-const F = {tab: 'w', day: 0, write: 'all', q: ''};
+/* ---------- Word List: one page for every language (a second tab for the script's signs where there are any) ---------- */
+const strip = s => s.normalize('NFD').replace(new RegExp('[\\u0300-\\u036f]', 'g'), '').toLowerCase().replace(/[\s']/g, '');
+const WF = {zh: {tab: 'w', grp: 0, st: 'all', q: ''}, ja: {tab: 'w', grp: 0, st: 'all', q: ''}, de: {tab: 'w', grp: 0, st: 'all', q: ''}};
+const stZh = w => (akOn() && AK.langs.zh?.st?.[w.h]) || (learned(w.d) ? 'known' : 'new');
+const WLA = {
+  zh: {cls: '', grp: 'день', tabs: [['w', 'Слова'], ['c', 'Иероглифы']], rd: 'чтение', rdc: 'py', ph: 'pinyin · english', load: () => loadChars(), ok: () => !!CH,
+    groups: () => PLAN.days.filter(x => !x.review).map(x => x.d), title: () => '',
+    items: tab => { if (tab === 'w') return WORDS.map(w => ({g: w.d, word: cells(w.h) + (w.a ? I.pen : ''), rd: esc(w.p), tr: esc(w.e), st: stZh(w), s: w.h + ' ' + strip(w.p) + ' ' + w.e.toLowerCase(), h: w.h}));
+      const fd = new Map(), sc = {}; for (const w of WORDS) for (const c of w.h) if (CH[c]) { if (!fd.has(c)) fd.set(c, w.d); const x = stZh(w); sc[c] = sc[c] === 'known' || x === 'known' ? 'known' : sc[c] === 'learning' || x === 'learning' ? 'learning' : 'new'; }
+      return [...fd].map(([c, d]) => ({g: d, word: cells(c, wide() ? 38 : 30), rd: esc((CH[c].py || []).join(', ')), tr: esc(CH[c].def), st: sc[c], s: c + ' ' + (CH[c].py || []).map(strip).join(' ') + ' ' + (CH[c].def || '').toLowerCase(), c})); } },
+  ja: {cls: 'jp', grp: 'урок', tabs: [['w', 'Слова'], ['c', 'Кандзи']], rd: 'чтение', rdc: 'py ja', ph: 'かな · english', load: () => loadJa(), ok: () => !!JA,
+    groups: () => [...new Set(JA.words.map(w => w.l))].sort((a, b) => a - b), title: () => '',
+    items: tab => (tab === 'w' ? JA.words : JA.chars).map((w, i) => ({g: w.l, word: jaCells(w.h), rd: w.r ? esc(w.r.replace(PT, '$1')) : '', tr: jaE(w.e), st: w.s, s: w.h + ' ' + (w.r || '') + ' ' + w.e.toLowerCase(), i, say: (w.r || w.h).replace(PT, '$1')})) },
+  de: {cls: 'de', grp: 'урок', tabs: [['w', 'Слова']], rd: 'мн. число', rdc: 'dp', ph: 'deutsch · русский', load: () => loadDe(), ok: () => !!DE,
+    groups: () => [...new Set(DE.words.map(w => w.l))].sort((a, b) => a - b), title: g => DE.titles[g] || '',
+    items: () => DE.words.map((w, i) => ({g: w.l, word: deW(w), rd: esc(w.p || ''), tr: esc(w.e), st: w.s, s: w.k, i, say: (w.a ? w.a + ' ' : '') + w.h})) }
+};
 function wordlist(arg){
-  if (S.lang === 'ja') return jaWordlist();
-  if (S.lang === 'de') return deWordlist();
-  if (arg?.startsWith('d')) F.day = +arg.slice(1);
-  if (arg?.startsWith('b')) F.day = 0;
+  const lang = S.lang, A = WLA[lang], F = WF[lang];
+  if (arg?.startsWith('d')) F.grp = +arg.slice(1);
+  if (arg?.startsWith('b')) F.grp = 0;
+  if (!A.tabs.some(x => x[0] === F.tab)) F.tab = 'w';
   const seg = (id, val, opts) => `<div class="seg" id="${id}">${opts.map(([v, l]) => `<button data-v="${v}" aria-pressed="${val === v}">${l}</button>`).join('')}</div>`;
-  show(`<div class="wl">
-    <div class="side"><div class="tabs">${[['w', 'Слова'], ['c', 'Иероглифы']].map(([v, l]) => `<button data-tab="${v}" aria-pressed="${F.tab === v}">${l}</button>`).join('')}</div>
+  const opts = () => `<option value="0">все</option>${(A.ok() ? A.groups() : []).map(g => `<option value="${g}" ${F.grp === g ? 'selected' : ''}>${g}</option>`).join('')}`;
+  show(`<div class="wl ${A.cls}">
+    <div class="side"><div class="tabs">${A.tabs.map(([v, l]) => `<button data-tab="${v}" aria-pressed="${F.tab === v}">${l}</button>`).join('')}</div>
       <div class="card filters">
-        <label><span class="eye">день</span><select id="fd"><option value="0">все</option>${PLAN.days.filter(x => !x.review).map(x => `<option value="${x.d}" ${F.day === x.d ? 'selected' : ''}>${x.d}</option>`).join('')}</select></label>
-        <label><span class="eye">написание</span>${seg('fw', F.write, [['all', 'все'], ['w', 'писать'], ['r', 'узнавать']])}</label>
-        <label><span class="eye">поиск</span><input type="text" id="fq" value="${esc(F.q)}" placeholder="pinyin · english"></label>
+        <label><span class="eye">${A.grp}</span><select id="fg">${opts()}</select></label>
+        <label><span class="eye">статус</span>${seg('fs', F.st, [['all', 'все'], ['known', 'знаю'], ['learn', 'учу']])}</label>
+        <label><span class="eye">поиск</span><input type="text" id="fq" value="${esc(F.q)}" placeholder="${A.ph}"></label>
       </div></div>
     <section class="card list" id="list"></section></div>`, '', () => {
-    $$('.tabs button').forEach(b => b.onclick = () => { F.tab = b.dataset.tab; $$('.tabs button').forEach(x => x.setAttribute('aria-pressed', x === b)); renderList(); });
-    $('#fd').onchange = e => { F.day = +e.target.value; renderList(); };
-    $$('#fw button').forEach(b => b.onclick = () => { F.write = b.dataset.v; $$('#fw button').forEach(x => x.setAttribute('aria-pressed', x === b)); renderList(); });
-    $('#fq').oninput = e => { F.q = e.target.value; renderList(); };
-    loadChars().then(renderList);
+    $$('.tabs button').forEach(b => b.onclick = () => { F.tab = b.dataset.tab; $$('.tabs button').forEach(x => x.setAttribute('aria-pressed', x === b)); wlRender(); });
+    $('#fg').onchange = e => { F.grp = +e.target.value; wlRender(); };
+    $$('#fs button').forEach(b => b.onclick = () => { F.st = b.dataset.v; $$('#fs button').forEach(x => x.setAttribute('aria-pressed', x === b)); wlRender(); });
+    $('#fq').oninput = e => { F.q = e.target.value; wlRender(); };
+    Promise.resolve(A.load()).then(() => { const sel = $('#fg'); if (sel && sel.options.length < 2) sel.innerHTML = opts(); wlRender(); });
   });
 }
-const strip = s => s.normalize('NFD').replace(new RegExp('[\\u0300-\\u036f]', 'g'), '').toLowerCase().replace(/[\s']/g, '');
-function renderList(){
-  const L = $('#list'); if (!L || !CH) return; hideFly(true);
-  const q = F.q.trim().toLowerCase();
-  let rows, head;
-  if (F.tab === 'w') {
-    const ws = WORDS.filter(w => (!F.day || w.d === F.day) && (F.write === 'all' || (F.write === 'w') === !!w.a) && (!q || w.h.includes(q) || strip(w.p).includes(strip(q)) || w.e.toLowerCase().includes(q)));
-    head = `<div class="lh"><span class="eye">написание</span><span class="eye">чтение</span><span class="eye x">перевод</span><span></span></div>`;
-    rows = ws.map(w => ({d: w.d, k: wKnown(w), html: `<div class="row ${wKnown(w) ? 'learned' : ''}" data-h="${esc(w.h)}">${cells(w.h)}<span class="py">${esc(w.p)}</span><span class="en">${esc(w.e)}</span><span>${w.a ? I.pen : ''}</span></div>`}));
-  } else {
-    const fd = new Map(), act = new Set(WORDS.filter(w => w.a).flatMap(w => [...w.h]));
-    for (const w of WORDS) for (const c of w.h) if (CH[c] && !fd.has(c)) fd.set(c, w.d);
-    const cs = [...fd].filter(([c, d]) => (!F.day || d === F.day) && (F.write === 'all' || (F.write === 'w') === act.has(c)) && (!q || (CH[c].py || []).some(p => strip(p).includes(strip(q))) || (CH[c].def || '').toLowerCase().includes(q)));
-    head = `<div class="lh"><span class="eye">знак</span><span class="eye">чтение</span><span class="eye x">значение</span><span></span></div>`;
-    rows = cs.map(([c, d]) => ({d, k: learned(d), html: `<div class="row ${learned(d) ? 'learned' : ''}" data-c="${esc(c)}">${cells(c, wide() ? 38 : 30)}<span class="py">${esc((CH[c].py || []).join(', '))}</span><span class="en">${esc(CH[c].def)}</span><span>${act.has(c) ? I.pen : ''}</span></div>`}));
+function wlRender(){
+  const lang = S.lang, A = WLA[lang], F = WF[lang], L = $('#list'); if (!L || !A.ok() || !$('.wl')) return; hideFly(true);
+  const q = F.q.trim().toLowerCase(), qa = lang === 'de' ? deKey(q) : q, qb = strip(q);   // a search looks through every group
+  const all = A.items(F.tab); all.forEach((x, n) => x.n = n);
+  const list = all.filter(x => (q || !F.grp || x.g === F.grp) && (F.st === 'all' || (F.st === 'known' ? x.st === 'known' : x.st !== 'known')) && (!q || x.s.includes(qa) || x.s.includes(qb)));
+  const cnt = {}; list.forEach(x => cnt[x.g] = (cnt[x.g] || 0) + 1);
+  const unit = F.tab === 'w' ? pl(list.length, 'слово', 'слова', 'слов') : lang === 'ja' ? 'кандзи' : pl(list.length, 'знак', 'знака', 'знаков');
+  let h = `<div class="wct"><b>${list.length}</b> ${unit} · <span class="tok">выучено ${list.filter(x => x.st === 'known').length}</span></div><div class="lh"><span class="eye">${F.tab === 'w' ? 'слово' : 'знак'}</span><span class="eye pl">${A.rd}</span><span class="eye x">перевод</span><span></span></div>`, cur = null;
+  for (const x of list) {
+    if (x.g !== cur) { cur = x.g; const ti = A.title(cur); h += `<div class="dh"><b>${A.grp.toUpperCase()} ${cur}</b>${ti ? `<span lang="${lang}">${esc(ti)}</span>` : ''}<span class="num">· ${cnt[cur]}</span></div>`; }
+    h += `<div class="row ${x.st === 'known' ? 'learned' : ''} ${x.rd ? '' : 'nr'}" data-n="${x.n}">${x.word}${x.rd ? `<span class="${A.rdc}">${x.rd}</span>` : ''}<span class="en">${x.tr}</span><span class="stdot ${x.st}" title="${ST[x.st] || ''}"></span></div>`;
   }
-  const cnt = {}; rows.forEach(r => cnt[r.d] = (cnt[r.d] || 0) + 1); const kn = rows.filter(r => r.k).length;
-  let h = `<div class="wct"><b>${rows.length}</b> ${F.tab === 'w' ? pl(rows.length, 'слово', 'слова', 'слов') : pl(rows.length, 'знак', 'знака', 'знаков')} · <span class="tok">выучено ${kn}</span></div>` + head, cur = 0;
-  for (const r of rows) { if (r.d !== cur) { cur = r.d; h += `<div class="dh"><b>ДЕНЬ ${cur}</b><span>${cnt[cur]}</span></div>`; } h += r.html; }
-  L.innerHTML = h;
-  $$('.row', L).forEach(r => { r.onmouseenter = () => { if (matchMedia('(hover:hover)').matches) openFly(r); }; r.onclick = () => openFly(r, true); });
+  L.innerHTML = list.length ? h : h + '<p class="mute" style="padding:18px">Ничего не найдено.</p>'; L.scrollTop = 0;
+  $$('.row', L).forEach(r => { const x = all[+r.dataset.n]; r.onmouseenter = () => { if (matchMedia('(hover:hover)').matches) wlFly(r, x); }; r.onclick = () => wlFly(r, x, true); });
   L.onmouseleave = () => { if (matchMedia('(hover:hover)').matches) hideFly(); };
+}
+function wlFly(r, x, tap){
+  if (S.lang === 'zh') { if (x.h) r.dataset.h = x.h; else r.dataset.c = x.c; return openFly(r, tap); }
+  const was = flyKey; S.lang === 'ja' ? jaFly(r, x.i) : deFly(r, x.i);
+  if (tap && x.say) say(x.say, S.lang);   // sound only on a click, never on hover
 }
 let wrs = [], flyT, flyKey;
 const fly = $('#fly');
@@ -323,43 +305,11 @@ const jaE = e => esc(e).replace(PT, (m, x) => `<span class="pt ja">${x.replace(/
 const KJ = /[\u3005\u3040-\u30ff\u3400-\u9fff〜～]/;
 function jaCells(h, size){ const z = size || (wide() ? 36 : 28); h = h.replace(PT, '$1').replace(/[~～]/g, '〜');   // every sign in a cell of the same size, long words go on to the next line
   return `<span class="cells">${(h.match(/[\u3005\u3040-\u30ff\u3400-\u9fff〜～]|[^\u3005\u3040-\u30ff\u3400-\u9fff〜～]+/g) || []).map(c => !KJ.test(c) ? (c.trim() ? `<span class="lat">${esc(c.trim())}</span>` : '') : `<span class="cell" style="width:${z}px;height:${z}px"><svg viewBox="0 0 1024 1024">${G}</svg><span class="t ja" style="font-size:${z * .62}px">${esc(c)}</span></span>`).join('')}</span>`; }
-function jaWordlist(){
-  const seg = (id, val, opts) => `<div class="seg" id="${id}">${opts.map(([v, l]) => `<button data-v="${v}" aria-pressed="${val === v}">${l}</button>`).join('')}</div>`;
-  show(`<div class="wl jp">
-    <div class="side"><div class="tabs">${[['w', 'Слова'], ['c', 'Кандзи']].map(([v, l]) => `<button data-tab="${v}" aria-pressed="${JF.tab === v}">${l}</button>`).join('')}</div>
-      <div class="card filters">
-        <label><span class="eye">урок</span><select id="fl"><option value="0">все</option>${[...Array(23)].map((_, i) => `<option value="${i + 1}" ${JF.lesson === i + 1 ? 'selected' : ''}>${i + 1}</option>`).join('')}</select></label>
-        <label><span class="eye">статус</span>${seg('fs', JF.st, [['all', 'все'], ['known', 'знаю'], ['learn', 'учу']])}</label>
-        <label><span class="eye">поиск</span><input type="text" id="fq" value="${esc(JF.q)}" placeholder="かな · english"></label>
-      </div></div>
-    <section class="card list" id="list"></section></div>`, '', () => {
-    $$('.tabs button').forEach(b => b.onclick = () => { JF.tab = b.dataset.tab; $$('.tabs button').forEach(x => x.setAttribute('aria-pressed', x === b)); jaList(); });
-    $('#fl').onchange = e => { JF.lesson = +e.target.value; jaList(); };
-    $$('#fs button').forEach(b => b.onclick = () => { JF.st = b.dataset.v; $$('#fs button').forEach(x => x.setAttribute('aria-pressed', x === b)); jaList(); });
-    $('#fq').oninput = e => { JF.q = e.target.value; jaList(); };
-    loadJa().then(jaList);
-  });
-}
-function jaList(){
-  const L = $('#list'); if (!L || !JA) return; hideFly(true);
-  const src = JF.tab === 'w' ? JA.words : JA.chars, q = JF.q.trim().toLowerCase();
-  const list = src.map((w, i) => [w, i]).filter(([w]) => (!JF.lesson || w.l === JF.lesson) && (JF.st === 'all' || (JF.st === 'known' ? w.s === 'known' : w.s !== 'known'))
-    && (!q || w.h.includes(q) || (w.r || '').includes(q) || w.e.toLowerCase().includes(q)));
-  const cnt = {}; list.forEach(([w]) => cnt[w.l] = (cnt[w.l] || 0) + 1);
-  let h = `<div class="wct"><b>${list.length}</b> ${JF.tab === 'w' ? pl(list.length, 'слово', 'слова', 'слов') : 'кандзи'} · <span class="tok">выучено ${list.filter(([w]) => w.s === 'known').length}</span></div><div class="lh"><span class="eye">слово</span><span class="eye">чтение</span><span class="eye x">перевод</span><span></span></div>`, cur = -1;
-  for (const [w, i] of list) {
-    if (w.l !== cur) { cur = w.l; h += `<div class="dh"><b>УРОК ${cur}</b><span>${cnt[cur]}</span></div>`; }
-    h += `<div class="row ${w.s === 'known' ? 'learned' : ''} ${w.r ? '' : 'nr'}" data-ji="${i}">${jaCells(w.h)}${w.r ? `<span class="py ja">${esc(w.r.replace(PT, "$1"))}</span>` : ''}<span class="en">${jaE(w.e)}</span><span class="stdot ${w.s}" title="${ST[w.s]}"></span></div>`;
-  }
-  L.innerHTML = list.length ? h : h + '<p class="mute" style="padding:18px">Ничего не найдено.</p>';
-  $$('.row', L).forEach(r => { r.onmouseenter = () => { if (matchMedia('(hover:hover)').matches) jaFly(r, src); }; r.onclick = () => jaFly(r, src); });
-  L.onmouseleave = () => { if (matchMedia('(hover:hover)').matches) hideFly(); };
-}
-function jaFly(r, src){
+function jaFly(r, i){
   clearTimeout(flyT);
-  const key = 'ja' + JF.tab + r.dataset.ji; if (key === flyKey) return; flyKey = key;
+  const tab = WF.ja.tab, key = 'ja' + tab + i; if (key === flyKey) return; flyKey = key;
   $$('.row.sel').forEach(x => x.classList.remove('sel')); r.classList.add('sel');
-  const w = src[+r.dataset.ji], wasOn = fly.classList.contains('on');
+  const w = (tab === 'w' ? JA.words : JA.chars)[i], wasOn = fly.classList.contains('on');
   fly.innerHTML = `<div class="fh"><div><b class="ja" style="font-family:'Klee One',var(--zh);font-size:22px">${esc((w.r || w.h).replace(PT, '$1'))}</b><span>${jaE(w.e)}</span></div></div>
     <div style="padding:18px;display:flex;justify-content:center">${jaCells(w.h, 56).replace('class="cells"', 'class="cells" style="justify-content:center"')}</div>
     ${w.x ? `<div style="padding:0 18px 14px;font-size:13px"><span class="eye">пример</span><p class="ja" style="font-family:'Klee One',var(--zh);font-size:16px;margin-top:4px">${esc(w.x)}</p></div>` : ''}
@@ -377,45 +327,15 @@ function jaFly(r, src){
 /* ---------- German word list (Motive A1–B1, 30 lessons; known comes from the «Знаю» column of the xlsx) ---------- */
 let DE = null, deP = null;
 const deKey = s => strip(s).replace(/ß/g, 'ss');
-const loadDe = () => deP ??= fetch('/l/data/de_words.json', {cache: 'no-cache'}).then(r => r.json()).then(x => { x.words.forEach(w => w.k = deKey((w.a || '') + w.h + '|' + (w.p || '') + '|' + w.e)); DE = x; }).catch(() => {});
+const loadDe = () => deP ??= fetch('/l/data/de_words.json', {cache: 'no-cache'}).then(r => r.json()).then(x => { x.words.forEach(w => w.k = deKey((w.a || '') + w.h + '|' + (w.p || '') + '|' + w.e)); DE = x; akApply(); }).catch(() => {});
 const deLessonsDone = () => { let n = 0; for (let l = 1; l <= 30; l++) { const ws = DE.words.filter(w => w.l === l); if (ws.length && ws.every(w => w.s === 'known')) n++; } return n; };
 const DF = {lesson: 1, st: 'all', q: ''};
 const deW = w => `<span class="dw" lang="de">${w.a ? `<i>${esc(w.a)}</i>` : ''}${esc(w.h)}</span>`;
-function deWordlist(){
-  const seg = (id, val, opts) => `<div class="seg" id="${id}">${opts.map(([v, l]) => `<button data-v="${v}" aria-pressed="${val === v}">${l}</button>`).join('')}</div>`;
-  show(`<div class="wl de">
-    <div class="side"><div class="tabs"><button aria-pressed="true">Слова</button></div>
-      <div class="card filters">
-        <label><span class="eye">урок</span><select id="fl"><option value="0">все</option>${[...Array(30)].map((_, i) => `<option value="${i + 1}" ${DF.lesson === i + 1 ? 'selected' : ''}>${i + 1}</option>`).join('')}</select></label>
-        <label><span class="eye">статус</span>${seg('fs', DF.st, [['all', 'все'], ['known', 'знаю'], ['learn', 'учу']])}</label>
-        <label><span class="eye">поиск</span><input type="text" id="fq" value="${esc(DF.q)}" placeholder="deutsch · русский"></label>
-      </div></div>
-    <section class="card list" id="list"></section></div>`, '', () => {
-    $('#fl').onchange = e => { DF.lesson = +e.target.value; deList(); };
-    $$('#fs button').forEach(b => b.onclick = () => { DF.st = b.dataset.v; $$('#fs button').forEach(x => x.setAttribute('aria-pressed', x === b)); deList(); });
-    $('#fq').oninput = e => { DF.q = e.target.value; deList(); };
-    loadDe().then(deList);
-  });
-}
-function deList(){
-  const L = $('#list'); if (!L || !DE || !$('.wl.de')) return; hideFly(true);
-  const q = deKey(DF.q.trim());   // a search looks through every lesson
-  const list = DE.words.map((w, i) => [w, i]).filter(([w]) => (q || !DF.lesson || w.l === DF.lesson) && (DF.st === 'all' || (DF.st === 'known' ? w.s === 'known' : w.s !== 'known')) && (!q || w.k.includes(q)));
-  const cnt = {}; list.forEach(([w]) => cnt[w.l] = (cnt[w.l] || 0) + 1);
-  let h = `<div class="wct"><b>${list.length}</b> ${pl(list.length, 'слово', 'слова', 'слов')} · <span class="tok">выучено ${list.filter(([w]) => w.s === 'known').length}</span></div><div class="lh"><span class="eye">слово</span><span class="eye pl">мн. число</span><span class="eye x">перевод</span><span></span></div>`, cur = -1;
-  for (const [w, i] of list) {
-    if (w.l !== cur) { cur = w.l; h += `<div class="dh"><b>УРОК ${cur}</b><span lang="de">${esc(DE.titles[cur])}</span><span class="num">· ${cnt[cur]}</span></div>`; }
-    h += `<div class="row ${w.s === 'known' ? 'learned' : ''}" data-di="${i}">${deW(w)}<span class="dp" lang="de">${esc(w.p)}</span><span class="en">${esc(w.e)}</span><span class="stdot ${w.s}" title="${ST[w.s]}"></span></div>`;
-  }
-  L.innerHTML = list.length ? h : h + '<p class="mute" style="padding:18px">Ничего не найдено.</p>'; L.scrollTop = 0;
-  $$('.row', L).forEach(r => { r.onmouseenter = () => { if (matchMedia('(hover:hover)').matches) deFly(r); }; r.onclick = () => deFly(r); });
-  L.onmouseleave = () => { if (matchMedia('(hover:hover)').matches) hideFly(); };
-}
-function deFly(r){
+function deFly(r, i){
   clearTimeout(flyT);
-  const key = 'de' + r.dataset.di; if (key === flyKey) return; flyKey = key;
+  const key = 'de' + i; if (key === flyKey) return; flyKey = key;
   $$('.row.sel').forEach(x => x.classList.remove('sel')); r.classList.add('sel');
-  const w = DE.words[+r.dataset.di], wasOn = fly.classList.contains('on');
+  const w = DE.words[i], wasOn = fly.classList.contains('on');
   const line = (t, v) => v ? `<div style="padding:12px 18px 0;font-size:13.5px"><span class="eye">${t}</span><p style="margin-top:3px;overflow-wrap:anywhere" lang="de">${esc(v)}</p></div>` : '';
   fly.innerHTML = `<div class="fh"><div style="min-width:0"><b class="dw" lang="de" style="overflow-wrap:anywhere;hyphens:auto">${w.a ? `<i>${esc(w.a)}</i>` : ''}${esc(w.h)}</b><span style="color:var(--ink);font-size:14px">${esc(w.e)}</span></div></div>
     ${line('мн. число', w.p)}${line('Австрия / Швейцария', w.v)}
@@ -475,17 +395,22 @@ function migrateZh(){ const m = gMem('zh'); if (m.migrated) return; m.migrated =
 /* ---------- topics of each language ---------- */
 let JG = null, JQ = null, jgP = null, JT = {}, JFB = {}, JFF = new Set();
 const loadJg = () => jgP ??= Promise.all(['/l/data/ja_grammar.json', '/l/data/ja_questions.json'].map(u => fetch(u, {cache: 'no-cache'}).then(r => r.json()))).then(([g, q]) => {
-  JG = g; JQ = q; g.lessons.forEach(l => l.topics.forEach((t, i) => { t.lesson = l.n; t.num = i + 1; t.title = t.t; t.q = q[t.id] || []; JT[t.id] = t; }));
+  JG = g; JQ = q; g.lessons.forEach(l => l.topics.forEach((t, i) => { t.lesson = l.n; t.num = i + 1; t.title = t.t; t.q = q[t.id] || []; t.eye = `Genki ${l.n <= 12 ? 'I' : 'II'} · урок ${l.n} · ${l.name}`; t.no = t.id; JT[t.id] = t; }));
   Object.values(JT).forEach(t => (t.from || []).forEach(f => JT[f] && (JT[f].to ??= []).push(t.id)));
   Object.keys(g.furi).sort((a, b) => b.length - a.length).forEach(k => { (JFB[k[0]] ??= []).push(k); JFF.add(k[0]); });
 }).catch(() => { jgP = null; });
 const zhOrder = () => PLAN.days.flatMap(d => d.lessons.map(id => ({id, day: d.d}))).filter(x => LES[x.id]);
+/* Chinese topics in the shared format (data/zh_topics.json, built from lessons.json); questions stay in lessons.json */
+const ZTT = {}; let ZK = {};
+function buildZT(zt){ ZK = zt.kinds || {}; zhOrder().forEach(({id, day}, i) => { const L = LES[id], x = zt.topics[id] || {};
+  ZTT[id] = {...x, id, day, no: i + 1, t: x.t || L.title, title: x.t || L.title, q: L.q, grp: L.g, eye: `день ${day} · ${PLAN.groups.find(g => g.id === L.g)?.name || ''}`}; }); }
 function gTopics(lang = S.lang){
   if (lang === 'ja') return JG ? Object.values(JT) : [];
   if (lang === 'de') return DG ? DG.all : [];
-  return zhOrder().map(({id, day}) => ({id, day, title: LES[id].title, g: LES[id].g, q: LES[id].q}));
+  return zhOrder().map(({id}) => ZTT[id]).filter(Boolean);
 }
-const gTopic = id => S.lang === 'de' ? DGT[id] : S.lang === 'ja' ? JT[id] : LES[id] && {id, title: LES[id].title, g: LES[id].g, q: LES[id].q, day: LES[id].day};
+const gTopic = id => S.lang === 'de' ? DGT[id] : S.lang === 'ja' ? JT[id] : ZTT[id];
+const gKinds = () => (S.lang === 'ja' ? JG?.kinds : S.lang === 'de' ? DG?.kinds : ZK) || {};
 /* books on the «Сегодня» page: zh = grammar groups split in two cards, ja = Genki I and II */
 function gBooks(){
   if (S.lang === 'ja') return JG ? [{name: 'Genki I', rows: JG.lessons.filter(l => l.n <= 12)}, {name: 'Genki II', rows: JG.lessons.filter(l => l.n > 12)}].map(b => ({name: b.name, rows: b.rows.map(l => ({n: l.n, name: l.name, ids: l.topics.map(t => t.id)}))})) : [];
@@ -500,8 +425,7 @@ function duePool(lang = S.lang, now = Date.now()){
 }
 function newPool(lang = S.lang, now = Date.now()){
   const m = gMem(lang), td = dayNo(now), left = gTopics(lang).filter(t => !m.cards[t.id]);
-  if (lang === 'zh') { const d = curDay(); return left.filter(t => t.day <= d); }   // the 40-day plan decides
-  if (lang === 'de') return left.slice(0, Math.max(0, deTgtD(deCur(now)) - (gTopics(lang).length - left.length)));   // one plan day at a time; owed days come one after another
+  return left.slice(0, Math.max(0, tgtD(lang, planCur(lang, now)) - (gTopics(lang).length - left.length)));   // one plan day at a time; owed days come one after another   // one plan day at a time; owed days come one after another
   return left.slice(0, Math.max(0, jaTgtD(jaCur(now)) - (gTopics(lang).length - left.length)));   // one plan day at a time; owed days come one after another
 }
 /* Japanese plan: day 1 = 23 November; Genki I (lessons 1–12) by 1 December, Genki II by 1 January */
@@ -538,11 +462,16 @@ function furiTok(run){
 }
 const furiH = run => furiTok(run).map(([t, r]) => r ? `<ruby>${t}<rt>${r}</rt></ruby>` : t).join('');
 const jpH = s => s.replace(JP_RUN, m => `<span class="ja" lang="ja">${furiH(m)}</span>`);
-const rich = s => String(s ?? '').split(/(\[[^\]]*\])/).map(p => p.startsWith('[') && p.endsWith(']') && p.length > 2 ? `<span class="hl">${jpH(esc(p.slice(1, -1)))}</span>` : jpH(esc(p))).join('');
+const zhH = s => s.replace(/([㐀-鿿〇，。？！：、；]+)/g, '<span class="zh say">$1</span>');
+const tgH = s => S.lang === 'ja' ? jpH(s) : S.lang === 'zh' ? zhH(s) : s;
+const rich = s => String(s ?? '').split(/(\[[^\]]*\])/).map(p => p.startsWith('[') && p.endsWith(']') && p.length > 2 ? `<span class="hl">${tgH(esc(p.slice(1, -1)))}</span>` : tgH(esc(p))).join('');
 const plainJ = s => String(s ?? '').replace(/\[|\]/g, '').replace(/\{[^}]*\}/g, '');
 const sayJa = text => { try { const u = new SpeechSynthesisUtterance(text); u.lang = 'ja-JP'; const v = speechSynthesis.getVoices().find(x => /^ja/i.test(x.lang)); if (v) u.voice = v; u.rate = .9; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) {} };
-const bindSay = V => V.addEventListener('click', e => { const s = e.target.closest('.ja'); if (!s || e.target.closest('a,button')) return; const c = s.cloneNode(true); $$('rt', c).forEach(r => r.remove()); sayJa(c.textContent); });
-const tTitle = t => S.lang === 'ja' ? rich(t.t) : esc(t.title);
+const speak = (text, tag) => { try { const u = new SpeechSynthesisUtterance(text); u.lang = tag; const v = speechSynthesis.getVoices().find(x => x.lang.replace('_', '-').toLowerCase().startsWith(tag.slice(0, 2))); if (v) u.voice = v; u.rate = .9; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) {} };
+/* sound, the same everywhere: Chinese has recorded audio where it exists, everything else is read by the system voice */
+const say = (text, lang = S.lang) => { text = String(text || '').trim(); if (!text) return; if (lang === 'zh' && AMAP?.l[text]) return sayT(text); if (lang === 'zh' && AMAP?.w[text]) return sayW(text); speak(text, {zh: 'zh-CN', ja: 'ja-JP', de: 'de-DE'}[lang]); };
+const bindSay = V => V.addEventListener('click', e => { const s = e.target.closest('.ja,.say'); if (!s || e.target.closest('a,button')) return; const c = s.cloneNode(true); $$('rt', c).forEach(r => r.remove()); say(c.textContent); });
+const tTitle = t => rich(t.t);
 
 /* ---------- written answers: romaji turns into kana, kanji are compared by their reading ---------- */
 const KANA = {a:'あ',i:'い',u:'う',e:'え',o:'お',ka:'か',ki:'き',ku:'く',ke:'け',ko:'こ',ga:'が',gi:'ぎ',gu:'ぐ',ge:'げ',go:'ご',sa:'さ',si:'し',shi:'し',su:'す',se:'せ',so:'そ',za:'ざ',zi:'じ',ji:'じ',zu:'ず',ze:'ぜ',zo:'ぞ',ta:'た',ti:'ち',chi:'ち',tu:'つ',tsu:'つ',te:'て',to:'と',da:'だ',di:'ぢ',du:'づ',de:'で',do:'ど',na:'な',ni:'に',nu:'ぬ',ne:'ね',no:'の',ha:'は',hi:'ひ',fu:'ふ',hu:'ふ',he:'へ',ho:'ほ',ba:'ば',bi:'び',bu:'ぶ',be:'べ',bo:'ぼ',pa:'ぱ',pi:'ぴ',pu:'ぷ',pe:'ぺ',po:'ぽ',ma:'ま',mi:'み',mu:'む',me:'め',mo:'も',ya:'や',yu:'ゆ',yo:'よ',ra:'ら',ri:'り',ru:'る',re:'れ',ro:'ろ',wa:'わ',wo:'を',kya:'きゃ',kyu:'きゅ',kyo:'きょ',gya:'ぎゃ',gyu:'ぎゅ',gyo:'ぎょ',sha:'しゃ',shu:'しゅ',sho:'しょ',sya:'しゃ',syu:'しゅ',syo:'しょ',ja:'じゃ',ju:'じゅ',jo:'じょ',zya:'じゃ',zyu:'じゅ',zyo:'じょ',cha:'ちゃ',chu:'ちゅ',cho:'ちょ',tya:'ちゃ',tyu:'ちゅ',tyo:'ちょ',nya:'にゃ',nyu:'にゅ',nyo:'にょ',hya:'ひゃ',hyu:'ひゅ',hyo:'ひょ',bya:'びゃ',byu:'びゅ',byo:'びょ',pya:'ぴゃ',pyu:'ぴゅ',pyo:'ぴょ',mya:'みゃ',myu:'みゅ',myo:'みょ',rya:'りゃ',ryu:'りゅ',ryo:'りょ','-':'ー',xtu:'っ',ltu:'っ'};
@@ -581,7 +510,7 @@ if (window.visualViewport) { const vvFit = () => { const on = document.activeEle
 function gNeed(fn){ if (S.lang === 'ja' && !JG) { show('<p class="mute" style="text-align:center;margin-top:30vh">Загружаю грамматику…</p>', '', null, 'g'); loadJg().then(() => JG && route(true)); return false; } if (S.lang === 'de' && !DG) { show('<p class="mute" style="text-align:center;margin-top:30vh">Загружаю грамматику…</p>', '', null, 'g'); loadDg().then(() => DG && route(true)); return false; } return true; }
 /* German grammar: «Grammatik aktiv A1–B1», same system as zh/ja (no questions yet: reading a topic counts) */
 let DG = null, dgP = null; const DGT = {};
-const loadDg = () => dgP ??= fetch('/l/data/de_grammar.json', {cache: 'no-cache'}).then(r => r.json()).then(x => { x.all = x.sections.flatMap((s, i) => s.topics.map(t => Object.assign(t, {sec: s.name, secN: i + 1, title: t.t, q: t.q || []}))); x.all.forEach(t => DGT[t.id] = t); DG = x; }).catch(() => { dgP = null; });
+const loadDg = () => dgP ??= fetch('/l/data/de_grammar.json', {cache: 'no-cache'}).then(r => r.json()).then(x => { x.all = x.sections.flatMap((s, i) => s.topics.map(t => Object.assign(t, {sec: s.name, secN: i + 1, title: t.t, q: t.q || [], no: t.n, eye: `${s.name} · глава ${t.n} · ${t.lv}`, src: `${x.book} · «${t.ex}» · стр. ${t.p}–${t.p + 1}`}))); x.all.forEach(t => DGT[t.id] = t); DG = x; }).catch(() => { dgP = null; });
 const deDay = (now = Date.now()) => Math.max(1, Math.min(DE_DAYS, dIdx(DE_START, isoD(dayDate(dayNo(now)))) + 1));
 const deTgtD = k => DG ? Math.ceil(DG.all.length * Math.min(k, DE_DAYS) / DE_DAYS) : 0;   // topics that should be done by the end of plan day k
 function deCur(now = Date.now()){ const L = learnedN('de'), s = deDay(now); for (let k = 1; k <= s; k++) if (deTgtD(k) > L) return k; return s; }   // first unfinished day
@@ -596,14 +525,14 @@ function gPlanHead(){
   return {due, nw, did, head, sub, date: `${WDAY[d.getDay()]}, ${d.getDate()} ${MONF[d.getMonth()]}`};
 }
 function tomorrowLine(){ const t = Date.now() + DAYMS, r = duePool(S.lang, t).length, n = newPool(S.lang, t).length;
-  return !r && !n ? (S.lang === 'zh' ? 'Новые темы придут с новым днём плана.' : 'Завтра заданий нет.') : `Завтра: ${r} ${pl(r, 'повторение', 'повторения', 'повторений')}${S.lang === 'ja' ? `, ${n} ${pl(n, 'новая тема', 'новые темы', 'новых тем')}` : ''}.`; }
+  return !r && !n ? 'Завтра заданий нет.' : `Завтра: ${r} ${pl(r, 'повторение', 'повторения', 'повторений')}, ${n} ${pl(n, 'новая тема', 'новые темы', 'новых тем')}.`; }
 function gToday(){
   if (!gNeed()) return;
   if (S.lang === 'zh') migrateZh();
   const P = gPlanHead(), m = overallMem(), now = Date.now(), cs = Object.values(gMem().cards);
   const later = m === null ? '' : `<dl>${[[1, 'завтра'], [7, 'через неделю'], [30, 'через месяц']].map(([n, l]) => `<div><dt>${l}</dt><dd class="num">${pct(cs.reduce((a, c) => a + memOf(c, now + n * DAYMS), 0) / cs.length)}%</dd></div>`).join('')}</dl>`;
   const cell = id => { const c = gMem().cards[id], t = gTopic(id), r = c ? memOf(c, now) : null, due = c && (c.relearn || c.due <= dayNo());
-    const tip = (S.lang === 'ja' ? id + ' ' + plainJ(t.t) : t.title) + ' · ' + (c ? `${pct(r)}%, повтор ${dueLabel(c)}` : 'ещё не пройдена');
+    const tip = (t.no ?? '') + ' ' + plainJ(t.t) + ' · ' + (c ? `${pct(r)}%, повтор ${dueLabel(c)}` : 'ещё не пройдена');
     return `<a class="gc ${c ? memClass(r) : ''} ${due ? 'due' : ''}" href="#t-${id}" aria-label="${esc(tip)}"></a>`; };
   const book = b => { const ids = b.rows.flatMap(r => r.ids), n = ids.filter(id => gMem().cards[id]).length, bm = rowMem(ids);
     return `<section class="card gbook"><h2>${esc(b.name)}<small class="num">${n}/${ids.length} тем${bm === null ? '' : ' · память ' + pct(bm) + '%'}</small></h2><div class="gbar"><i style="width:${n / ids.length * 100}%"></i></div>
@@ -626,7 +555,7 @@ function gList(){
     return `<div class="gr ${op ? 'open' : ''}" data-k="${key}"><button class="grb" aria-expanded="${op}"><span class="n num">${r.n}</span><span class="nm">${esc(r.name)}</span><span class="sq">${r.ids.map(sq).join('')}</span><span class="p num">${rm === null ? '' : pct(rm) + '%'}</span>${cv}</button>
       <div class="gt"><div>${r.ids.map(ti).join('')}</div></div></div>`; };
   return `<section class="card gl"><div class="glh"><h2>Грамматика</h2><small class="num">${n}/${all.length} тем${om === null ? '' : ' · память ' + pct(om) + '%'}</small></div><div class="gbar"><i style="width:${n / all.length * 100}%"></i></div>
-    ${B.map(b => (S.lang === 'ja' ? `<div class="gsec">${esc(b.name)}</div>` : '') + b.rows.map(r => row(r, S.lang + r.n)).join('')).join('')}</section>`;
+    ${B.map(b => (B.length > 1 ? `<div class="gsec">${esc(b.name)}</div>` : '') + b.rows.map(r => row(r, S.lang + r.n)).join('')).join('')}</section>`;
 }
 document.addEventListener('click', e => { const b = e.target.closest('.grb'); if (!b) return; const r = b.parentElement, k = r.dataset.k, op = !r.classList.contains('open');
   r.classList.toggle('open', op); b.setAttribute('aria-expanded', op); op ? GOPEN.add(k) : GOPEN.delete(k); });
@@ -634,12 +563,8 @@ document.addEventListener('click', e => { const b = e.target.closest('.grb'); if
   const hide = now => { clearTimeout(gfT); const go = () => { gf.classList.remove('on'); gfId = null; }; now ? go() : (gfT = setTimeout(go, 160)); };
   const card = id => { const t = gTopic(id), c = gMem().cards[id], r = c ? memOf(c) : null;
     let head, sub, rule, ex = '';
-    if (S.lang === 'ja') { const l = JG.lessons.find(x => x.n === t.lesson); head = rich(t.t); sub = `Genki ${t.lesson <= 12 ? 'I' : 'II'} · урок ${t.lesson} · ${esc(l.name)}`; rule = rich(t.g || '') + (t.r ? `<span class="gr2">${rich(t.r)}</span>` : '');
-      const tb = [].concat(t.v || [])[0], row = tb?.r?.[0]; if (row) ex = `<div class="gx"><b>${rich(row[0])}</b>${row[1] ? `<span>${rich(row[row.length - 1])}</span>` : ''}</div>`; }
-    else if (S.lang === 'de') { head = esc(t.t); sub = `${esc(t.sec)} · глава ${t.n} · ${t.lv}`; rule = rich(t.g || '') + (t.r ? `<span class="gr2">${rich(t.r)}</span>` : '');
-      const row = [].concat(t.v || [])[0]?.r?.[0]; if (row) ex = `<div class="gx"><b>${rich(row[0])}</b>${row.length > 1 ? `<span>${rich(row[row.length - 1])}</span>` : ''}</div>`; }
-    else { const L = LES[id], R = L.rules[0], e = R?.ex?.[0]; head = esc(L.title); sub = `день ${L.day} · ${esc(PLAN.groups.find(g => g.id === L.g)?.name || '')}`; rule = R ? `${zh(R.f)} — ${esc(R.m)}` : '';
-      if (e) ex = `<div class="gx"><b class="zh">${esc(e[0])}</b><span>${esc(e[1])} · ${esc(e[2])}</span></div>`; }
+    head = rich(t.t); sub = esc(t.eye || ''); rule = rich(t.g || '') + (t.r ? `<span class="gr2">${rich(t.r)}</span>` : '');
+    { const row = [].concat(t.v || [])[0]?.r?.[0]; if (row) ex = `<div class="gx"><b>${cellH(row[0])}</b>${row.length > 1 ? `<span>${rich(row[row.length - 1])}</span>` : ''}</div>`; }
     const st = c ? [[`<b class="num ${memClass(r)}">${pct(r)}%</b>`, 'память'], [`<b>${dueLabel(c)}</b>`, 'повтор'], [`<b class="num">${c.reps}</b>`, 'оценок']]
       : [['<b>—</b>', 'память'], ['<b>новая</b>', 'статус'], [`<b class="num">${t.q.length}</b>`, 'вопросов']];
     return `<div class="fh"><span class="gc ${c ? memClass(r) : ''}"></span><div><b>${head}</b><span>${sub}</span></div></div>
@@ -658,38 +583,23 @@ document.addEventListener('click', e => { const b = e.target.closest('.grb'); if
   document.addEventListener('mouseout', e => { if (gfId && e.target.closest?.('.gbook a.gc') && !e.relatedTarget?.closest?.('.gbook a.gc')) hide(); });   // off the squares: gone at once (a short grace only for the gap between two squares)
   addEventListener('hashchange', () => hide(true)); document.addEventListener('scroll', () => gfId && hide(true), {passive: true, capture: true}); }
 /* the topic itself */
-const jgTable = tb => `${tb.cap ? `<div class="jcap">${rich(tb.cap)}</div>` : ''}<div class="jtw"><table>${tb.h.some(Boolean) ? `<thead><tr>${tb.h.map(h => `<th>${rich(h)}</th>`).join('')}</tr></thead>` : ''}<tbody>${tb.r.map(r => `<tr>${r.map(c => `<td>${rich(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+const cellH = c => S.lang === 'de' && /[A-Za-zÄÖÜäöüß]/.test(c) && !/[А-Яа-яЁё]/.test(c) ? `<span class="say">${rich(c)}</span>` : rich(c);   // German cells can be listened to
+const jgTable = tb => `${tb.cap ? `<div class="jcap">${rich(tb.cap)}</div>` : ''}<div class="jtw"><table>${tb.h.some(Boolean) ? `<thead><tr>${tb.h.map(h => `<th>${rich(h)}</th>`).join('')}</tr></thead>` : ''}<tbody>${tb.r.map(r => `<tr>${r.map(c => `<td>${cellH(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
 const jChip = id => JT[id] ? `<a class="jt" href="#t-${id}"><span>${rich(JT[id].t)}</span><em>${id}</em></a>` : '';
 function topicBody(id){
-  if (S.lang === 'ja') { const t = JT[id], k = JG.kinds[t.k], l = JG.lessons.find(x => x.n === t.lesson), sec = (lab, html) => `<section class="jsec"><span class="eye">${lab}</span>${html}</section>`;
-    return `<div class="ph"><span class="eye">Genki ${t.lesson <= 12 ? 'I' : 'II'} · урок ${t.lesson} · ${esc(l.name)}${k ? ' · ' + esc(k.name) : ''}</span><h1>${rich(t.t)}</h1><div class="g">${rich(t.g)}</div></div>
-    <div class="body jgr">
-      <div class="jrule"><span class="eye">Правило</span>${rich(t.r)}</div>
-      ${t.o ? sec('Откуда', `<p>${rich(t.o)}</p>`) : ''}
-      ${t.v ? sec('Все варианты', [].concat(t.v).map(jgTable).join('')) : ''}
-      ${t.e ? sec('Исключения', `<ul>${t.e.map(x => `<li>${rich(x)}</li>`).join('')}</ul>`) : ''}
-      ${t.c ? sec('Сравнение', jgTable(t.c)) : ''}
-      ${t.from?.length ? `<div class="jlinks"><span>Опирается на</span>${t.from.map(jChip).join('')}</div>` : ''}
-      ${t.to?.length ? `<div class="jlinks"><span>Ведёт к</span>${t.to.map(jChip).join('')}</div>` : ''}
-      ${k ? `<div class="jhow"><span class="eye">как учить</span><p>${rich(k.how)}</p></div>` : ''}
-      ${t.src ? `<p class="jsrc">${rich(t.src)}</p>` : ''}</div>`; }
-  if (S.lang === 'de') { const t = DGT[id], k = DG.kinds[t.k], sec = (lab, html) => `<section class="jsec"><span class="eye">${lab}</span>${html}</section>`;
-    const chip = x => DGT[x] ? `<a class="jt" href="#t-${x}"><span>${esc(DGT[x].t)}</span><em>${DGT[x].n}</em></a>` : '';
-    return `<div class="ph"><span class="eye">${esc(t.sec)} · глава ${t.n} · ${t.lv}${k ? ' · ' + esc(k.name) : ''}</span><h1>${esc(t.t)}</h1><div class="g">${rich(t.g || t.ex)}</div></div>
-    <div class="body jgr dgr">
-      ${t.r ? `<div class="jrule"><span class="eye">Правило</span>${rich(t.r)}</div>` : ''}
-      ${t.o ? sec('Откуда', `<p>${rich(t.o)}</p>`) : ''}
-      ${t.v ? sec('Все варианты', [].concat(t.v).map(jgTable).join('')) : ''}
-      ${t.e ? sec('Исключения', `<ul>${t.e.map(x => `<li>${rich(x)}</li>`).join('')}</ul>`) : ''}
-      ${t.c ? sec('Сравнение', jgTable(t.c)) : ''}
-      ${t.from?.length ? `<div class="jlinks"><span>Опирается на</span>${t.from.map(chip).join('')}</div>` : ''}
-      ${t.to?.length ? `<div class="jlinks"><span>Ведёт к</span>${t.to.map(chip).join('')}</div>` : ''}
-      ${k ? `<div class="jhow"><span class="eye">как учить</span><p>${rich(k.how)}</p></div>` : ''}
-      <p class="jsrc">${esc(DG.book)} · «${esc(t.ex)}» · стр. ${t.p}–${t.p + 1}</p></div>`; }
-  const L = LES[id];
-  return `<div class="ph"><span class="eye">день ${L.day} · ${esc(PLAN.groups.find(g => g.id === L.g)?.name || '')}</span><h1>${esc(L.title)}</h1></div><div class="body">
-    ${L.rules.map(r => `<div><div class="f">${zh(r.f)}</div><p class="m" style="margin:8px 0 6px">${esc(r.m)}</p>${r.ex.map(e => `<div class="ex"><button class="play" data-t="${esc(e[0])}" aria-label="Послушать">${I.play}</button><span class="zh">${esc(e[0])}</span><small>${esc(e[1])}<i>${esc(e[2])}</i></small></div>`).join('')}</div>`).join('')}
-    ${L.trap ? `<div class="trap"><s>${zh(L.trap[0])}</s><span>→</span><b>${zh(L.trap[1])}</b><span class="mute">${esc(L.trap[2])}</span></div>` : ''}</div>`;
+  const t = gTopic(id), k = gKinds()[t.k], sec = (lab, html) => `<section class="jsec"><span class="eye">${lab}</span>${html}</section>`;
+  const chip = x => { const o = gTopic(x); return o ? `<a class="jt" href="#t-${x}"><span>${rich(o.t)}</span><em>${o.no ?? x}</em></a>` : ''; };
+  return `<div class="ph"><span class="eye">${esc(t.eye || '')}${k ? ' · ' + esc(k.name) : ''}</span><h1>${rich(t.t)}</h1><div class="g">${rich(t.g || '')}</div></div>
+  <div class="body jgr ${S.lang === 'de' ? 'dgr' : ''}">
+    ${t.r ? `<div class="jrule"><span class="eye">Правило</span>${rich(t.r)}</div>` : ''}
+    ${t.o ? sec('Откуда', `<p>${rich(t.o)}</p>`) : ''}
+    ${t.v ? sec('Все варианты', [].concat(t.v).map(jgTable).join('')) : ''}
+    ${t.e ? sec('Исключения', `<ul>${t.e.map(x => `<li>${rich(x)}</li>`).join('')}</ul>`) : ''}
+    ${t.c ? sec('Сравнение', jgTable(t.c)) : ''}
+    ${t.from?.length ? `<div class="jlinks"><span>Опирается на</span>${t.from.map(chip).join('')}</div>` : ''}
+    ${t.to?.length ? `<div class="jlinks"><span>Ведёт к</span>${t.to.map(chip).join('')}</div>` : ''}
+    ${k ? `<div class="jhow"><span class="eye">как учить</span><p>${rich(k.how)}</p></div>` : ''}
+    ${t.src ? `<p class="jsrc">${rich(t.src)}</p>` : ''}</div>`;
 }
 function panelPage(html, after){ show(`<div class="gkw"><section class="card panel gpanel" id="P"><div class="pv">${html}</div></section></div>`, '', () => { const P = $('#P'); bindPlay(P); bindSay(P); fitPanel(P); after?.(P.firstElementChild); }, 'g'); }
 function gTopicPage(id){
@@ -723,9 +633,9 @@ function gSession(){
     });
   }
   // the questions: all of a new topic (up to NEW_N), part of them in a review
-  const W = S.lang === 'de' ? [] : t.q.filter(q => q.k === 'write'), n = it.mode === 'new' ? NEW_N : REV_N, qs = W.length ? (it.mode === 'new' ? W : shuffle(W).slice(0, REV_N)) : shuffle(t.q).slice(0, n);
+  const W = [], n = it.mode === 'new' ? NEW_N : REV_N, qs = W.length ? (it.mode === 'new' ? W : shuffle(W).slice(0, REV_N)) : shuffle(t.q).slice(0, n);
   if (!qs.length) { rateTopic(it, 3, 1); return gSession(); }
-  panelPage('', () => quiz(qs.map((q, k) => ({q, key: it.id + ':' + k})), {title: `${S.lang === 'ja' ? plainJ(t.t) : t.title} · тема ${SS.i + 1} из ${SS.queue.length}`, back: '#s', end: ok => {
+  panelPage('', () => quiz(qs.map((q, k) => ({q, key: it.id + ':' + k})), {title: `${plainJ(t.t)} · тема ${SS.i + 1} из ${SS.queue.length}`, back: '#s', end: ok => {
     const sc = ok / qs.length, fresh = !gMem().cards[it.id], g = sc < 0.6 ? 1 : sc < 0.8 ? 2 : sc < 1 ? 3 : fresh ? 3 : 4;
     const c = rateTopic(it, g, sc);
     return `${['', 'Не закрепилось', 'Слабо', 'Хорошо', 'Отлично'][g]} · ${g === 1 ? 'вернётся в конце занятия' : 'повтор ' + dueLabel(c)}`; }}));
@@ -826,7 +736,7 @@ async function akSync(){
         L.wNew = (await akCall('findCards', {query: q + ' -note:Kanji is:new'})).length; L.wIntro = (await akCall('findCards', {query: q + ' -note:Kanji introduced:1'})).length;
         L.kNew = (await akCall('findCards', {query: q + ' note:Kanji is:new'})).length; L.kIntro = (await akCall('findCards', {query: q + ' note:Kanji introduced:1'})).length;
       }
-      if (lang === 'de') { L.wNew = (await akCall('findCards', {query: q + ' is:new'})).length; L.wIntro = (await akCall('findCards', {query: q + ' introduced:1'})).length; continue; }
+      if (lang === 'de') { L.wNew = (await akCall('findCards', {query: q + ' is:new'})).length; L.wIntro = (await akCall('findCards', {query: q + ' introduced:1'})).length; }
       // word states by note: zh = Hanzi field; ja words = Kanji or reading, ja kanji = third field of «Kanji» notes
       const rv = new Set(revN), lr = new Set(lrnN), info = await akCall('notesInfo', {notes: nids}), st = {}, kst = {};
       for (const n of info) { if (!n || !n.fields) continue; const f = akFields(n), s = rv.has(n.noteId) ? 'known' : lr.has(n.noteId) ? 'learning' : 'new', get = k => (f.find(x => x[0] === k) || [])[1];
@@ -885,6 +795,8 @@ const akOn = () => !!AK && AK.day === today();
 function akApply(){
   const ja = akOn() && AK.langs.ja;
   if (ja && JA) { JA.words.forEach(w => { const s = ja.st?.[w.h]; if (s) w.s = s; }); JA.chars.forEach(c => { const s = ja.kst?.[c.h]; if (s) c.s = s; }); }
+  const de = akOn() && AK.langs.de;   // German cards keep the word with its article in «Back»
+  if (de?.st && DE) DE.words.forEach(w => { const s = de.st[(w.a ? w.a + ' ' : '') + w.h] || de.st[w.h]; if (s) w.s = s; });
 }
 const wKnown = w => akOn() && AK.langs.zh?.st?.[w.h] ? AK.langs.zh.st[w.h] === 'known' : learned(w.d);
 function akUI(){
@@ -905,9 +817,9 @@ function calStart(){
 }
 function calHtml(){
   // the calendar starts on the plan's first day; a plan day's cell shows how much of THAT day is done, even if it is done later
-  const P0 = S.lang === 'zh' ? PLAN_START : S.lang === 'ja' ? JA_START : S.lang === 'de' ? DE_START : null;
-  const pDay = ds => P0 && ds >= P0 ? dIdx(P0, ds) + 1 : 0, cur = S.lang === 'zh' ? dateOfDay(curDay()) : S.lang === 'ja' && JG ? addDays(JA_START, jaCur() - 1) : S.lang === 'de' && DG ? addDays(DE_START, deCur() - 1) : null;
-  const pFrac = k => { if (S.lang === 'zh') return k <= 40 ? frac(k) : 0; const de = S.lang === 'de'; if (de ? !DG : !JG) return 0; const T = de ? deTgtD : jaTgtD, a = k > 1 ? T(k - 1) : 0, b = T(k); return b > a ? Math.max(0, Math.min(1, (learnedN(S.lang) - a) / (b - a))) : 0; };
+  const P0 = LP()[S.lang]?.start || null, ND = LP()[S.lang]?.days || 0;
+  const pDay = ds => P0 && ds >= P0 ? dIdx(P0, ds) + 1 : 0, cur = gTopics().length ? addDays(P0, planCur() - 1) : null;
+  const pFrac = k => { if (!gTopics().length || k > ND) return 0; const L = learnedN(S.lang), a = k > 1 ? tgtD(S.lang, k - 1) : 0, b = tgtD(S.lang, k); return b > a ? Math.max(0, Math.min(1, (L - a) / (b - a))) : L >= b ? 1 : 0; };
   const t = today(), start = P0 && P0 < t ? P0 : t, d0 = new Date(start + 'T12:00:00'); d0.setDate(d0.getDate() - (d0.getDay() + 6) % 7);   // from Monday
   const end = new Date(EXAM + 'T12:00:00'); end.setDate(end.getDate() + (7 - end.getDay()) % 7);
   const m = gMem(), planDone = new Set(Object.values(S.doneOn || {})), MS = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
@@ -918,7 +830,7 @@ function calHtml(){
     let cls = '', tip = `${d.getDate()} ${MS[d.getMonth()]}`;
     if (ds < start || ds > EXAM) cls = 'out';
     else {
-      const g = m.log[dayNo(d.getTime())], gn = g ? g.n + g.r : 0, mins = dayT(ds) / 60, sc = mins + gn * 3 + (S.lang === 'zh' && planDone.has(ds) ? 30 : 0);
+      const g = m.log[dayNo(d.getTime())], gn = g ? g.n + g.r : 0, mins = dayT(ds) / 60, sc = mins + gn * 3;
       const k = pDay(ds), pf = k && ds <= t ? pFrac(k) : null;
       if (pf !== null) { cls = pf >= 1 ? 'l4' : pf >= .6 ? 'l3' : pf >= .3 ? 'l2' : pf > 0 ? 'l1' : ds < t ? 'miss' : ''; tip += ` · день ${k} · сделано ${Math.round(pf * 100)}%`; }
       else cls = ds > t ? 'fut' : sc >= 80 ? 'l4' : sc >= 40 ? 'l3' : sc >= 15 ? 'l2' : sc > 0 ? 'l1' : '';
@@ -996,27 +908,21 @@ const refit = () => { const P = $('#P'); if (P && P.firstElementChild) fitPanel(
 
 /* ---------- statistics ---------- */
 function stats(){
-  track();
-  const ja = S.lang === 'ja' && JG && JA;
-  if (S.lang === 'ja' && !ja) { loadJg().then(() => loadJa()).then(() => { if (S.lang === 'ja' && location.hash === '#stats') route(true); }); }
-  // Japanese: words from the Anki deck, Genki topics with memory; Mandarin: the 40-day plan
-  const lw = ja ? JA.words.filter(w => w.s === 'known').length : WORDS.filter(wKnown).length, wN = ja ? JA.words.length : WORDS.length;
-  const nL = ja ? gTopics('ja').length : Object.keys(LES).length, nl = ja ? learnedN('ja') : Object.keys(LES).filter(passed).length;
-  const tot = Object.keys(S.time).reduce((a, k) => a + dayT(k), 0), gm = overallMem(ja ? 'ja' : 'zh');
-  const gRows = ja ? JG.lessons.map(l => ({name: l.n + ' · ' + l.name, n: l.topics.length, p: l.topics.filter(t => gMem('ja').cards[t.id]).length}))
-    : PLAN.groups.map(g => { const ls = Object.values(LES).filter(l => l.g === g.id); return {name: g.name, n: ls.length, p: ls.filter(l => passed(l.id)).length}; });
-  const ds = Object.keys(S.time).sort().slice(-21), mx = Math.max(.5, ...ds.map(d => dayT(d) / 3600)), W = 900, H = 170, bw = Math.min(30, (W - 40) / Math.max(ds.length, 1) - 6);
+  const lang = S.lang, W = wordStats(lang), nL = gTopics(lang).length, nl = learnedN(lang);
+  const tot = Object.keys(S.time).reduce((a, k) => a + dayT(k), 0), gm = overallMem(lang);
+  const gRows = gBooks().flatMap(b => b.rows.map(r => ({name: r.n + ' · ' + r.name, n: r.ids.length, p: r.ids.filter(id => gMem(lang).cards[id]).length})));
+  const ds = Object.keys(S.time).sort().slice(-21), mx = Math.max(.5, ...ds.map(d => dayT(d) / 3600)), Wd = 900, H = 170, bw = Math.min(30, (Wd - 40) / Math.max(ds.length, 1) - 6);
   let bars = '';
   ds.forEach((d, i) => { let y = H - 20; const x = 30 + i * (bw + 6);
     [['anki', 'var(--ink)'], ['phon', 'var(--mute)'], ['gram', 'var(--dim)']].forEach(([k, c]) => { const hh = sec(d, k) / 3600 / mx * (H - 40); if (hh) { y -= hh; bars += `<rect x="${x}" y="${y}" width="${bw}" height="${hh}" rx="3" fill="${c}"/>`; } });
     bars += `<text x="${x + bw / 2}" y="${H - 5}" text-anchor="middle">${d.slice(8)}.${d.slice(5, 7)}</text>`; });
   show(`<div class="st">
-    <div class="card k"><b class="num">${lw}<span>/${wN}</span></b><span class="eye">слова</span></div>
-    <div class="card k"><b class="num">${nl}<span>/${nL}</span></b><span class="eye">${ja ? 'темы' : 'уроки'}</span></div>
+    <div class="card k"><b class="num">${W.known}<span>/${W.total}</span></b><span class="eye">слова</span></div>
+    <div class="card k"><b class="num">${nl}<span>/${nL}</span></b><span class="eye">темы</span></div>
     <div class="card k"><b class="num">${h2(tot, 1)}<span> ч</span></b><span class="eye">время</span></div>
     <div class="card k mem"><b class="num">${gm === null ? '—' : pct(gm)}<span>${gm === null ? '' : '%'}</span></b><span class="eye">память грамматики</span></div>
-    <div class="card wide"><span class="eye">часы · Anki / фонетика / грамматика</span><div class="chart" style="margin-top:12px">${ds.length ? `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Часы по дням">${bars}</svg>` : '<p class="mute" style="margin-top:8px">Появится после первого дня.</p>'}</div></div>
-    <div class="card wide"><span class="eye">грамматика${ja ? ' · Genki' : ''}</span><div style="margin-top:10px">${gRows.map((g, i) =>
+    <div class="card wide"><span class="eye">часы · Anki / фонетика / грамматика</span><div class="chart" style="margin-top:12px">${ds.length ? `<svg viewBox="0 0 ${Wd} ${H}" role="img" aria-label="Часы по дням">${bars}</svg>` : '<p class="mute" style="margin-top:8px">Появится после первого дня.</p>'}</div></div>
+    <div class="card wide"><span class="eye">грамматика</span><div style="margin-top:10px">${gRows.map((g, i) =>
       `<div class="gb"><span>${esc(g.name)}</span><span class="t"><i style="width:${g.p / g.n * 100}%;animation-delay:${200 + i * 40}ms"></i></span><span class="num mute">${g.p}/${g.n}</span></div>`).join('')}</div></div>
   </div>`);
 }
@@ -1120,8 +1026,8 @@ function route(silent){
   home();
 }
 addEventListener('hashchange', () => route());
-Promise.all(['/l/data/plan.json', '/l/data/words.json', '/l/data/lessons.json', '/l/data/pinyin.json', '/l/audio/map.json'].map(u => fetch(u, {cache: 'no-cache'}).then(r => r.json())))
-  .then(([p, w, l, pin, am]) => { PLAN = p; WORDS = w.words; LES = l.lessons; PIN = pin; AMAP = am;
+Promise.all(['/l/data/plan.json', '/l/data/words.json', '/l/data/lessons.json', '/l/data/pinyin.json', '/l/audio/map.json', '/l/data/zh_topics.json'].map(u => fetch(u, {cache: 'no-cache'}).then(r => r.json())))
+  .then(([p, w, l, pin, am, zt]) => { PLAN = p; WORDS = w.words; LES = l.lessons; PIN = pin; AMAP = am; buildZT(zt);
     const need = S.lang === 'ja' ? [loadJa(), loadJg()] : S.lang === 'de' ? [loadDe(), loadDg()] : [];   // the language on screen loads before the first paint
     Promise.all(need).catch(() => {}).then(() => { route(); akSync(); loadChars(); loadJa(); loadDe(); }); })
   .catch(() => { app.innerHTML = '<p class="mute" style="text-align:center;margin-top:30vh">Не удалось загрузить данные. Обнови страницу.</p>'; });
