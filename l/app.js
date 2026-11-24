@@ -150,8 +150,7 @@ function homePlan(lang){
 /* phone: the queue shows as many whole rows as the screen holds (desktop: 7) */
 function fitQ(){
   const g = $('.grp.q'); if (!g) return; const ts = [...g.querySelectorAll('.task')];
-  ts.forEach((t, i) => t.style.display = innerWidth > 600 && i >= 7 ? 'none' : '');
-  if (innerWidth > 600) return;
+  ts.forEach(t => t.style.display = '');
   const bot = g.getBoundingClientRect().bottom; ts.forEach(t => { if (t.getBoundingClientRect().bottom > bot + 1) t.style.display = 'none'; });
 }
 addEventListener('resize', () => fitQ());

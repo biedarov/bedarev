@@ -130,6 +130,8 @@ main.home>.stack{flex:none;margin:auto}
 .cal i{width:14px;height:14px;border-radius:4px;background:var(--c2);box-shadow:inset 0 0 0 1px var(--line);animation:pop .4s var(--ease) both}
 .cal i.f{box-shadow:none} .cal i.cur{outline:1.5px solid var(--ink);outline-offset:1.5px}
 .plan{position:relative;margin-top:-48px;padding:80px 36px 32px;display:grid;grid-template-columns:.8fr 1.5fr;gap:40px;align-items:center;border-radius:26px}
+/* computer: the plan card is the same size in every language; the grammar queue shows as many whole rows as fit */
+@media (min-width:861px){ main.home .plan{height:460px;align-items:stretch} main.home .plan>.day{align-self:center} main.home .plan .tasks{display:flex;flex-direction:column;gap:16px;min-height:0;overflow:hidden} main.home .plan .grp{flex:none} main.home .plan .grp.q{flex:1 1 0;min-height:0;overflow:hidden} }
 .day h1{font-size:50px;white-space:nowrap}
 .day h1 span{color:var(--dim)}
 .tasks{display:flex;flex-direction:column;gap:16px}
@@ -433,7 +435,7 @@ select,input[type=text]{font:inherit;font-weight:600;height:34px;padding:0 10px;
   .rings{gap:0;justify-content:space-evenly}
   .ring{width:80px;height:80px} .ring b{font-size:23px} .ring small{display:none}
   .nums,.top.nogirl .nums{width:auto;gap:0;display:flex;align-items:center}
-  .fr{gap:0;justify-content:space-evenly;width:100%} .frac b{font-size:26px} .frac b i{font-size:11px} .frac hr{margin:6px 0 4px}
+  .fr{gap:18px;justify-content:space-evenly;width:100%} .frac b{font-size:26px} .frac b i{font-size:11px} .frac hr{margin:6px 0 4px}
   .plan{margin-top:10px;padding:16px;gap:12px;border-radius:20px}
   .day{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
   .day h1{font-size:36px} .day p{margin:0!important}
