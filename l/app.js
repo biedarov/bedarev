@@ -144,6 +144,23 @@ function jaHomePlan(){
       ${next.length ? next.map(([t, k]) => { const c = m.cards[t.id]; return `<a class="task" href="#t-${t.id}"><span class="gc ${c ? memClass(memOf(c)) : ''}" style="flex:none"></span><b>${rich(t.t)}</b><span class="r">${k === 'новая' ? '' : `<span>${k}${c ? ' · ' + pct(memOf(c)) + '%' : ''}</span>`}</span></a>`; }).join('')
         : `<p class="mute" style="font-size:13px">${learnedN('ja')} из ${gTopics('ja').length} тем пройдено.</p>`}</div></div></section>`;
 }
+/* German: dated plan to 31 December — Anki words and Grammatik aktiv topics */
+function deHomePlan(){
+  if (!DG) { loadDg().then(() => { if (DG && S.lang === 'de' && /^#?(home)?$/.test(location.hash.replace('#', ''))) route(true); });
+    return `<section class="card plan" aria-label="Сегодня"><div class="day"><h1>Грамматика</h1><p class="mute" style="margin-top:8px">Загружаю…</p></div></section>`; }
+  const P = gPlanHead(), m = gMem('de'), next = [...P.due.map(t => [t, 'повтор']), ...P.nw.map(t => [t, 'новая'])].slice(0, JA_MAX);
+  const A = akOn() ? AK.langs.de : null, wt = A && A.wNew != null ? akTargets(AK).de : null;
+  const row = (done, title, note) => `<div class="task ${done ? 'done' : ''}"><button class="chk" disabled aria-label="${esc(title)}">${I.chk}</button><b>${title}</b><span class="r"><span>${note}</span></span></div>`;
+  const ak = A ? row(A.due === 0 && A.rated > 0, 'Anki · повторения', A.due ? 'осталось ' + A.due : 'готово') + (wt != null ? row(A.wIntro >= wt, `Anki · ${wt} новых слов`, A.wIntro >= wt ? 'готово' : 'осталось ' + (wt - A.wIntro)) : '')
+    : row(false, 'Anki', 'открой Anki на компьютере');
+  return `<section class="card plan" aria-label="Сегодня">
+    <div class="day"><h1 class="num">День ${deDay()}<span>/${DE_DAYS}</span></h1><p class="mute" style="margin-top:8px">${P.head} · ${P.sub}</p>
+      <p style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap">${P.due.length + P.nw.length ? `<a class="btn main" href="#s">${P.did ? 'Продолжить' : 'Начать'}</a>` : ''}<a class="btn" href="#lessons">Все темы</a></p></div>
+    <div class="tasks"><div class="grp"><div class="gh"><span class="eye">лексика</span></div>${ak}</div>
+      <div class="grp q"><div class="gh"><span class="eye">${next.length ? 'грамматика на очереди' : 'грамматика'}</span></div>
+      ${next.length ? next.map(([t, k]) => { const c = m.cards[t.id]; return `<a class="task" href="#t-${t.id}"><span class="gc ${c ? memClass(memOf(c)) : ''}" style="flex:none"></span><b>${esc(t.t)}</b><span class="r">${k === 'новая' ? '' : `<span>${k}${c ? ' · ' + pct(memOf(c)) + '%' : ''}</span>`}</span></a>`; }).join('')
+        : `<p class="mute" style="font-size:13px">${learnedN('de')} из ${gTopics('de').length} тем пройдено.</p>`}</div></div></section>`;
+}
 /* phone: the queue shows as many whole rows as the screen holds (desktop: 7) */
 function fitQ(){
   const g = $('.grp.q'); if (!g) return; const ts = [...g.querySelectorAll('.task')];
@@ -165,15 +182,15 @@ function home(){
   const row = x => `<div class="task ${done(x.k, x) ? 'done' : ''}" data-g="${x.g}" ${x.go ? `data-go="${x.go}"` : ''}><button class="chk" data-t="${x.id}" data-d="${x.k}" ${x.auto ? 'disabled' : ''} aria-label="${esc(x.t)}">${I.chk}</button><b>${esc(x.t)}</b>
       <span class="r">${x.k < D ? `<span class="dk">день ${x.k}</span>` : ''}${x.note ? `<span>${x.note}</span>` : ''}${(x.links || []).map(([u, l]) => `<a class="mini" href="${esc(u)}" target="_blank" rel="noopener">${l}</a>`).join('')}</span></div>`;
   const tmr = g => { const s = {Лексика: 'anki'}[g]; if (!s) return ''; const run = S.timer?.s === s; return `<button class="mini ${run ? 'on' : ''}" data-timer="${s}">${run ? '■ стоп' : '▶ таймер'}</button>`; };
-  show(`<div class="stack ${S.lang === 'ja' ? 'jah' : ''}">
+  show(`<div class="stack ${S.lang === 'ja' || S.lang === 'de' ? 'jah' : ''}">
     <section class="card top ${S.settings.girl === false ? 'nogirl' : ''}" aria-label="Статистика">${S.settings.girl === false ? '' : peek()}
-      <div class="rings">${S.lang === 'ja' && JA ? ring(JA.words.filter(w => w.s === 'known').length, JA.words.length, '') + ring(JG ? learnedN('ja') : 0, 137, 'тем') : S.lang === 'de' && DE ? ring(DE.words.filter(w => w.s === 'known').length, DE.words.length, '') + ring(deLessonsDone(), 30, 'уроков') : ring(lw, WORDS.length, '') + ring(nl, nL, 'уроков')}</div>
+      <div class="rings">${S.lang === 'ja' && JA ? ring(JA.words.filter(w => w.s === 'known').length, JA.words.length, '') + ring(JG ? learnedN('ja') : 0, 137, 'тем') : S.lang === 'de' && DE ? ring(DE.words.filter(w => w.s === 'known').length, DE.words.length, '') + ring(DG ? learnedN('de') : 0, 80, 'тем') : ring(lw, WORDS.length, '') + ring(nl, nL, 'уроков')}</div>
       <div class="nums">
         <div class="fr"><div class="frac"><b class="num">${h2(tod, innerWidth <= 600 ? 1 : 2)}<i>${tod > yes ? '↑' : tod && tod < yes ? '↓' : ''}</i></b><hr><span>часы</span></div>
           <div class="frac"><b class="num">${h2(tot, 1)}</b><hr><span>total</span></div></div>
         ${calHtml()}
       </div></section>
-    ${S.lang === 'ja' ? jaHomePlan() : `<section class="card plan" aria-label="Сегодня">
+    ${S.lang === 'ja' ? jaHomePlan() : S.lang === 'de' ? deHomePlan() : `<section class="card plan" aria-label="Сегодня">
       <div class="day"><h1 class="num">День ${D}<span>/40</span></h1><div class="dprog"><b><i style="width:${Math.round(frac(D) * 100)}%"></i></b><span class="num">${T.filter(x => done(d, x)).length} из ${T.length}</span></div>${revBtn()}${complete(d) && d < 40 ? `<p style="margin-top:18px"><button class="btn main" id="next">День ${d + 1} →</button></p>` : ''}</div>
       <div class="tasks">${gs.map(g => `<div class="grp" style="--n:${QS.filter(x => x.g === g).length}"><div class="gh"><span class="eye">${g}</span>${tmr(g)}</div>${QS.filter(x => x.g === g).map(row).join('')}</div>`).join('')}
         </div>
@@ -481,7 +498,7 @@ function duePool(lang = S.lang, now = Date.now()){
 function newPool(lang = S.lang, now = Date.now()){
   const m = gMem(lang), td = dayNo(now), left = gTopics(lang).filter(t => !m.cards[t.id]);
   if (lang === 'zh') { const d = curDay(); return left.filter(t => t.day <= d); }   // the 40-day plan decides
-  if (lang === 'de') return left.slice(0, Math.max(0, DE_PER_DAY - (m.log[td]?.n || 0)));   // book order, a few new topics a day
+  if (lang === 'de') return left.slice(0, Math.max(0, deTopicTarget(now) - (gTopics(lang).length - left.length)));   // by date: all 80 by 31 December, debt included
   return left.slice(0, Math.max(0, jaTgtD(jaCur(now)) - (gTopics(lang).length - left.length)));   // one plan day at a time; owed days come one after another
 }
 /* Japanese plan: day 1 = 23 November; Genki I (lessons 1–12) by 1 December, Genki II by 1 January */
@@ -551,7 +568,8 @@ function romajiToKana(input, final) {
 }
 const toRd = s => String(s).replace(/\{[^}]*\}|\[|\]/g, '').replace(JP_RUN, m => furiTok(m).map(([t, r]) => r || t).join(''));
 const normAnswer = s => toRd(romajiToKana(String(s), true).replace(/[\s　。．.、,，？?！!「」]/g, '')).replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60)).replace(/は/g, 'わ').replace(/へ/g, 'え').replace(/を/g, 'お');
-const writeOk = (typed, q) => { const u = normAnswer(typed); return !!u && [...q.a, ...(q.r || [])].some(x => normAnswer(x) === u); };
+const normDe = s => String(s).toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss').replace(/[.,!?;:«»„“"–—-]/g, ' ').replace(/\s+/g, ' ').trim();
+const writeOk = (typed, q) => { if (S.lang === 'de') { const u = normDe(typed); return !!u && [...q.a, ...(q.r || [])].some(x => normDe(x) === u); } const u = normAnswer(typed); return !!u && [...q.a, ...(q.r || [])].some(x => normAnswer(x) === u); };
 // phone: while typing, the question card is exactly the part of the screen above the keyboard
 if (window.visualViewport) { const vvFit = () => { const on = document.activeElement?.id === 'wa'; document.documentElement.style.setProperty('--vvh', (on ? visualViewport.height : innerHeight) + 'px'); if (on && innerWidth <= 860) window.scrollTo(0, 0); };
   visualViewport.addEventListener('resize', vvFit); document.addEventListener('focusin', () => setTimeout(vvFit, 250)); document.addEventListener('focusout', () => setTimeout(vvFit, 120)); }
@@ -560,8 +578,9 @@ if (window.visualViewport) { const vvFit = () => { const on = document.activeEle
 function gNeed(fn){ if (S.lang === 'ja' && !JG) { show('<p class="mute" style="text-align:center;margin-top:30vh">Загружаю грамматику…</p>', '', null, 'g'); loadJg().then(() => JG && route(true)); return false; } if (S.lang === 'de' && !DG) { show('<p class="mute" style="text-align:center;margin-top:30vh">Загружаю грамматику…</p>', '', null, 'g'); loadDg().then(() => DG && route(true)); return false; } return true; }
 /* German grammar: «Grammatik aktiv A1–B1», same system as zh/ja (no questions yet: reading a topic counts) */
 let DG = null, dgP = null; const DGT = {};
-const loadDg = () => dgP ??= fetch('/l/data/de_grammar.json', {cache: 'no-cache'}).then(r => r.json()).then(x => { x.all = x.sections.flatMap((s, i) => s.topics.map(t => Object.assign(t, {sec: s.name, secN: i + 1, title: t.t, q: []}))); x.all.forEach(t => DGT[t.id] = t); DG = x; }).catch(() => { dgP = null; });
-const DE_PER_DAY = 3;
+const loadDg = () => dgP ??= fetch('/l/data/de_grammar.json', {cache: 'no-cache'}).then(r => r.json()).then(x => { x.all = x.sections.flatMap((s, i) => s.topics.map(t => Object.assign(t, {sec: s.name, secN: i + 1, title: t.t, q: t.q || []}))); x.all.forEach(t => DGT[t.id] = t); DG = x; }).catch(() => { dgP = null; });
+const deDay = (now = Date.now()) => Math.max(1, Math.min(DE_DAYS, dIdx(DE_START, isoD(dayDate(dayNo(now)))) + 1));
+const deTopicTarget = (now = Date.now()) => DG ? Math.ceil(DG.all.length * deDay(now) / DE_DAYS) : 0;
 function gRing(m, big){ const r = 62, C = 2 * Math.PI * r, v = m === null ? 0 : m;
   return `<div class="ring gring ${big ? '' : 'sm'} ${m === null ? '' : memClass(m)}"><svg viewBox="0 0 140 140"><circle class="tr" cx="70" cy="70" r="${r}"/><circle class="pr" cx="70" cy="70" r="${r}" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - v)}"/></svg><div class="c"><b class="num">${m === null ? '—' : pct(m)}<i>%</i></b><small>память</small></div></div>`; }
 function gPlanHead(){
@@ -699,7 +718,7 @@ function gSession(){
     });
   }
   // the questions: all of a new topic (up to NEW_N), part of them in a review
-  const W = t.q.filter(q => q.k === 'write'), n = it.mode === 'new' ? NEW_N : REV_N, qs = W.length ? (it.mode === 'new' ? W : shuffle(W).slice(0, REV_N)) : shuffle(t.q).slice(0, n);
+  const W = S.lang === 'de' ? [] : t.q.filter(q => q.k === 'write'), n = it.mode === 'new' ? NEW_N : REV_N, qs = W.length ? (it.mode === 'new' ? W : shuffle(W).slice(0, REV_N)) : shuffle(t.q).slice(0, n);
   if (!qs.length) { rateTopic(it, 3, 1); return gSession(); }
   panelPage('', () => quiz(qs.map((q, k) => ({q, key: it.id + ':' + k})), {title: `${S.lang === 'ja' ? plainJ(t.t) : t.title} · тема ${SS.i + 1} из ${SS.queue.length}`, back: '#s', end: ok => {
     const sc = ok / qs.length, fresh = !gMem().cards[it.id], g = sc < 0.6 ? 1 : sc < 0.8 ? 2 : sc < 1 ? 3 : fresh ? 3 : 4;
@@ -795,13 +814,14 @@ async function akSync(){
       const L = out.langs[lang] = {due: due.length, rated: rated.length, secs: Math.round(revs.reduce((a, r) => a + (r.time || 0), 0) / 1000)};
       if (lang === 'zh') {   // every day deck up to today's plan day: are its new cards done?
         const want = {}; for (let d = 1; d <= schedDay(); d++) { const dn = names.find(n => new RegExp(`^${deck}::Day ${String(d).padStart(2, '0')}( |$)`).test(n)); if (dn) want[dn] = d; }
-        L.days = {}; if (Object.keys(want).length) Object.values(await akCall('getDeckStats', {decks: Object.keys(want)})).forEach(st => { const d = +(/Day ([0-9]+)/.exec(st.name) || [])[1]; if (d) L.days[d] = {nw: st.new_count + st.learn_count, tot: st.total_in_deck}; });   // Anki gives the short name «Day 01 · …»
+        L.days = {}; if (Object.keys(want).length) Object.values(await akCall('getDeckStats', {decks: Object.keys(want)})).forEach(st => { const d = +(/Day ([0-9]+)/.exec(st.name) || [])[1]; if (d) L.days[d] = {nw: st.new_count + st.learn_count, nn: st.new_count, tot: st.total_in_deck}; });
+        L.intro = (await akCall('findCards', {query: q + ' introduced:1'})).length;   // Anki gives the short name «Day 01 · …»
       }
       if (lang === 'ja') {   // words (not kanji): still new, and introduced today
         L.wNew = (await akCall('findCards', {query: q + ' -note:Kanji is:new'})).length; L.wIntro = (await akCall('findCards', {query: q + ' -note:Kanji introduced:1'})).length;
         L.kNew = (await akCall('findCards', {query: q + ' note:Kanji is:new'})).length; L.kIntro = (await akCall('findCards', {query: q + ' note:Kanji introduced:1'})).length;
       }
-      if (lang === 'de') continue;
+      if (lang === 'de') { L.wNew = (await akCall('findCards', {query: q + ' is:new'})).length; L.wIntro = (await akCall('findCards', {query: q + ' introduced:1'})).length; continue; }
       // word states by note: zh = Hanzi field; ja words = Kanji or reading, ja kanji = third field of «Kanji» notes
       const rv = new Set(revN), lr = new Set(lrnN), info = await akCall('notesInfo', {notes: nids}), st = {}, kst = {};
       for (const n of info) { if (!n || !n.fields) continue; const f = akFields(n), s = rv.has(n.noteId) ? 'known' : lr.has(n.noteId) ? 'learning' : 'new', get = k => (f.find(x => x[0] === k) || [])[1];
@@ -810,6 +830,7 @@ async function akSync(){
         else { const k = get('Kanji') || get('Back'); if (k) st[k] = s; } }
       L.st = st; if (lang === 'ja') L.kst = kst;
     }
+    try { out.plan = await akPlan(out); } catch (e) { out.plan = {err: e.message}; }
     AK = out; akErr = '';
     try { localStorage.setItem('lcm-anki', JSON.stringify(AK)); } catch (e) {}
     // Anki time goes into today's hours (the larger of the timer and Anki's own count)
@@ -818,6 +839,41 @@ async function akSync(){
     if (!busy && /^#?(home|words.*|stats)?$/.test(location.hash.replace('#', ''))) route(true);
   } catch (e) { AK_URL = null; akErr = e.name === 'AbortError' || /fetch|network|Failed/i.test(e.message) ? 'нет связи' : e.message; }
   finally { akBusy = false; akUI(); }
+}
+/* Anki plan: on every sync each language's «new cards per day» is set to what the plan asks for today, debt included.
+   Only the site's own presets are touched (never Default): zh «LCM · План дня» on Mandarin (you study from the top deck),
+   de «DE · План дня» on German, ja «JA · План дня» on Japanese with «JA · Слова» / «JA · Kanji» splitting words and kanji. */
+const DE_START = '2026-11-23', DE_END = '2027-01-01', DE_DAYS = dIdx(DE_START, DE_END);   // German: every word and topic by 31 December
+const deDaysLeft = () => Math.max(1, dIdx(today(), DE_END));
+const akTargets = A => {
+  const t = {}, zh = A.langs.zh, de = A.langs.de, ja = A.langs.ja;
+  if (zh?.days) t.zh = Object.entries(zh.days).filter(([d]) => +d <= schedDay()).reduce((a, [, x]) => a + (x.nn || 0), 0) + (zh.intro || 0);   // every owed day's new words + today's
+  if (de?.wNew != null) t.de = Math.ceil((de.wNew + de.wIntro) / deDaysLeft());
+  if (ja?.wNew != null) { const dl = Math.max(1, dIdx(today(), JA_END) + 1); t.jaW = Math.ceil((ja.wNew + ja.wIntro) / dl); t.jaK = Math.ceil((ja.kNew + ja.kIntro) / dl); }
+  return t;
+};
+async function akPreset(decks, name, perDay, own){
+  let conf = null, changed = false;
+  for (const d of decks) {
+    let c; try { c = await akCall('getDeckConfig', {deck: d}); } catch (e) { continue; } if (!c || !c.id) continue;
+    if (!conf) {
+      if (c.name === name) conf = c;
+      else if (own) { conf = c; conf.name = name; changed = true; }   // the site's own preset: rename in place
+      else { const id = await akCall('cloneDeckConfigId', {name, cloneFrom: c.id}); await akCall('setDeckConfigId', {decks: [d], configId: id}); conf = await akCall('getDeckConfig', {deck: d}); }
+    } else if (c.id !== conf.id) await akCall('setDeckConfigId', {decks: [d], configId: conf.id});
+  }
+  if (!conf || conf.id === 1 || conf.name === 'Default') return null;   // never touch the shared Default preset
+  if (conf.new.perDay !== perDay) { conf.new.perDay = perDay; changed = true; }
+  if (changed) await akCall('saveDeckConfig', {config: conf});
+  return perDay;
+}
+async function akPlan(A){
+  const t = akTargets(A), done = {};
+  if (t.zh != null) done.zh = await akPreset(['Mandarin'], 'LCM · План дня', t.zh, true);
+  if (t.de != null) done.de = await akPreset(['German'], 'DE · План дня', t.de);
+  if (t.jaW != null) { done.jaW = await akPreset(['Japanese::Japanese: A'], 'JA · Слова', t.jaW); done.jaK = await akPreset(['Japanese::Japanese: Kanji A'], 'JA · Kanji', t.jaK, true);
+    done.ja = await akPreset(['Japanese'], 'JA · План дня', t.jaW + t.jaK); }
+  return done;
 }
 const akOn = () => !!AK && AK.day === today();
 /* word states from Anki override the ones baked into the site */
@@ -885,36 +941,41 @@ function quiz(items, o){
     const {q, key} = items[i], me = i; let ans = false;
     const next = () => { if (i !== me) return; i++; step(); };
     const fin = (good, extra = '') => { if (ans) return; ans = true; res[i] = good; if (good) ok++;
-      $('#fb').innerHTML = (good ? '<b class="tok">Верно</b> ' : '<b class="tbad">Неверно</b> ') + extra + (good ? '' : ' <button class="btn main nx" id="nx">Дальше</button>'); bindPlay(P); $('#nx', P) && ($('#nx', P).onclick = next); if (good) setTimeout(next, 900); };
-    const JA = S.lang === 'ja', LC = JA ? 'ja' : 'zh', tx = x => JA ? rich(x) : esc(x), sent = q.ja ?? q.zh;
+      const own = $('#wok', P) || $('#ock', P);   // write / order: their own button turns into «Дальше», no second one
+      if (own) own.textContent = 'Дальше';
+      $('#fb').innerHTML = (good ? '<b class="tok">Верно</b> ' : '<b class="tbad">Неверно</b> ') + extra + (good ? '' : `${own ? '' : ' <button class="btn main nx" id="nx">Дальше</button>'} <button class="btn ovr" id="ovr" title="Мой ответ тоже правильный">Засчитать</button>`); bindPlay(P);
+      $('#nx', P) && ($('#nx', P).onclick = next);
+      $('#ovr', P) && ($('#ovr', P).onclick = () => { if (i !== me || res[i]) return; res[i] = true; ok++; $('#wa', P)?.classList.replace('wrong', 'right'); $$('.o.wrong', P).forEach(x => x.classList.remove('wrong')); next(); });
+      if (good) setTimeout(next, 900); };
+    const JA = S.lang === 'ja', DEq = S.lang === 'de', LC = JA ? 'ja' : DEq ? 'de' : 'zh', tx = x => JA || DEq ? rich(x) : esc(x), sent = q.ja ?? q.de ?? q.zh;
     const opts = (arr, allZh) => { const ord = shuffle(arr.map((x, j) => [x, j])); return [ord, `<div class="opts">${ord.map(([x, j], n) => `<button class="o ${allZh || HAN.test(x) ? LC : ''} in" style="animation-delay:${n * 50}ms" data-j="${j}"><kbd>${n + 1}</kbd><span>${tx(x)}</span></button>`).join('')}</div>`]; };
     let ord = [], body = '';
-    if (q.k === 'choice') { const r = opts(q.o); ord = r[0]; body = `<div class="qp">${JA ? rich(q.q) : zh(q.q)}</div>${r[1]}`; }
+    if (q.k === 'choice') { const r = opts(q.o); ord = r[0]; body = `<div class="qp">${JA || DEq ? rich(q.q) : zh(q.q)}</div>${r[1]}`; }
     if (q.k === 'listen') { const r = opts(q.o); ord = r[0]; body = `<div style="display:flex;gap:14px;align-items:center"><button class="play" id="qa" style="width:52px;height:52px" aria-label="Послушать">${I.play}</button><span class="qp">Что прозвучало?</span></div>${r[1]}`; }
     if (q.k === 'fill') { const r = opts(q.o, true); ord = r[0]; body = `<div class="qp">${esc(q.ru)}</div><div class="qz ${LC}" id="qz">${esc(sent).replace('＿', '<span style="display:inline-block;min-width:48px;border-bottom:2px solid var(--ink)">&nbsp;</span>')}</div>${r[1]}`; }
-    if (q.k === 'write') body = `<div class="qp">${esc(q.ru)}</div>${q.ja ? `<div class="qz ja" id="qz">${rich(q.ja)}</div>` : ''}<div class="wf"><input id="wa" class="ja" lang="ja" enterkeyhint="go" inputmode="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="ответ" aria-label="Ответ"><button class="btn main" id="wok">Проверить</button></div>`;
+    if (q.k === 'write') body = `<div class="qp">${esc(q.ru)}</div>${q.ja || q.de ? `<div class="qz ${LC}" id="qz">${rich(q.ja || q.de)}</div>` : ''}<div class="wf"><input id="wa" class="${DEq ? 'de' : 'ja'}" lang="${DEq ? 'de' : 'ja'}" enterkeyhint="go" inputmode="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="ответ" aria-label="Ответ"><button class="btn main" id="wok">Проверить</button></div>`;
     if (q.k === 'order') { const all = shuffle([...q.t, ...(q.x || [])]);
       body = `<div class="qp">${esc(q.ru)}</div><div class="tiles" id="ans"></div><div class="tiles pool" id="pool">${all.map((x, n) => `<button class="tile ${JA ? 'ja' : ''}" data-n="${n + 1}"><kbd>${n + 1}</kbd>${esc(x)}</button>`).join('')}</div><p class="oc"><button class="btn main" id="ock">Проверить</button></p><p class="hint">цифра — взять · Backspace — убрать · Enter — проверить</p>`; }
     P.innerHTML = `<div class="quiz"><div class="qtop"><div class="bar">${items.map((_, k) => `<i class="${k < i ? (res[k] ? 'ok' : 'no') : k === i ? 'cur' : ''}"></i>`).join('')}</div><a class="qx" href="${o.exit || (o.back === '#s' ? '#lessons' : o.back)}">Выйти</a></div>${body}<p class="fb" id="fb"></p></div>`;
     const pick = j => { if (ans) return; const good = j === q.a;
       $$('.o', P).forEach(x => { x.disabled = true; if (+x.dataset.j === q.a) x.classList.add('right'); }); if (!good) $(`.o[data-j="${j}"]`, P).classList.add('wrong');
       let ex = ''; if (q.k === 'listen') ex = `<span class="zh">${esc(q.zh)}</span>`;
-      if (q.k === 'fill') { const full = sent.replace('＿', q.o[q.a]); $('#qz').textContent = full; ex = JA ? '' : `<button class="play" data-t="${esc(full)}" style="display:inline-grid;vertical-align:middle;width:26px;height:26px" aria-label="Послушать">${I.play}</button>`; }
+      if (q.k === 'fill') { const full = sent.replace('＿', q.o[q.a]); $('#qz').textContent = full; ex = JA || DEq ? '' : `<button class="play" data-t="${esc(full)}" style="display:inline-grid;vertical-align:middle;width:26px;height:26px" aria-label="Послушать">${I.play}</button>`; }
       fin(good, ex + (good ? '' : '')); };
     refit();
     $('.qx', P).onclick = () => { keys(null); busy = false; };
     $$('.o', P).forEach(b => b.onclick = () => pick(+b.dataset.j));
     if (q.k === 'listen') { $('#qa').onclick = () => sayT(q.zh, $('#qa')); if (touched) setTimeout(() => sayT(q.zh, $('#qa')), 200); }
-    const check = () => { if (ans) return; const got = $$('#ans .tile', P).map(t => t.lastChild.textContent).join(''), want = q.t.join(''); if (!got) return;
+    const check = () => { if (ans) return next(); const got = $$('#ans .tile', P).map(t => t.lastChild.textContent).join(DEq ? ' ' : ''), want = q.t.join(DEq ? ' ' : ''); if (!got) return;
       $$('.tile', P).forEach(t => t.disabled = true);
-      fin(got === want, `<span class="${LC}" style="font-size:17px">${esc(want)}</span> ${JA ? '' : `<button class="play" data-t="${esc(want)}" style="display:inline-grid;vertical-align:middle;width:26px;height:26px" aria-label="Послушать">${I.play}</button>`}${got === want ? '' : ''}`); };
+      fin(got === want, `<span class="${LC}" style="font-size:17px">${esc(want)}</span> ${JA || DEq ? '' : `<button class="play" data-t="${esc(want)}" style="display:inline-grid;vertical-align:middle;width:26px;height:26px" aria-label="Послушать">${I.play}</button>`}${got === want ? '' : ''}`); };
     const move = t => { if (ans) return; ($('#pool').contains(t) ? $('#ans') : $('#pool')).appendChild(t); };
     $$('.tile', P).forEach(t => t.onclick = () => move(t));
     if ($('#ock', P)) $('#ock', P).onclick = check;
-    if (q.k === 'write') { const W = $('#wa', P), wcheck = () => { if (ans) return next(); if (!W.value.trim()) return W.focus(); W.value = romajiToKana(W.value, true); const good = writeOk(W.value, q);
-        W.readOnly = true; W.classList.add(good ? 'right' : 'wrong'); $('#wok', P).textContent = 'Дальше';
-        fin(good, `<span class="ja" style="font-size:18px">${rich(q.a[0])}</span>${good ? '' : ''}`); };
-      W.oninput = () => { if (/[a-z]/i.test(W.value)) { const p = W.selectionStart === W.value.length; W.value = romajiToKana(W.value, false); if (p) W.setSelectionRange(W.value.length, W.value.length); } };
+    if (q.k === 'write') { const W = $('#wa', P), wcheck = () => { if (ans) return next(); if (!W.value.trim()) return W.focus(); if (!DEq) W.value = romajiToKana(W.value, true); const good = writeOk(W.value, q);
+        W.readOnly = true; W.classList.add(good ? 'right' : 'wrong');
+        fin(good, `<span class="${LC}" style="font-size:18px">${rich(q.a[0])}</span>`); };
+      W.oninput = () => { if (!DEq && /[a-z]/i.test(W.value)) { const p = W.selectionStart === W.value.length; W.value = romajiToKana(W.value, false); if (p) W.setSelectionRange(W.value.length, W.value.length); } };
       W.onkeydown = e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); wcheck(); } };
       $('#wok', P).onclick = wcheck; setTimeout(() => W.focus({preventScroll: true}), 60); }
     keys(e => { if (e.target.closest?.('input,select,textarea')) return;

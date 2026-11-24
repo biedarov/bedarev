@@ -527,4 +527,4 @@ body.sess nav{display:none} body.sess .pbar{top:env(safe-area-inset-top,0px)!imp
 @media (hover:none){ .o kbd,.tile kbd{display:none} .o{grid-template-columns:1fr} .quiz .hint{display:none} }
 @media (max-width:860px){ body.sess .pv:has(>.quiz){min-height:var(--vvh,100dvh)} }
 .qtop{display:flex;align-items:center;gap:14px} .qtop .bar{flex:1} .qx{font-size:12.5px;font-weight:800;color:var(--mute);white-space:nowrap} .qx:hover{color:var(--ink)}
-#fb .nx{height:34px;padding:0 14px;font-size:12.5px;margin-left:8px;vertical-align:middle} .oc{margin:0}
+#fb .nx,#fb .ovr{height:34px;padding:0 14px;font-size:12.5px;margin-left:8px;vertical-align:middle} #fb .ovr{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 45%,var(--line))} .oc{margin:0}
