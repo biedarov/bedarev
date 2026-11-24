@@ -433,7 +433,7 @@ select,input[type=text]{font:inherit;font-weight:600;height:34px;padding:0 10px;
   .rings{gap:0;justify-content:space-evenly}
   .ring{width:80px;height:80px} .ring b{font-size:23px} .ring small{display:none}
   .nums,.top.nogirl .nums{width:auto;gap:0;display:flex;align-items:center}
-  .fr{gap:18px;justify-content:space-evenly;width:100%} .frac b{font-size:26px} .frac b i{font-size:11px} .frac hr{margin:6px 0 4px}
+  .fr{gap:18px;justify-content:center;width:100%} .fr>.frac{flex:0 0 58px} .frac b i{margin-left:4px} .frac b{font-size:26px} .frac b i{font-size:11px} .frac hr{margin:6px 0 4px}
   .plan{margin-top:10px;padding:16px;gap:12px;border-radius:20px}
   .day{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
   .day h1{font-size:36px} .day p{margin:0!important}

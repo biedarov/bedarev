@@ -59,7 +59,15 @@ const words = d => WORDS.filter(w => w.d === d);
 const LP = () => ({zh: {start: PLAN_START, days: 40}, ja: {start: JA_START, days: JA_DAYS}, de: {start: DE_START, days: DE_DAYS}});
 const pDayOf = (lang = S.lang, now = Date.now()) => { const p = LP()[lang]; return Math.max(1, Math.min(p.days, dIdx(p.start, isoD(dayDate(dayNo(now)))) + 1)); };
 const tgtD = (lang, k) => lang === 'zh' ? zhOrder().filter(x => x.day <= k).length : lang === 'ja' ? jaTgtD(k) : deTgtD(k);
-function planCur(lang = S.lang, now = Date.now()){ const L = learnedN(lang), s = pDayOf(lang, now); for (let k = 1; k <= s; k++) if (tgtD(lang, k) > L) return k; return s; }
+/* a plan day is done only when ALL of it is done: its topics, and in Chinese also its new words and its phonetics videos */
+function zhSyncDays(){ const A = akOn() ? AK.langs.zh : null; if (A?.days) for (const [d, dk] of Object.entries(A.days)) if (dk.nw === 0 && dk.tot > 0) (S.done[d] ??= {}).a2 = true; }
+function dayDone(lang, k, L = learnedN(lang)){
+  if (tgtD(lang, k) > L) return false;
+  if (lang !== 'zh') return true;
+  const ph = PLAN.phonetics;
+  return (!words(k).length || !!S.done[k]?.a2) && (k > ph.days[1] || (!!S.done[k]?.ph1 && !!S.done[k]?.ph2));
+}
+function planCur(lang = S.lang, now = Date.now()){ if (lang === 'zh') zhSyncDays(); const L = learnedN(lang), s = pDayOf(lang, now); for (let k = 1; k <= s; k++) if (!dayDone(lang, k, L)) return k; return s; }
 function track(){}   // the old 40-day ticks are gone; kept so older calls stay harmless
 const learned = d => !!S.done[d]?.a2;
 /* manual ticks (when Anki is not connected): per language and date */
@@ -67,7 +75,7 @@ const tickOn = (lang, id) => !!S.tick?.[lang]?.[today()]?.[id];
 const tickSet = (lang, id, on) => { (((S.tick ??= {})[lang] ??= {})[today()] ??= {})[id] = on; };
 /* Chinese phonetics week: today's videos */
 function phonRows(){
-  const d = pDayOf('zh'), ph = PLAN.phonetics; if (d > ph.days[1]) return [];
+  const d = planCur('zh'), ph = PLAN.phonetics; if (d > ph.days[1]) return [];
   const gs = (ph.schedule[String(d)] || []).map(n => ph.groups[n - 1]), st = ((d - 1) * ph.syllables.perDay) % ph.syllables.minutes, s1 = gs.reduce((a, g) => a + (g.sec || 0), 0);
   return [{id: 'ph1', d, man: true, done: !!S.done[d]?.ph1, t: gs.length ? 'Звуки · группы ' + gs.map(g => g.n).join(' и ') : 'Звуки · трудная группа', links: (gs.length ? gs : ph.groups).map(g => [g.video, 'гр. ' + g.n]), sec: s1, note: s1 ? Math.round(s1 / 60) + ' мин' : ''},
     {id: 'ph2', d, man: true, done: !!S.done[d]?.ph2, t: `Слоги · ${st}:00–${st + 10}:00`, links: [[ph.syllables.video + '&t=' + st * 60 + 's', 'видео']], sec: ph.syllables.perDay * 60, note: ph.syllables.perDay + ' мин'}];
@@ -841,7 +849,7 @@ function calHtml(){
   // the calendar starts on the plan's first day; a plan day's cell shows how much of THAT day is done, even if it is done later
   const P0 = LP()[S.lang]?.start || null, ND = LP()[S.lang]?.days || 0;
   const pDay = ds => P0 && ds >= P0 ? dIdx(P0, ds) + 1 : 0, cur = gTopics().length ? addDays(P0, planCur() - 1) : null;
-  const pFrac = k => { if (!gTopics().length || k > ND) return 0; const L = learnedN(S.lang), a = k > 1 ? tgtD(S.lang, k - 1) : 0, b = tgtD(S.lang, k); return b > a ? Math.max(0, Math.min(1, (L - a) / (b - a))) : L >= b ? 1 : 0; };
+  const pFrac = k => { if (!gTopics().length || k > ND) return 0; const L = learnedN(S.lang), a = k > 1 ? tgtD(S.lang, k - 1) : 0, b = tgtD(S.lang, k); const f = b > a ? Math.max(0, Math.min(1, (L - a) / (b - a))) : L >= b ? 1 : 0; return S.lang === 'zh' && f >= 1 && !dayDone('zh', k, L) ? .5 : f; };
   const t = today(), start = P0 && P0 < t ? P0 : t, d0 = new Date(start + 'T12:00:00'); d0.setDate(d0.getDate() - (d0.getDay() + 6) % 7);   // from Monday
   const end = new Date(EXAM + 'T12:00:00'); end.setDate(end.getDate() + (7 - end.getDay()) % 7);
   const m = gMem(), planDone = new Set(Object.values(S.doneOn || {})), MS = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
