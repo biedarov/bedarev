@@ -462,12 +462,14 @@ const loadJg = () => jgP ??= Promise.all(['/l/data/ja_grammar.json', '/l/data/ja
 const zhOrder = () => PLAN.days.flatMap(d => d.lessons.map(id => ({id, day: d.d}))).filter(x => LES[x.id]);
 function gTopics(lang = S.lang){
   if (lang === 'ja') return JG ? Object.values(JT) : [];
+  if (lang === 'de') return DG ? DG.all : [];
   return zhOrder().map(({id, day}) => ({id, day, title: LES[id].title, g: LES[id].g, q: LES[id].q}));
 }
-const gTopic = id => S.lang === 'ja' ? JT[id] : LES[id] && {id, title: LES[id].title, g: LES[id].g, q: LES[id].q, day: LES[id].day};
+const gTopic = id => S.lang === 'de' ? DGT[id] : S.lang === 'ja' ? JT[id] : LES[id] && {id, title: LES[id].title, g: LES[id].g, q: LES[id].q, day: LES[id].day};
 /* books on the «Сегодня» page: zh = grammar groups split in two cards, ja = Genki I and II */
 function gBooks(){
   if (S.lang === 'ja') return JG ? [{name: 'Genki I', rows: JG.lessons.filter(l => l.n <= 12)}, {name: 'Genki II', rows: JG.lessons.filter(l => l.n > 12)}].map(b => ({name: b.name, rows: b.rows.map(l => ({n: l.n, name: l.name, ids: l.topics.map(t => t.id)}))})) : [];
+  if (S.lang === 'de') return DG ? [{name: DG.book, rows: DG.sections.map((s, i) => ({n: i + 1, name: s.name, ids: s.topics.map(t => t.id)}))}] : [];
   const ord = zhOrder(), rows = PLAN.groups.map((g, i) => ({n: i + 1, name: g.name, ids: ord.filter(x => LES[x.id].g === g.id).map(x => x.id)})).filter(r => r.ids.length), h = Math.ceil(rows.length / 2);
   return [{name: 'Грамматика', rows}];   // Chinese grammar is one list
 }
@@ -479,6 +481,7 @@ function duePool(lang = S.lang, now = Date.now()){
 function newPool(lang = S.lang, now = Date.now()){
   const m = gMem(lang), td = dayNo(now), left = gTopics(lang).filter(t => !m.cards[t.id]);
   if (lang === 'zh') { const d = curDay(); return left.filter(t => t.day <= d); }   // the 40-day plan decides
+  if (lang === 'de') return left.slice(0, Math.max(0, DE_PER_DAY - (m.log[td]?.n || 0)));   // book order, a few new topics a day
   return left.slice(0, Math.max(0, jaTgtD(jaCur(now)) - (gTopics(lang).length - left.length)));   // one plan day at a time; owed days come one after another
 }
 /* Japanese plan: day 1 = 23 November; Genki I (lessons 1–12) by 1 December, Genki II by 1 January */
@@ -522,31 +525,11 @@ const bindSay = V => V.addEventListener('click', e => { const s = e.target.close
 const tTitle = t => S.lang === 'ja' ? rich(t.t) : esc(t.title);
 
 /* ---------- pages ---------- */
-function gNeed(fn){ if (S.lang === 'ja' && !JG) { show('<p class="mute" style="text-align:center;margin-top:30vh">Загружаю грамматику…</p>', '', null, 'g'); loadJg().then(() => JG && route(true)); return false; } if (S.lang === 'de') { if (!DG) { show('<p class="mute" style="text-align:center;margin-top:30vh">Загружаю грамматику…</p>', '', null, 'g'); loadDg().then(() => DG && route(true)); return false; }
-    const h = decodeURIComponent(location.hash.slice(1)); h.startsWith('t-') ? deTopic(h.slice(2)) : deGram(); return false; } return true; }
-/* German grammar: topic list of «Grammatik aktiv A1–B1» (no questions yet) */
-let DG = null, dgP = null;
-const loadDg = () => dgP ??= fetch('/l/data/de_grammar.json', {cache: 'no-cache'}).then(r => r.json()).then(x => { DG = x; DG.all = x.sections.flatMap(s => s.topics.map(t => (t.sec = s.name, t))); }).catch(() => { dgP = null; });
-const deLv = lv => `<span class="dlv dlv-${lv.toLowerCase()}">${lv}</span>`;
-function deGram(){
-  const cv = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
-  const cnt = lv => DG.all.filter(t => t.lv === lv).length;
-  const ti = t => `<a class="gti" href="#t-${t.id}">${deLv(t.lv)}<span class="tt">${esc(t.t)}<small class="dex">${esc(t.ex)}</small></span><span class="st">стр. ${t.p}</span></a>`;
-  const row = (s, i) => { const key = 'de' + i, op = GOPEN.has(key), lvs = [...new Set(s.topics.map(t => t.lv))];
-    return `<div class="gr ${op ? 'open' : ''}" data-k="${key}"><button class="grb" aria-expanded="${op}"><span class="n num">${i + 1}</span><span class="nm">${esc(s.name)}</span><span class="sq">${lvs.map(deLv).join('')}</span><span class="p num">${s.topics.length}</span>${cv}</button>
-      <div class="gt"><div>${s.topics.map(ti).join('')}</div></div></div>`; };
-  show(`<div class="gk"><section class="card gplan"><h1>Грамматика</h1><p class="mute">${esc(DG.book)} · ${DG.all.length} тем: A1 ${cnt('A1')}, A2 ${cnt('A2')}, B1 ${cnt('B1')}. Вопросы появятся позже.</p></section>
-    <section class="card gl dgl"><div class="glh"><h2>Темы по разделам</h2><small class="num">${DG.sections.length} разделов</small></div>${DG.sections.map(row).join('')}</section></div>`, '', null, 'g');
-}
-function deTopic(id){
-  const i = DG.all.findIndex(t => t.id === id); if (i < 0) { location.hash = 'lessons'; return; }
-  const t = DG.all[i], prev = DG.all[i - 1], next = DG.all[i + 1];
-  panelPage(`<div class="pbar"><a href="#lessons">← Темы</a><span class="pa"><a href="${prev ? '#t-' + prev.id : '#'}" ${prev ? '' : 'aria-disabled="true"'} aria-label="Предыдущая тема">←</a><span>${t.n}</span><a href="${next ? '#t-' + next.id : '#'}" ${next ? '' : 'aria-disabled="true"'} aria-label="Следующая тема">→</a></span></div>
-    <div class="ph"><span class="eye">${esc(t.sec)} · глава ${t.n} · ${t.lv}</span><h1>${esc(t.t)}</h1><div class="g">${esc(t.ex)}</div></div>
-    <div class="body"><p class="mute">${esc(DG.book)}, стр. ${t.p}–${t.p + 1}. Объяснение и вопросы по этой теме появятся позже.</p></div>`, () =>
-    keys(e => { const go = x => x && (location.hash = 't-' + x.id);
-      if (e.key === 'ArrowRight') go(next); else if (e.key === 'ArrowLeft') go(prev); else if (e.key === 'Escape') location.hash = 'lessons'; }));
-}
+function gNeed(fn){ if (S.lang === 'ja' && !JG) { show('<p class="mute" style="text-align:center;margin-top:30vh">Загружаю грамматику…</p>', '', null, 'g'); loadJg().then(() => JG && route(true)); return false; } if (S.lang === 'de' && !DG) { show('<p class="mute" style="text-align:center;margin-top:30vh">Загружаю грамматику…</p>', '', null, 'g'); loadDg().then(() => DG && route(true)); return false; } return true; }
+/* German grammar: «Grammatik aktiv A1–B1», same system as zh/ja (no questions yet: reading a topic counts) */
+let DG = null, dgP = null; const DGT = {};
+const loadDg = () => dgP ??= fetch('/l/data/de_grammar.json', {cache: 'no-cache'}).then(r => r.json()).then(x => { x.all = x.sections.flatMap((s, i) => s.topics.map(t => Object.assign(t, {sec: s.name, secN: i + 1, title: t.t, q: []}))); x.all.forEach(t => DGT[t.id] = t); DG = x; }).catch(() => { dgP = null; });
+const DE_PER_DAY = 3;
 function gRing(m, big){ const r = 62, C = 2 * Math.PI * r, v = m === null ? 0 : m;
   return `<div class="ring gring ${big ? '' : 'sm'} ${m === null ? '' : memClass(m)}"><svg viewBox="0 0 140 140"><circle class="tr" cx="70" cy="70" r="${r}"/><circle class="pr" cx="70" cy="70" r="${r}" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - v)}"/></svg><div class="c"><b class="num">${m === null ? '—' : pct(m)}<i>%</i></b><small>память</small></div></div>`; }
 function gPlanHead(){
@@ -569,7 +552,7 @@ function gToday(){
   const book = b => { const ids = b.rows.flatMap(r => r.ids), n = ids.filter(id => gMem().cards[id]).length, bm = rowMem(ids);
     return `<section class="card gbook"><h2>${esc(b.name)}<small class="num">${n}/${ids.length} тем${bm === null ? '' : ' · память ' + pct(bm) + '%'}</small></h2><div class="gbar"><i style="width:${n / ids.length * 100}%"></i></div>
       ${b.rows.map(r => { const rm = rowMem(r.ids); return `<div class="grow"><span class="n num">${r.n}</span><span class="nm" title="${esc(r.name)}">${esc(r.name)}</span><span class="gcs">${r.ids.map(cell).join('')}</span><span class="p num">${rm === null ? '' : pct(rm) + '%'}</span></div>`; }).join('')}</section>`; };
-  const extra = S.lang === 'ja' ? '<a class="btn" href="#jsheet">Шпаргалка</a><a class="btn" href="#jmap">Карта форм</a>' : '<a class="btn" href="#pinyin">Правила пиньиня</a>';
+  const extra = S.lang === 'ja' ? '<a class="btn" href="#jsheet">Шпаргалка</a><a class="btn" href="#jmap">Карта форм</a>' : S.lang === 'de' ? '' : '<a class="btn" href="#pinyin">Правила пиньиня</a>';
   show(`<div class="gk"><div class="gtop" ${m === null ? 'style="grid-template-columns:1fr"' : ''}>
       <section class="card gplan"><h1>${P.head}</h1><p class="mute">${P.sub}</p>
         <div class="acts">${P.due.length + P.nw.length ? `<a class="btn main" href="#s">${P.did ? 'Продолжить' : 'Начать'}</a>` : ''}${extra}</div></section>
@@ -592,11 +575,12 @@ function gList(){
 document.addEventListener('click', e => { const b = e.target.closest('.grb'); if (!b) return; const r = b.parentElement, k = r.dataset.k, op = !r.classList.contains('open');
   r.classList.toggle('open', op); b.setAttribute('aria-expanded', op); op ? GOPEN.add(k) : GOPEN.delete(k); });
 { const gf = $('#gfly'); let gfT = null, gfId = null;
-  const hide = now => { clearTimeout(gfT); const go = () => { gf.classList.remove('on'); gfId = null; }; now ? go() : (gfT = setTimeout(go, 60)); };
+  const hide = now => { clearTimeout(gfT); const go = () => { gf.classList.remove('on'); gfId = null; }; now ? go() : (gfT = setTimeout(go, 160)); };
   const card = id => { const t = gTopic(id), c = gMem().cards[id], r = c ? memOf(c) : null;
     let head, sub, rule, ex = '';
     if (S.lang === 'ja') { const l = JG.lessons.find(x => x.n === t.lesson); head = rich(t.t); sub = `Genki ${t.lesson <= 12 ? 'I' : 'II'} · урок ${t.lesson} · ${esc(l.name)}`; rule = rich(t.g || '') + (t.r ? `<span class="gr2">${rich(t.r)}</span>` : '');
       const tb = [].concat(t.v || [])[0], row = tb?.r?.[0]; if (row) ex = `<div class="gx"><b>${rich(row[0])}</b>${row[1] ? `<span>${rich(row[row.length - 1])}</span>` : ''}</div>`; }
+    else if (S.lang === 'de') { head = esc(t.t); sub = `${esc(t.sec)} · глава ${t.n} · ${t.lv}`; rule = esc(t.ex); }
     else { const L = LES[id], R = L.rules[0], e = R?.ex?.[0]; head = esc(L.title); sub = `день ${L.day} · ${esc(PLAN.groups.find(g => g.id === L.g)?.name || '')}`; rule = R ? `${zh(R.f)} — ${esc(R.m)}` : '';
       if (e) ex = `<div class="gx"><b class="zh">${esc(e[0])}</b><span>${esc(e[1])} · ${esc(e[2])}</span></div>`; }
     const st = c ? [[`<b class="num ${memClass(r)}">${pct(r)}%</b>`, 'память'], [`<b>${dueLabel(c)}</b>`, 'повтор'], [`<b class="num">${c.reps}</b>`, 'оценок']]
@@ -605,7 +589,7 @@ document.addEventListener('click', e => { const b = e.target.closest('.grb'); if
       <div class="gfb">${rule ? `<div class="gr1">${rule}</div>` : ''}${ex}</div><div class="gfs">${st.map(([v, l]) => `<div>${v}<span>${l}</span></div>`).join('')}</div>`; };
   document.addEventListener('mouseover', e => {
     if (!matchMedia('(hover:hover)').matches || innerWidth <= 860) return;
-    const a = e.target.closest?.('.gbook a.gc'); if (!a) { if (gfId && !e.target.closest?.('.gcs')) hide(true); return; }
+    const a = e.target.closest?.('.gbook a.gc'); if (!a) { if (gfId && !e.target.closest?.('.gcs')) hide(); return; }
     const id = a.getAttribute('href').slice(3); clearTimeout(gfT); if (id === gfId) return; gfId = id;
     try { gf.innerHTML = card(id); } catch (er) { return; }
     const rc = a.getBoundingClientRect(), w = 310, h = gf.offsetHeight || 220, up = rc.top - h - 12 > 52;
@@ -632,6 +616,9 @@ function topicBody(id){
       ${t.to?.length ? `<div class="jlinks"><span>Ведёт к</span>${t.to.map(jChip).join('')}</div>` : ''}
       ${k ? `<div class="jhow"><span class="eye">как учить</span><p>${rich(k.how)}</p></div>` : ''}
       ${t.src ? `<p class="jsrc">${rich(t.src)}</p>` : ''}</div>`; }
+  if (S.lang === 'de') { const t = DGT[id];
+    return `<div class="ph"><span class="eye">${esc(t.sec)} · глава ${t.n} · ${t.lv}</span><h1>${esc(t.t)}</h1><div class="g">${esc(t.ex)}</div></div>
+    <div class="body"><p class="mute">${esc(DG.book)}, стр. ${t.p}–${t.p + 1}. Вопросы по этой теме появятся позже.</p></div>`; }
   const L = LES[id];
   return `<div class="ph"><span class="eye">день ${L.day} · ${esc(PLAN.groups.find(g => g.id === L.g)?.name || '')}</span><h1>${esc(L.title)}</h1></div><div class="body">
     ${L.rules.map(r => `<div><div class="f">${zh(r.f)}</div><p class="m" style="margin:8px 0 6px">${esc(r.m)}</p>${r.ex.map(e => `<div class="ex"><button class="play" data-t="${esc(e[0])}" aria-label="Послушать">${I.play}</button><span class="zh">${esc(e[0])}</span><small>${esc(e[1])}<i>${esc(e[2])}</i></small></div>`).join('')}</div>`).join('')}
@@ -644,7 +631,7 @@ function gTopicPage(id){
   const prev = all[i - 1], next = all[i + 1], c = gMem().cards[id];
   const met = c ? `<div class="gmet">${[[pct(memOf(c)) + '%', 'память'], [(c.S < 10 ? c.S.toFixed(1) : Math.round(c.S)) + ' дн.', 'прочность'], [dueLabel(c), 'повтор'], [c.reps + ' / ' + c.lapses, 'оценок / забыл']].map(([v, l]) => `<div><b class="num">${v}</b><span>${l}</span></div>`).join('')}</div>` : '';
   panelPage(`<div class="pbar"><a href="#lessons">← Сегодня</a><span class="pa"><a href="${prev ? '#t-' + prev.id : '#'}" ${prev ? '' : 'aria-disabled="true"'} aria-label="Предыдущая тема">←</a><span>${S.lang === 'ja' ? id : i + 1}</span><a href="${next ? '#t-' + next.id : '#'}" ${next ? '' : 'aria-disabled="true"'} aria-label="Следующая тема">→</a></span></div>
-    ${topicBody(id)}<div class="body" style="padding-top:0">${met}<div class="gacts">${c ? `<button class="btn main" id="gtest">Проверить себя · ${Math.min(REV_N, gTopic(id).q.length)}</button>` : `<button class="btn main" id="gtest">Учить сейчас</button>`}</div></div>`, V => {
+    ${topicBody(id)}<div class="body" style="padding-top:0">${met}<div class="gacts">${c ? (gTopic(id).q.length ? `<button class="btn main" id="gtest">Проверить себя · ${Math.min(REV_N, gTopic(id).q.length)}</button>` : `<button class="btn main" id="gtest">Повторил</button>`) : `<button class="btn main" id="gtest">Учить сейчас</button>`}</div></div>`, V => {
     $('#gtest', V).onclick = () => { SS = newSession([{id, mode: c ? 'review' : 'new'}], true); location.hash = 's'; if (location.hash === '#s') route(); };
     keys(e => { if (e.target.closest?.('input,textarea')) return; const go = x => x && (location.hash = 't-' + x.id);
       if (e.key === 'ArrowRight') go(next); else if (e.key === 'ArrowLeft') go(prev); else if (e.key === 'Escape') location.hash = 'lessons'; });
@@ -663,7 +650,7 @@ function gSession(){
   if (it.mode === 'new' && !card && SS.phase !== 'quiz') {
     SS.phase = 'read';
     return panelPage(`<div class="pbar"><span class="mute">Тема ${SS.i + 1} из ${SS.queue.length} · новая</span><a href="#lessons">Выйти</a></div>${topicBody(it.id)}
-      <div class="gfoot"><span></span><button class="btn main" id="gq">К вопросам · Enter</button></div>`, V => {
+      <div class="gfoot"><span></span><button class="btn main" id="gq">${t.q.length ? 'К вопросам' : 'Прочитал'} · Enter</button></div>`, V => {
       const go = () => { SS.phase = 'quiz'; route(); };
       $('#gq', V).onclick = go; keys(e => { if (e.key === 'Enter') { e.preventDefault(); go(); } });
     });
