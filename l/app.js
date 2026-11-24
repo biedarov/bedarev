@@ -156,7 +156,7 @@ function deHomePlan(){
   const ak = A ? row(A.due === 0 && A.rated > 0, 'Anki · повторения', A.due ? 'осталось ' + A.due : 'готово') + (wt != null ? row(A.wIntro >= wt, `Anki · ${wt} новых слов`, A.wIntro >= wt ? 'готово' : 'осталось ' + (wt - A.wIntro)) : '')
     : row(false, 'Anki', 'открой Anki на компьютере');
   return `<section class="card plan" aria-label="Сегодня">
-    <div class="day"><h1 class="num">День ${deDay()}<span>/${DE_DAYS}</span></h1><p class="mute" style="margin-top:8px">${P.head} · ${P.sub}</p>
+    <div class="day"><h1 class="num">День ${deCur()}<span>/${DE_DAYS}</span></h1><p class="mute" style="margin-top:8px">${P.head} · ${P.sub}</p>
       <p style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap">${P.due.length + P.nw.length ? `<a class="btn main" href="#s">${P.did ? 'Продолжить' : 'Начать'}</a>` : ''}<a class="btn" href="#lessons">Все темы</a></p></div>
     <div class="tasks"><div class="grp"><div class="gh"><span class="eye">лексика</span></div>${ak}</div>
       <div class="grp q"><div class="gh"><span class="eye">${next.length ? 'грамматика на очереди' : 'грамматика'}</span></div>
@@ -501,7 +501,7 @@ function duePool(lang = S.lang, now = Date.now()){
 function newPool(lang = S.lang, now = Date.now()){
   const m = gMem(lang), td = dayNo(now), left = gTopics(lang).filter(t => !m.cards[t.id]);
   if (lang === 'zh') { const d = curDay(); return left.filter(t => t.day <= d); }   // the 40-day plan decides
-  if (lang === 'de') return left.slice(0, Math.max(0, deTopicTarget(now) - (gTopics(lang).length - left.length)));   // by date: all 80 by 31 December, debt included
+  if (lang === 'de') return left.slice(0, Math.max(0, deTgtD(deCur(now)) - (gTopics(lang).length - left.length)));   // one plan day at a time; owed days come one after another
   return left.slice(0, Math.max(0, jaTgtD(jaCur(now)) - (gTopics(lang).length - left.length)));   // one plan day at a time; owed days come one after another
 }
 /* Japanese plan: day 1 = 23 November; Genki I (lessons 1–12) by 1 December, Genki II by 1 January */
@@ -583,7 +583,9 @@ function gNeed(fn){ if (S.lang === 'ja' && !JG) { show('<p class="mute" style="t
 let DG = null, dgP = null; const DGT = {};
 const loadDg = () => dgP ??= fetch('/l/data/de_grammar.json', {cache: 'no-cache'}).then(r => r.json()).then(x => { x.all = x.sections.flatMap((s, i) => s.topics.map(t => Object.assign(t, {sec: s.name, secN: i + 1, title: t.t, q: t.q || []}))); x.all.forEach(t => DGT[t.id] = t); DG = x; }).catch(() => { dgP = null; });
 const deDay = (now = Date.now()) => Math.max(1, Math.min(DE_DAYS, dIdx(DE_START, isoD(dayDate(dayNo(now)))) + 1));
-const deTopicTarget = (now = Date.now()) => DG ? Math.ceil(DG.all.length * deDay(now) / DE_DAYS) : 0;
+const deTgtD = k => DG ? Math.ceil(DG.all.length * Math.min(k, DE_DAYS) / DE_DAYS) : 0;   // topics that should be done by the end of plan day k
+function deCur(now = Date.now()){ const L = learnedN('de'), s = deDay(now); for (let k = 1; k <= s; k++) if (deTgtD(k) > L) return k; return s; }   // first unfinished day
+const deTopicTarget = (now = Date.now()) => deTgtD(deDay(now));
 function gRing(m, big){ const r = 62, C = 2 * Math.PI * r, v = m === null ? 0 : m;
   return `<div class="ring gring ${big ? '' : 'sm'} ${m === null ? '' : memClass(m)}"><svg viewBox="0 0 140 140"><circle class="tr" cx="70" cy="70" r="${r}"/><circle class="pr" cx="70" cy="70" r="${r}" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - v)}"/></svg><div class="c"><b class="num">${m === null ? '—' : pct(m)}<i>%</i></b><small>память</small></div></div>`; }
 function gPlanHead(){
@@ -846,8 +848,8 @@ async function akSync(){
 /* Anki plan: on every sync each language's «new cards per day» is set to what the plan asks for today, debt included.
    Only the site's own presets are touched (never Default): zh «LCM · План дня» on Mandarin (you study from the top deck),
    de «DE · План дня» on German, ja «JA · План дня» on Japanese with «JA · Слова» / «JA · Kanji» splitting words and kanji. */
-const DE_START = '2026-11-23', DE_END = '2027-01-01', DE_DAYS = dIdx(DE_START, DE_END);   // German: every word and topic by 31 December
-const deDaysLeft = () => Math.max(1, dIdx(today(), DE_END));
+const DE_START = '2026-11-23', DE_END = '2027-01-01', DE_DAYS = dIdx(DE_START, DE_END) + 1;   // German: day 1 = 23 November … day 40 = 1 January, like the other two
+const deDaysLeft = () => Math.max(1, dIdx(today(), DE_END) + 1);   // today included, as in Japanese
 const akTargets = A => {
   const t = {}, zh = A.langs.zh, de = A.langs.de, ja = A.langs.ja;
   if (zh?.days) t.zh = Object.entries(zh.days).filter(([d]) => +d <= schedDay()).reduce((a, [, x]) => a + (x.nn || 0), 0) + (zh.intro || 0);   // every owed day's new words + today's
@@ -903,9 +905,9 @@ function calStart(){
 }
 function calHtml(){
   // the calendar starts on the plan's first day; a plan day's cell shows how much of THAT day is done, even if it is done later
-  const P0 = S.lang === 'zh' ? PLAN_START : S.lang === 'ja' ? JA_START : null;
-  const pDay = ds => P0 && ds >= P0 ? dIdx(P0, ds) + 1 : 0, cur = S.lang === 'zh' ? dateOfDay(curDay()) : S.lang === 'ja' && JG ? addDays(JA_START, jaCur() - 1) : null;
-  const pFrac = k => { if (S.lang === 'zh') return k <= 40 ? frac(k) : 0; if (!JG) return 0; const a = k > 1 ? jaTgtD(k - 1) : 0, b = jaTgtD(k); return b > a ? Math.max(0, Math.min(1, (learnedN('ja') - a) / (b - a))) : 0; };
+  const P0 = S.lang === 'zh' ? PLAN_START : S.lang === 'ja' ? JA_START : S.lang === 'de' ? DE_START : null;
+  const pDay = ds => P0 && ds >= P0 ? dIdx(P0, ds) + 1 : 0, cur = S.lang === 'zh' ? dateOfDay(curDay()) : S.lang === 'ja' && JG ? addDays(JA_START, jaCur() - 1) : S.lang === 'de' && DG ? addDays(DE_START, deCur() - 1) : null;
+  const pFrac = k => { if (S.lang === 'zh') return k <= 40 ? frac(k) : 0; const de = S.lang === 'de'; if (de ? !DG : !JG) return 0; const T = de ? deTgtD : jaTgtD, a = k > 1 ? T(k - 1) : 0, b = T(k); return b > a ? Math.max(0, Math.min(1, (learnedN(S.lang) - a) / (b - a))) : 0; };
   const t = today(), start = P0 && P0 < t ? P0 : t, d0 = new Date(start + 'T12:00:00'); d0.setDate(d0.getDate() - (d0.getDay() + 6) % 7);   // from Monday
   const end = new Date(EXAM + 'T12:00:00'); end.setDate(end.getDate() + (7 - end.getDay()) % 7);
   const m = gMem(), planDone = new Set(Object.values(S.doneOn || {})), MS = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
@@ -1067,13 +1069,14 @@ function switchLang(k, push){
   switching = true; setLang(k); persist(); brandTo(LANGS[k], dir); hideFly(true); keys(null);
   if (push) try { history.pushState(null, '', (SITE ? '/l/' + LANGS[k] + '/' : location.pathname + location.search) + (SITE ? '' : '#home')); } catch (e) {}
   const out = quiet ? null : app.animate([{opacity: 1, transform: 'none', filter: 'blur(0)'}, {opacity: 0, transform: `translateX(${-90 * dir}px) scale(.97)`, filter: 'blur(12px)'}], {duration: 240, easing: 'cubic-bezier(.5,0,.85,.3)', fill: 'forwards'});
-  setTimeout(() => { if (me !== swN) return;
-    switching = false; route(true); out?.cancel(); app.getAnimations().forEach(a => a.cancel());
+  const need = k === 'ja' ? Promise.all([loadJa(), loadJg()]) : k === 'de' ? Promise.all([loadDe(), loadDg()]) : Promise.resolve();
+  Promise.all([need.catch(() => {}), new Promise(r => setTimeout(r, quiet ? 0 : 235))]).then(() => { if (me !== swN) return;
+    switching = false; swUntil = Date.now() + 1100; route(true); out?.cancel(); app.getAnimations().forEach(a => a.cancel());
     if (quiet) return;
     const box = app.firstElementChild, els = box ? ($('.top', box) ? [$('.top', box), $('.plan', box)] : [...box.children]) : [];
     els.forEach((el, i) => el.animate([{opacity: 0, transform: `translateX(${130 * dir}px) scale(.97)`, filter: 'blur(14px)'}, {opacity: 1, transform: 'none', filter: 'blur(0)'}], {duration: 720, delay: i * 110, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'backwards'}));
     $$('.task', box).forEach((el, i) => el.animate([{opacity: 0, transform: `translateX(${46 * dir}px)`}, {opacity: 1, transform: 'none'}], {duration: 560, delay: 260 + i * 55, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'backwards'}));
-  }, quiet ? 0 : 235);
+  });
 }
 $$('.lang[data-lang]').forEach(a => { const k = a.dataset.lang; a.href = SITE ? '/l/' + LANGS[k] + '/' : '#home';
   a.addEventListener('click', e => { if (e.ctrlKey || e.metaKey || e.shiftKey || e.button) return; e.preventDefault(); $('.bw').blur?.(); document.activeElement?.blur(); switchLang(k, true); }); });
@@ -1092,9 +1095,11 @@ document.addEventListener('click', e => { if (!pop.contains(e.target) && e.targe
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { pop.classList.add('hide'); hideFly(true); } });
 
 /* ---------- router ---------- */
+let swUntil = 0, swDefer = null;
 function route(silent){
   document.body.classList.toggle('sess', location.hash === '#s' || location.hash.startsWith('#t-'));
   if (!PLAN || switching) return;
+  if (silent && Date.now() < swUntil) { clearTimeout(swDefer); swDefer = setTimeout(() => route(true), swUntil - Date.now()); return; }
   const h = decodeURIComponent(location.hash.slice(1)) || 'home';
   const tab = /^(lesson|pinyin|review|start|s$|t-|jsheet|jmap)/.test(h) ? 'lessons' : h.startsWith('words') ? 'words' : h;
   $$('nav a[data-tab]').forEach(a => a.dataset.tab === tab ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current'));
