@@ -1068,14 +1068,15 @@ function switchLang(k, push){
   const dir = LK.indexOf(k) > LK.indexOf(S.lang) ? 1 : -1, me = ++swN, quiet = calm();
   switching = true; setLang(k); persist(); brandTo(LANGS[k], dir); hideFly(true); keys(null);
   if (push) try { history.pushState(null, '', (SITE ? '/l/' + LANGS[k] + '/' : location.pathname + location.search) + (SITE ? '' : '#home')); } catch (e) {}
-  const out = quiet ? null : app.animate([{opacity: 1, transform: 'none', filter: 'blur(0)'}, {opacity: 0, transform: `translateX(${-90 * dir}px) scale(.97)`, filter: 'blur(12px)'}], {duration: 240, easing: 'cubic-bezier(.5,0,.85,.3)', fill: 'forwards'});
+  const out = quiet ? null : app.animate([{opacity: 1, transform: 'none'}, {opacity: 0, transform: `translateX(${-70 * dir}px) scale(.98)`}], {duration: 220, easing: 'cubic-bezier(.5,0,.85,.3)', fill: 'forwards'});
   const need = k === 'ja' ? Promise.all([loadJa(), loadJg()]) : k === 'de' ? Promise.all([loadDe(), loadDg()]) : Promise.resolve();
   Promise.all([need.catch(() => {}), new Promise(r => setTimeout(r, quiet ? 0 : 235))]).then(() => { if (me !== swN) return;
-    switching = false; swUntil = Date.now() + 1100; route(true); out?.cancel(); app.getAnimations().forEach(a => a.cancel());
+    switching = false; route(true); swUntil = Date.now() + 1100;   // draw first, then hold off background redraws out?.cancel(); app.getAnimations().forEach(a => a.cancel());
     if (quiet) return;
     const box = app.firstElementChild, els = box ? ($('.top', box) ? [$('.top', box), $('.plan', box)] : [...box.children]) : [];
-    els.forEach((el, i) => el.animate([{opacity: 0, transform: `translateX(${130 * dir}px) scale(.97)`, filter: 'blur(14px)'}, {opacity: 1, transform: 'none', filter: 'blur(0)'}], {duration: 720, delay: i * 110, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'backwards'}));
-    $$('.task', box).forEach((el, i) => el.animate([{opacity: 0, transform: `translateX(${46 * dir}px)`}, {opacity: 1, transform: 'none'}], {duration: 560, delay: 260 + i * 55, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'backwards'}));
+    const A = [...els.map((el, i) => el.animate([{opacity: 0, transform: `translateX(${110 * dir}px) scale(.98)`}, {opacity: 1, transform: 'none'}], {duration: 680, delay: i * 100, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'backwards'})),
+      ...$$('.task', box).map((el, i) => el.animate([{opacity: 0, transform: `translateX(${40 * dir}px)`}, {opacity: 1, transform: 'none'}], {duration: 520, delay: 240 + i * 50, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'backwards'}))];
+    A.forEach(a => a.pause()); requestAnimationFrame(() => requestAnimationFrame(() => { if (me === swN) A.forEach(a => a.play()); }));
   });
 }
 $$('.lang[data-lang]').forEach(a => { const k = a.dataset.lang; a.href = SITE ? '/l/' + LANGS[k] + '/' : '#home';
@@ -1099,7 +1100,7 @@ let swUntil = 0, swDefer = null;
 function route(silent){
   document.body.classList.toggle('sess', location.hash === '#s' || location.hash.startsWith('#t-'));
   if (!PLAN || switching) return;
-  if (silent && Date.now() < swUntil) { clearTimeout(swDefer); swDefer = setTimeout(() => route(true), swUntil - Date.now()); return; }
+  if (silent && Date.now() < swUntil) return;   // the switch has just drawn this language with its data: a second redraw would only restart the animations
   const h = decodeURIComponent(location.hash.slice(1)) || 'home';
   const tab = /^(lesson|pinyin|review|start|s$|t-|jsheet|jmap)/.test(h) ? 'lessons' : h.startsWith('words') ? 'words' : h;
   $$('nav a[data-tab]').forEach(a => a.dataset.tab === tab ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current'));
