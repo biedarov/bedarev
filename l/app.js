@@ -1076,7 +1076,7 @@ function switchLang(k, push){
     const box = app.firstElementChild, els = box ? ($('.top', box) ? [$('.top', box), $('.plan', box)] : [...box.children]) : [];
     const A = [...els.map((el, i) => el.animate([{opacity: 0, transform: `translateX(${110 * dir}px) scale(.98)`}, {opacity: 1, transform: 'none'}], {duration: 680, delay: i * 100, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'backwards'})),
       ...$$('.task', box).map((el, i) => el.animate([{opacity: 0, transform: `translateX(${40 * dir}px)`}, {opacity: 1, transform: 'none'}], {duration: 520, delay: 240 + i * 50, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'backwards'}))];
-    A.forEach(a => a.pause()); requestAnimationFrame(() => requestAnimationFrame(() => { if (me === swN) A.forEach(a => a.play()); }));
+    requestAnimationFrame(() => requestAnimationFrame(() => A.forEach(a => { try { if (a.playState === 'running') a.currentTime = 0; } catch (e) {} })));   // restart once the page has painted; never paused, so nothing can get stuck invisible
   });
 }
 $$('.lang[data-lang]').forEach(a => { const k = a.dataset.lang; a.href = SITE ? '/l/' + LANGS[k] + '/' : '#home';
