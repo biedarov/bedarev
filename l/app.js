@@ -746,13 +746,15 @@ async function akSync(){
       L.st = st; if (lang === 'ja') L.kst = kst;
     }
     try { out.plan = await akPlan(out); } catch (e) { out.plan = {err: e.message}; }
+    out.bd = Object.fromEntries(Object.entries(bd).map(([k, v]) => [k, Math.round(v)]));
     AK = out; akErr = '';
     try { localStorage.setItem('lcm-anki', JSON.stringify(AK)); } catch (e) {}
+    akCloudPut();
     // Anki time goes into today's hours (the larger of the timer and Anki's own count)
     Object.entries(bd).forEach(([k, v]) => { (S.time[k] ??= {}); if (v > (S.time[k].anki || 0)) S.time[k].anki = Math.round(v); });   // by calendar date, like the site's hours
     akApply(); track(); persist();
     if (!busy && /^#?(home|words.*|stats)?$/.test(location.hash.replace('#', ''))) refresh();
-  } catch (e) { AK_URL = null; akErr = e.name === 'AbortError' || /fetch|network|Failed/i.test(e.message) ? 'нет связи' : e.message; }
+  } catch (e) { AK_URL = null; akErr = e.name === 'AbortError' || /fetch|network|Failed/i.test(e.message) ? 'нет связи' : e.message; akCloudGet(); }
   finally { akBusy = false; akUI(); }
 }
 /* Anki plan: on every sync each language's «new cards per day» is set to what the plan asks for today, debt included.
@@ -791,6 +793,23 @@ async function akPlan(A){
   return done;
 }
 const akOn = () => !!AK && AK.day === today();
+/* Anki on the phone: the computer with Anki puts its snapshot in the cloud after every sync; a device without Anki reads it back.
+   The secret code lives in localStorage «lcm-sync»; the phone gets it once through the link #sync=… shown in the computer's Anki settings. */
+const AK_CLOUD = 'https://esaapwjyheyfmxcsndjf.supabase.co/rest/v1/rpc/', AK_KEY = 'sb_publishable_ufy0tVtVNtXVPH_Zp7cqkg_GnjmKLQl';
+let akCode = localStorage.getItem('lcm-sync') || '';
+{ const m = /^#sync=([A-Za-z0-9]{12,64})$/.exec(location.hash); if (m) { akCode = m[1]; try { localStorage.setItem('lcm-sync', akCode); } catch (e) {} history.replaceState(null, '', location.pathname + location.search + (document.documentElement.dataset.site ? '' : '#home')); } }   // SITE is declared further down
+const akNewCode = () => { const a = new Uint8Array(15); crypto.getRandomValues(a); return [...a].map(x => 'abcdefghjkmnpqrstuvwxyz23456789'[x % 31]).join(''); };
+const akRpc = (fn, body) => fetch(AK_CLOUD + fn, {method: 'POST', headers: {apikey: AK_KEY, 'Content-Type': 'application/json'}, body: JSON.stringify(body)}).then(r => { if (!r.ok) throw new Error('cloud ' + r.status); return r.text(); }).then(t => t ? JSON.parse(t) : null);
+function akCloudPut(){ if (!akOn()) return; if (!akCode) { akCode = akNewCode(); try { localStorage.setItem('lcm-sync', akCode); } catch (e) {} } akRpc('lcm_put', {p_code: akCode, p_data: AK}).catch(() => {}); }
+async function akCloudGet(){
+  if (!akCode) return;
+  let d = null; try { d = await akRpc('lcm_get', {p_code: akCode}); } catch (e) { return; }
+  if (!d || d.day !== today() || (AK && AK.day === today() && AK.at >= d.at)) return;
+  AK = d; try { localStorage.setItem('lcm-anki', JSON.stringify(AK)); } catch (e) {}
+  Object.entries(d.bd || {}).forEach(([k, v]) => { (S.time[k] ??= {}); if (v > (S.time[k].anki || 0)) S.time[k].anki = Math.round(v); });
+  akApply(); track(); persist(); akUI();
+  if (!busy && /^#?(home|words.*|stats)?$/.test(location.hash.replace('#', ''))) refresh();
+}
 /* word states from Anki override the ones baked into the site */
 function akApply(){
   const ja = akOn() && AK.langs.ja;
@@ -803,6 +822,9 @@ function akUI(){
   const el = $('#ak'); if (!el) return;
   el.innerHTML = akOn() ? `<span class="akdot on"></span><span>Подключено · ${new Date(AK.at).toTimeString().slice(0, 5)}</span><button class="mini" id="akr">обновить</button>`
     : `<span class="akdot"></span><span>${akBusy ? 'Ищу Anki…' : akErr && akErr !== 'нет связи' ? 'Ошибка: ' + esc(akErr) : 'Anki не найден'}</span><button class="mini" id="akr">ещё раз</button><p class="akh">Нужен AnkiConnect: в Anki «Инструменты → Дополнения → Получить дополнения», код <b>2055492159</b>, в его Config поставь <b>"webBindPort": 8766</b> (8765 занят) и добавь адрес сайта в <b>webCorsOriginList</b>. Перезапусти Anki и держи его открытым.</p>`;
+  if (akCode) { const link = (SITE ? location.origin + '/l/' + LANGS[S.lang] + '/' : location.origin + location.pathname) + '#sync=' + akCode, fromCloud = akOn() && !AK_URL;
+    el.insertAdjacentHTML('beforeend', `<p class="akh">${fromCloud ? 'Данные с компьютера.' : 'На телефоне:'} открой эту ссылку один раз на телефоне, и он будет брать Anki отсюда. <button class="mini" id="akl">скопировать ссылку</button></p>`);
+    $('#akl', el).onclick = e => { e.stopPropagation(); navigator.clipboard?.writeText(link).then(() => { e.target.textContent = 'скопировано'; }, () => prompt('Ссылка для телефона', link)); }; }
   $('#akr', el).onclick = e => { e.stopPropagation(); akSync(); akUI(); };
 }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') akSync(); });
