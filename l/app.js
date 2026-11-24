@@ -26,7 +26,7 @@ let busy = false;
   const ref = db.collection('/l/data/users/' + id).doc('state40v2');
   const snap = await Promise.race([ref.get(), new Promise(r => setTimeout(() => r('t'), 10000))]); if (snap === 't') return;
   if (snap?.exists && snap.data()?.v === 2) S = Object.assign(DEF(), JSON.parse(JSON.stringify(snap.data()))); else await ref.set(JSON.parse(JSON.stringify(S)));
-  store = {save: s => ref.set(JSON.parse(JSON.stringify(s)))}; theme(); setLang(SITE || S.lang || 'zh'); brandTo(LANGS[S.lang]); if (!busy && PLAN) route(true);
+  store = {save: s => ref.set(JSON.parse(JSON.stringify(s)))}; theme(); setLang(SITE || S.lang || 'zh'); brandTo(LANGS[S.lang]); if (!busy && PLAN) refresh();
 } catch (e) {} })();
 function syncGi(){ $$('#gi button').forEach(b => b.setAttribute('aria-pressed', (b.dataset.v === '1') === (S.settings.girl !== false))); }
 function theme(){ syncGi?.(); const t = S.settings.theme === 'light' ? 'light' : 'dark'; document.documentElement.dataset.theme = t; $$('#th button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === t)); }
@@ -91,10 +91,12 @@ setInterval(() => { if (document.visibilityState === 'visible' && /^#(s|t-|lesso
 
 /* ---------- view swap: one crossfade between sections ---------- */
 let first = true, curSec = '';
+let QUIET = false;   // true while a refresh repaints the page the user is already looking at
+const refresh = () => { QUIET = true; try { route(true); } finally { QUIET = false; } };
 function show(html, cls = '', after, sec = ''){
   curSec = sec;
   let painted = false;
-  const paint = () => { if (painted) return; painted = true; app.className = cls; app.innerHTML = html; after?.(); };
+  const paint = () => { if (painted) return; painted = true; app.className = cls; app.classList.toggle('still', QUIET); app.innerHTML = html; after?.(); };
   if (first || !document.startViewTransition || document.hidden || matchMedia('(prefers-reduced-motion: reduce)').matches) { first = false; return paint(); }
   try { const vt = document.startViewTransition(paint); vt.updateCallbackDone?.catch(paint); vt.finished?.catch(() => {}); vt.ready?.catch(() => {}); } catch (e) { paint(); }
   setTimeout(paint, 400);   // safety net: the page is drawn even if the browser skips the transition
@@ -195,7 +197,8 @@ function home(){
       <div class="tasks">${gs.map(g => `<div class="grp" style="--n:${QS.filter(x => x.g === g).length}"><div class="gh"><span class="eye">${g}</span>${tmr(g)}</div>${QS.filter(x => x.g === g).map(row).join('')}</div>`).join('')}
         </div>
     </section>`}</div>`, 'home', () => {
-    setTimeout(() => {
+    if (app.classList.contains('still')) { $$('.pr').forEach(c => c.style.strokeDashoffset = c.dataset.to); $$('[data-count]').forEach(el => el.textContent = el.dataset.count); }
+    else setTimeout(() => {
       $$('.pr').forEach(c => c.style.strokeDashoffset = c.dataset.to);
       $$('[data-count]').forEach(el => { const to = +el.dataset.count, t0 = performance.now(); const f = n => { const p = Math.min(1, (n - t0) / 1100); el.textContent = Math.round(to * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(f); }; requestAnimationFrame(f); });
     }, 180);
@@ -567,7 +570,7 @@ function romajiToKana(input, final) {
   return out;
 }
 const toRd = s => String(s).replace(/\{[^}]*\}|\[|\]/g, '').replace(JP_RUN, m => furiTok(m).map(([t, r]) => r || t).join(''));
-const normAnswer = s => toRd(romajiToKana(String(s), true).replace(/[\s　。．.、,，？?！!「」]/g, '')).replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60)).replace(/は/g, 'わ').replace(/へ/g, 'え').replace(/を/g, 'お');
+const normAnswer = s => toRd(romajiToKana(String(s), true).replace(/[\s　。．.、,，？?！!「」…・]/g, '')).replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60)).replace(/は/g, 'わ').replace(/へ/g, 'え').replace(/を/g, 'お');
 const normDe = s => String(s).toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss').replace(/[.,!?;:«»„“"–—-]/g, ' ').replace(/\s+/g, ' ').trim();
 const writeOk = (typed, q) => { if (S.lang === 'de') { const u = normDe(typed); return !!u && [...q.a, ...(q.r || [])].some(x => normDe(x) === u); } const u = normAnswer(typed); return !!u && [...q.a, ...(q.r || [])].some(x => normAnswer(x) === u); };
 // phone: while typing, the question card is exactly the part of the screen above the keyboard
@@ -836,7 +839,7 @@ async function akSync(){
     // Anki time goes into today's hours (the larger of the timer and Anki's own count)
     Object.entries(bd).forEach(([k, v]) => { (S.time[k] ??= {}); if (v > (S.time[k].anki || 0)) S.time[k].anki = Math.round(v); });   // by calendar date, like the site's hours
     akApply(); track(); persist();
-    if (!busy && /^#?(home|words.*|stats)?$/.test(location.hash.replace('#', ''))) route(true);
+    if (!busy && /^#?(home|words.*|stats)?$/.test(location.hash.replace('#', ''))) refresh();
   } catch (e) { AK_URL = null; akErr = e.name === 'AbortError' || /fetch|network|Failed/i.test(e.message) ? 'нет связи' : e.message; }
   finally { akBusy = false; akUI(); }
 }
@@ -1111,6 +1114,8 @@ function route(silent){
 }
 addEventListener('hashchange', () => route());
 Promise.all(['/l/data/plan.json', '/l/data/words.json', '/l/data/lessons.json', '/l/data/pinyin.json', '/l/audio/map.json'].map(u => fetch(u, {cache: 'no-cache'}).then(r => r.json())))
-  .then(([p, w, l, pin, am]) => { PLAN = p; WORDS = w.words; LES = l.lessons; PIN = pin; AMAP = am; route(); akSync(); loadChars(); loadJa().then(() => { if (S.lang === 'ja' && !busy) route(true); }); if (S.lang === 'ja') loadJg().then(() => { if (S.lang === 'ja' && !busy) route(true); }); loadDe().then(() => { if (S.lang === 'de' && !busy && !$('.wl.de')) route(true); }); })
+  .then(([p, w, l, pin, am]) => { PLAN = p; WORDS = w.words; LES = l.lessons; PIN = pin; AMAP = am;
+    const need = S.lang === 'ja' ? [loadJa(), loadJg()] : S.lang === 'de' ? [loadDe(), loadDg()] : [];   // the language on screen loads before the first paint
+    Promise.all(need).catch(() => {}).then(() => { route(); akSync(); loadChars(); loadJa(); loadDe(); }); })
   .catch(() => { app.innerHTML = '<p class="mute" style="text-align:center;margin-top:30vh">Не удалось загрузить данные. Обнови страницу.</p>'; });
 })();

@@ -414,6 +414,7 @@ select,input[type=text]{font:inherit;font-weight:600;height:34px;padding:0 10px;
 .akh{flex-basis:100%;margin:2px 0 0;font-size:11.5px;font-weight:600;color:var(--mute);line-height:1.45}
 /* word lists: denser, with counts */
 .wct{padding:12px 18px 2px;font-size:12px;font-weight:700;color:var(--mute)} .wct b{color:var(--ink)}
+#app.still,#app.still *{animation:none!important} #app.still .pr,#app.still .pk{transition:none!important}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
 /* phone: home and grammar fit one screen; Word List | brand | Lessons; statistics and settings stay on the computer */
