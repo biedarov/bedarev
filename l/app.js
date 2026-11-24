@@ -1071,7 +1071,8 @@ function switchLang(k, push){
   const out = quiet ? null : app.animate([{opacity: 1, transform: 'none'}, {opacity: 0, transform: `translateX(${-70 * dir}px) scale(.98)`}], {duration: 220, easing: 'cubic-bezier(.5,0,.85,.3)', fill: 'forwards'});
   const need = k === 'ja' ? Promise.all([loadJa(), loadJg()]) : k === 'de' ? Promise.all([loadDe(), loadDg()]) : Promise.resolve();
   Promise.all([need.catch(() => {}), new Promise(r => setTimeout(r, quiet ? 0 : 235))]).then(() => { if (me !== swN) return;
-    switching = false; route(true); swUntil = Date.now() + 1100;   // draw first, then hold off background redraws out?.cancel(); app.getAnimations().forEach(a => a.cancel());
+    switching = false; route(true); swUntil = Date.now() + 1100;   // draw first, then hold off background redraws
+    out?.cancel(); app.getAnimations().forEach(a => a.cancel());   // the fade-out must go, or the page stays invisible
     if (quiet) return;
     const box = app.firstElementChild, els = box ? ($('.top', box) ? [$('.top', box), $('.plan', box)] : [...box.children]) : [];
     const A = [...els.map((el, i) => el.animate([{opacity: 0, transform: `translateX(${110 * dir}px) scale(.98)`}, {opacity: 1, transform: 'none'}], {duration: 680, delay: i * 100, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'backwards'})),
