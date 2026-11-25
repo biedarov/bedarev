@@ -9,7 +9,7 @@ const I = {
   pen: '<svg class="pen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-label="писать"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>'
 };
 let PLAN, WORDS, LES, PIN, AMAP, CH = null;
-const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const today = () => { const d = new Date(Date.now() - 4 * 36e5); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 const addDays = (s, n) => { const d = new Date(s + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
@@ -18,7 +18,7 @@ const DEF = () => ({v: 2, done: {}, doneOn: {}, tests: {}, srs: {}, time: {}, ti
 let S = DEF(), store = {save: async () => {}}, saveT;
 const LS = 'lcm40-state-v2';
 try { const t = localStorage.getItem(LS); if (t) S = Object.assign(DEF(), JSON.parse(t)); } catch (e) {}
-const persist = () => { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) {} clearTimeout(saveT); saveT = setTimeout(() => store.save(S).catch(() => {}), 500); };
+const persist = () => { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) {} clearTimeout(saveT); saveT = setTimeout(() => store.save(S).catch(() => {}), 500); window.stSchedule?.(); };
 let busy = false;
 (async () => { try {
   const [db, user] = await Promise.all([window.claude?.use?.('db'), window.claude?.use?.('user')]); if (!db || !user) return;
@@ -26,7 +26,7 @@ let busy = false;
   const ref = db.collection('/l/data/users/' + id).doc('state40v2');
   const snap = await Promise.race([ref.get(), new Promise(r => setTimeout(() => r('t'), 10000))]); if (snap === 't') return;
   if (snap?.exists && snap.data()?.v === 2) S = Object.assign(DEF(), JSON.parse(JSON.stringify(snap.data()))); else await ref.set(JSON.parse(JSON.stringify(S)));
-  store = {save: s => ref.set(JSON.parse(JSON.stringify(s)))}; theme(); setLang(SITE || S.lang || 'zh'); brandTo(LANGS[S.lang]); if (!busy && PLAN) refresh();
+  store = {save: s => ref.set(JSON.parse(JSON.stringify(s)))}; theme(); setLang(SITE && !(matchMedia('(display-mode: standalone)').matches || navigator.standalone === true) ? SITE : S.lang || SITE || 'zh'); brandTo(LANGS[S.lang]); if (!busy && PLAN) refresh();
 } catch (e) {} })();
 function syncGi(){ $$('#gi button').forEach(b => b.setAttribute('aria-pressed', (b.dataset.v === '1') === (S.settings.girl !== false))); }
 function theme(){ syncGi?.(); const t = S.settings.theme === 'light' ? 'light' : 'dark'; document.documentElement.dataset.theme = t; $$('#th button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === t)); }
@@ -59,36 +59,47 @@ const words = d => WORDS.filter(w => w.d === d);
 const LP = () => ({zh: {start: PLAN_START, days: 40}, ja: {start: JA_START, days: JA_DAYS}, de: {start: DE_START, days: DE_DAYS}});
 const pDayOf = (lang = S.lang, now = Date.now()) => { const p = LP()[lang]; return Math.max(1, Math.min(p.days, dIdx(p.start, isoD(dayDate(dayNo(now)))) + 1)); };
 const tgtD = (lang, k) => lang === 'zh' ? zhOrder().filter(x => x.day <= k).length : lang === 'ja' ? jaTgtD(k) : deTgtD(k);
-/* a plan day is done only when ALL of it is done: its topics, and in Chinese also its new words and its phonetics videos */
+/* a plan day is done when its grammar topics are done (Chinese: and its part of the phonetics video).
+   Anki is NOT part of it: words go at their own pace in Anki, their row only shows what is left. */
 function zhSyncDays(Z = akOn() ? AK : null){ const A = Z?.langs?.zh; if (A?.days) for (const [d, dk] of Object.entries(A.days)) if (dk.nw === 0 && dk.tot > 0) (S.done[d] ??= {}).a2 = true; }
+const PH_DAYS = () => Math.ceil(PLAN.phonetics.syllables.sec / 60 / PLAN.phonetics.syllables.perDay);   // the one long video, 10 minutes a day
 function dayDone(lang, k, L = learnedN(lang)){
   if (tgtD(lang, k) > L) return false;
-  if (lang !== 'zh') return true;
-  const ph = PLAN.phonetics;
-  return (!words(k).length || !!S.done[k]?.a2) && (k > ph.days[1] || (!!S.done[k]?.ph1 && !!S.done[k]?.ph2));
+  return lang !== 'zh' || k > PH_DAYS() || !!S.done[k]?.ph2;
 }
-function planCur(lang = S.lang, now = Date.now()){ if (lang === 'zh') zhSyncDays(); const L = learnedN(lang), s = pDayOf(lang, now); for (let k = 1; k <= s; k++) if (!dayDone(lang, k, L)) return k; return s; }
+function planCur(lang = S.lang, now = Date.now()){ const L = learnedN(lang), s = pDayOf(lang, now); for (let k = 1; k <= s; k++) if (!dayDone(lang, k, L)) return k; return s; }
+/* the date each plan day was finished (for the calendar and the statistics: a late day stays a debt of ITS day) */
+function noteDays(lang = S.lang){
+  if (!gTopics(lang).length) return; const dd = ((S.dd ??= {})[lang] ??= {}), L = learnedN(lang), s = pDayOf(lang); let ch = false;
+  const cs = gMem(lang).cards, T = gTopics(lang);
+  for (let k = 1; k <= s; k++) { if (!dayDone(lang, k, L)) break; if (dd[k]) continue;
+    // the day of its last topic (first time learned); a day without topics counts on its own date or with the day before it
+    const ns = T.slice(k > 1 ? tgtD(lang, k - 1) : 0, tgtD(lang, k)).map(t => cs[t.id]).filter(Boolean).map(c => c.born ?? dayNo(c.first ?? c.last));   // born = the day the topic was first learned
+    const own = addDays(LP()[lang].start, k - 1), d = ns.length ? isoD(dayDate(Math.max(...ns))) : (dd[k - 1] && dd[k - 1] > own ? dd[k - 1] : own);
+    dd[k] = d > today() ? today() : d; ch = true; }
+  if (ch) persist();
+}
 function track(){}   // the old 40-day ticks are gone; kept so older calls stay harmless
 const learned = d => !!S.done[d]?.a2;
 /* manual ticks (when Anki is not connected): per language and date */
 const tickOn = (lang, id) => !!S.tick?.[lang]?.[today()]?.[id];
 const tickSet = (lang, id, on) => { (((S.tick ??= {})[lang] ??= {})[today()] ??= {})[id] = on; };
-/* Chinese phonetics week: today's videos */
+/* Chinese phonetics: one long video (the syllables), 10 minutes a day for the first days; the next part follows the last ticked one */
 function phonRows(){
-  const d = planCur('zh'), ph = PLAN.phonetics; if (d > ph.days[1]) return [];
-  const gs = (ph.schedule[String(d)] || []).map(n => ph.groups[n - 1]), st = ((d - 1) * ph.syllables.perDay) % ph.syllables.minutes, s1 = gs.reduce((a, g) => a + (g.sec || 0), 0);
-  return [{id: 'ph1', d, man: true, done: !!S.done[d]?.ph1, t: gs.length ? 'Звуки · группы ' + gs.map(g => g.n).join(' и ') : 'Звуки · трудная группа', links: (gs.length ? gs : ph.groups).map(g => [g.video, 'гр. ' + g.n]), sec: s1, note: s1 ? Math.round(s1 / 60) + ' мин' : ''},
-    {id: 'ph2', d, man: true, done: !!S.done[d]?.ph2, t: `Слоги · ${st}:00–${st + 10}:00`, links: [[ph.syllables.video + '&t=' + st * 60 + 's', 'видео']], sec: ph.syllables.perDay * 60, note: ph.syllables.perDay + ' мин'}];
+  const ph = PLAN.phonetics, v = ph.syllables, n = PH_DAYS(); let d = 1; while (d <= n && S.done[d]?.ph2) d++;
+  d = Math.min(d, planCur('zh')); if (d > n) return [];   // an owed part first; once today's part is watched it stays ticked until the next plan day
+  const st = (d - 1) * v.perDay, end = Math.min(d * v.perDay * 60, v.sec), mm = s => Math.floor(s / 60) + ':' + String(Math.round(s % 60)).padStart(2, '0'), len = end - st * 60;
+  return [{id: 'ph2', d, man: true, done: !!S.done[d]?.ph2, t: `Слоги · часть ${d} из ${n}`, links: [[v.video + '&t=' + st * 60 + 's', 'смотреть']], sec: len, note: `${st}:00–${mm(end)}`}];
 }
-/* Anki rows: the same for every language; with Anki connected they tick themselves, without it by hand */
+/* Anki rows: the same for every language; with Anki connected they tick themselves, without it by hand. Words never hold the plan day. */
 function lexRows(lang){
   const A = akOn() ? AK.langs[lang] : null, t = A ? akTargets(AK) : {}, R = [];
   R.push({id: 'a1', t: 'Anki · повторения', man: !A, done: A ? A.due === 0 && A.rated > 0 : tickOn(lang, 'a1'), note: A ? (A.due ? 'осталось ' + A.due : 'готово') : ''});
   if (lang === 'zh') {
-    const pd = planCur('zh');   // the day you are on: its words, and any older ones still new
+    zhSyncDays(); const pd = pDayOf('zh');   // words go by the calendar: every day deck up to today's date
     const owed = []; for (let d = 1; d <= pd; d++) if (words(d).length && !S.done[d]?.a2) owed.push(d);
     const left = A?.days ? Object.entries(A.days).filter(([d]) => +d <= pd).reduce((a, [, x]) => a + (x.nn || 0), 0) : owed.reduce((a, d) => a + words(d).length, 0);
-    R.push({id: 'a2', t: `Anki · новые слова · день ${pd}`, man: !A, go: '#words', done: A?.days ? left === 0 : !owed.length, note: left ? 'осталось ' + left : 'готово'});
+    R.push({id: 'a2', t: 'Anki · новые слова', man: !A, go: '#words', done: A?.days ? left === 0 : !owed.length, note: left ? 'осталось ' + left : 'готово'});
   } else {
     const n = A && A.wNew != null ? (lang === 'ja' ? t.jaW : t.de) : null;
     R.push({id: 'a2', t: n != null ? `Anki · ${n} новых слов` : 'Anki · новые слова', man: n == null, go: '#words', done: n != null ? A.wIntro >= n : tickOn(lang, 'a2'), note: n != null ? (A.wIntro >= n ? 'готово' : 'осталось ' + (n - A.wIntro)) : ''});
@@ -100,14 +111,41 @@ function lexRows(lang){
 const wordStats = (lang = S.lang) => lang === 'ja' ? (JA ? {known: JA.words.filter(w => w.s === 'known').length, total: JA.words.length} : {known: 0, total: 1})
   : lang === 'de' ? (DE ? {known: DE.words.filter(w => w.s === 'known').length, total: DE.words.length} : {known: 0, total: 1}) : {known: WORDS.filter(wKnown).length, total: WORDS.length};
 
-/* ---------- time ---------- */
-const sec = (date, k) => (S.time[date]?.[k] || 0) + (S.timer?.s === k && date === today() ? (Date.now() - S.timer.at) / 1000 : 0);
-const dayT = date => ['anki', 'phon', 'gram'].reduce((a, k) => a + sec(date, k), 0);
+/* ---------- time: per language and day (the day ends at 04:00) ----------
+   S.time[date][lang] = {anki, phon, gram} in seconds. Anki comes from Anki's own review log, phonetics = length of the
+   ticked video, grammar = time on the grammar pages while you are actually doing something (no input for 90 s = not counted). */
+const TL = (date, lang = S.lang) => ((S.time[date] ??= {})[lang] ??= {});
+// grammar minutes are kept per device («gram:<device>») and added up, so the phone and the computer never overwrite each other
+const DEV = localStorage.getItem('lcm-dev') || (() => { const d = Math.random().toString(36).slice(2, 8); try { localStorage.setItem('lcm-dev', d); } catch (e) {} return d; })();
+const sec = (date, k, lang = S.lang) => { const o = S.time[date]?.[lang]; if (!o) return 0; if (k !== 'gram') return o[k] || 0; let t = 0; for (const x in o) if (x === 'gram' || x.startsWith('gram:')) t += o[x] || 0; return t; };
+const dayT = (date, lang = S.lang) => ['anki', 'phon', 'gram'].reduce((a, k) => a + sec(date, k, lang), 0);
 const h2 = (s, p = 2) => (s / 3600).toFixed(p);
-const add = (k, s) => { const t = today(); (S.time[t] ??= {})[k] = (S.time[t][k] || 0) + s; };
-function timer(k){ if (S.timer) { add(S.timer.s, (Date.now() - S.timer.at) / 1000); const same = S.timer.s === k; S.timer = null; if (same) return persist(); } S.timer = {s: k, at: Date.now()}; persist(); }
-let tk = Date.now();
-setInterval(() => { if (document.visibilityState === 'visible' && /^#(s|t-|lessons|jsheet|jmap|pinyin)/.test(location.hash)) { add('gram', (Date.now() - tk) / 1000); persist(); } tk = Date.now(); }, 5000);
+const add = (k, s, lang = S.lang) => { const o = TL(today(), lang), key = k === 'gram' ? 'gram:' + DEV : k; o[key] = (o[key] || 0) + s; };
+let tk = Date.now(), lastAct = 0;
+['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(e => addEventListener(e, () => lastAct = Date.now(), {passive: true, capture: true}));
+setInterval(() => { const now = Date.now(); if (document.visibilityState === 'visible' && now - lastAct < 90e3 && /^#(s|t-|lessons|jsheet|jmap|pinyin)/.test(location.hash)) { add('gram', Math.min(10, (now - tk) / 1000)); persist(); } tk = now; }, 5000);
+/* one-time clean-up (25 Nov): the old timer counted grammar while a page was merely open, and one bucket held all three languages.
+   Grammar minutes before 25 November go (nobody studied then, the pages were open); phonetics belongs to Chinese;
+   Anki is filled in again from Anki's own log by language. The old state is kept in localStorage «lcm40-backup-v2». */
+function migrateTime(X){
+  const S0 = S; if (X) S = X;
+  try { migrate1(); } finally { if (X) S = S0; }
+}
+function migrate1(){
+  if (S.tv === 3) return;
+  try { if (!localStorage.getItem('lcm40-backup-v2')) localStorage.setItem('lcm40-backup-v2', JSON.stringify(S)); } catch (e) {}
+  const T = {};
+  for (const [d, o] of Object.entries(S.time || {})) {
+    if (d < '2026-11-23' || !o || typeof o !== 'object') continue;
+    if (['zh', 'ja', 'de'].some(l => o[l] && typeof o[l] === 'object')) { T[d] = o; continue; }   // already per language
+    const day = dayNo(Date.parse(d + 'T12:00:00')), cnt = {}; let all = 0;
+    for (const l of ['zh', 'ja', 'de']) { const g = S.mem?.[l]?.log?.[day]; cnt[l] = g ? g.n + g.r : 0; all += cnt[l]; }
+    T[d] = {};
+    if (o.phon) T[d].zh = {phon: o.phon};
+    if (o.gram && all && d >= '2026-11-25') for (const l of ['zh', 'ja', 'de']) if (cnt[l]) (T[d][l] ??= {}).gram = o.gram * cnt[l] / all;
+  }
+  S.time = T; S.timer = null; S.tv = 3;
+}
 
 /* ---------- view swap: one crossfade between sections ---------- */
 let first = true, curSec = '';
@@ -131,7 +169,7 @@ const peek = () => { const k = GIRL[S.lang] ? S.lang : 'zh'; return `<div class=
 function reveal(pk, img){ let done = false; const go = () => { if (done) return; done = true; requestAnimationFrame(() => pk.classList.add('up')); setTimeout(() => pk.classList.add('up'), 60); };
   setTimeout(go, 300); img?.decode?.().then(go).catch(go); }
 function setGirl(on){
-  S.settings.girl = on; persist(); $$('#gi button').forEach(b => b.setAttribute('aria-pressed', (b.dataset.v === '1') === on));
+  S.settings.girl = on; S.setAt = Date.now(); persist(); $$('#gi button').forEach(b => b.setAttribute('aria-pressed', (b.dataset.v === '1') === on));
   const top = $('.top'); if (!top) return;
   if (!on) { const pk = $('.pk', top); if (pk) { pk.classList.add('out'); pk.classList.remove('up'); }
     setTimeout(() => { $('.peek', top)?.remove(); top.classList.add('nogirl'); }, pk ? 650 : 0); }
@@ -145,13 +183,13 @@ function homePlan(lang){
   const row = x => `<div class="task ${x.done ? 'done' : ''}" ${x.go ? `data-go="${x.go}"` : ''}><button class="chk" data-k="${x.id}" data-d="${x.d || ''}" ${x.man ? '' : 'disabled'} aria-label="${esc(x.t)}">${I.chk}</button><b>${esc(x.t)}</b><span class="r">${x.note ? `<span>${x.note}</span>` : ''}${(x.links || []).map(([u, l]) => `<a class="mini" href="${esc(u)}" target="_blank" rel="noopener">${l}</a>`).join('')}</span></div>`;
   const ph = lang === 'zh' ? phonRows() : [];
   return `<section class="card plan" aria-label="Сегодня">
-    <div class="day"><h1 class="num">День ${cur}<span>/${LP()[lang].days}</span></h1><p class="mute" style="margin-top:8px">${P.head} · ${P.sub}${debt > 0 ? ` · <span class="tbad">долг ${debt} ${pl(debt, 'день', 'дня', 'дней')}</span>` : ''}</p>
+    <div class="day"><h1 class="num">День ${cur}<span>/${LP()[lang].days}</span></h1><p class="mute" style="margin-top:8px">${P.date}${debt > 0 ? ` · <span class="tbad">долг ${debt} ${pl(debt, 'день', 'дня', 'дней')}</span>` : ''}</p>
 </div>
     <div class="tasks">${ph.length ? `<div class="grp"><div class="gh"><span class="eye">фонетика</span></div>${ph.map(row).join('')}</div>` : ''}
       <div class="grp"><div class="gh"><span class="eye">лексика</span></div>${lexRows(lang).map(row).join('')}</div>
       <div class="grp q"><div class="gh"><span class="eye">${next.length ? 'грамматика на очереди' : 'грамматика'}</span></div>
       ${next.length ? next.map(([t, k]) => { const c = m.cards[t.id]; return `<a class="task" href="#t-${t.id}"><span class="gc ${c ? memClass(memOf(c)) : ''}" style="flex:none"></span><b>${rich(t.t)}</b><span class="r">${k === 'новая' ? '' : `<span>${k}${c ? ' · ' + pct(memOf(c)) + '%' : ''}</span>`}</span></a>`; }).join('')
-        : `<p class="mute" style="font-size:13px">${learnedN(lang)} из ${gTopics(lang).length} тем пройдено.</p>`}</div></div></section>`;
+        : `<div class="task done"><span class="chk">${I.chk}</span><b>Грамматика готова</b><span class="r"><span>${learnedN(lang)} из ${gTopics(lang).length}</span></span></div>`}</div></div></section>`;
 }
 /* phone: the queue shows as many whole rows as the screen holds (desktop: 7) */
 function fitQ(){
@@ -166,13 +204,13 @@ function home(){
   const ring = (v, max, lab) => { const r = 70, C = 2 * Math.PI * r; return `<div class="ring"><svg viewBox="0 0 156 156"><circle class="tr" cx="78" cy="78" r="${r}"/><circle class="pr" cx="78" cy="78" r="${r}" stroke-dasharray="${C}" stroke-dashoffset="${C}" data-to="${C * (1 - Math.min(1, v / max))}"/></svg><div class="c"><b class="num" data-count="${v}">0</b>${lab ? `<small>${lab}</small>` : ''}</div></div>`; };
   show(`<div class="stack jah">
     <section class="card top ${S.settings.girl === false ? 'nogirl' : ''}" aria-label="Статистика">${S.settings.girl === false ? '' : peek()}
-      <div class="rings">${ring(W.known, W.total, '') + ring(learnedN(lang), gTopics(lang).length || 1, 'тем')}</div>
+      <div class="rings">${ring(W.known, W.total, 'слов') + ring(learnedN(lang), gTopics(lang).length || 1, 'тем')}</div>
       <div class="nums">
-        <div class="fr"><div class="frac"><b class="num">${h2(tod, innerWidth <= 600 ? 1 : 2)}<i>${tod > yes ? '↑' : tod && tod < yes ? '↓' : ''}</i></b><hr><span>часы</span></div>
+        <div class="fr"><div class="frac"><b class="num">${h2(tod, 1)}<i>${tod > yes ? '↑' : tod && tod < yes ? '↓' : ''}</i></b><hr><span>часы</span></div>
           <div class="frac"><b class="num">${h2(tot, 1)}</b><hr><span>total</span></div></div>
         ${calHtml()}
       </div></section>
-    ${homePlan(lang)}</div>`, 'home', () => {
+    ${homePlan(lang)}${akCode || !SITE ? '' : '<button class="sybar">Синхронизация с другим устройством не настроена · <u>ввести код</u></button>'}</div>`, 'home', () => {
     if (app.classList.contains('still')) { $$('.pr').forEach(c => c.style.strokeDashoffset = c.dataset.to); $$('[data-count]').forEach(el => el.textContent = el.dataset.count); }
     else setTimeout(() => {
       $$('.pr').forEach(c => c.style.strokeDashoffset = c.dataset.to);
@@ -184,10 +222,11 @@ function home(){
     if (tp && pim && matchMedia('(hover:hover)').matches) { tp.onmousemove = e => { const r = tp.getBoundingClientRect(); pim.style.setProperty('--px', ((e.clientX - r.left) / r.width - .5) * -10 + 'px'); pim.style.setProperty('--py', ((e.clientY - r.top) / r.height - .5) * -6 + 'px'); };
       tp.onmouseleave = () => { pim.style.setProperty('--px', '0px'); pim.style.setProperty('--py', '0px'); }; }
     $$('.chk[data-k]').forEach(b => b.onclick = e => { e.stopPropagation(); if (b.disabled) return; const k = b.dataset.k, d = +b.dataset.d; let on;
-      if (d) { on = !S.done[d]?.[k]; (S.done[d] ??= {})[k] = on; const x = phonRows().find(r => r.id === k); if (x?.sec) { (S.time[t] ??= {}); S.time[t].phon = Math.max(0, (S.time[t].phon || 0) + (on ? x.sec : -x.sec)); } }   // a watched video counts its length
-      else { on = !tickOn(lang, k); tickSet(lang, k, on); if (lang === 'zh' && k === 'a2') { const pd = planCur('zh'); for (let j = 1; j <= pd; j++) if (on || j === pd) (S.done[j] ??= {}).a2 = on; } }
+      if (d) { const x = phonRows().find(r => r.id === k && r.d === d); on = !S.done[d]?.[k]; (S.done[d] ??= {})[k] = on; stamp('done:' + d + ':' + k); if (x?.sec) { const o = TL(t, 'zh'); o.phon = Math.max(0, (o.phon || 0) + (on ? x.sec : -x.sec)); } }   // a watched part counts its length   // a watched video counts its length
+      else { on = !tickOn(lang, k); tickSet(lang, k, on); stamp('tick:' + lang + ':' + today() + ':' + k); if (lang === 'zh' && k === 'a2') { const pd = pDayOf('zh'); for (let j = 1; j <= pd; j++) if (on || j === pd) { (S.done[j] ??= {}).a2 = on; stamp('done:' + j + ':a2'); } } }
       persist(); b.closest('.task').classList.toggle('done', on); setTimeout(() => refresh(), 400); });
     $$('.task[data-go]').forEach(r => r.onclick = e => { if (!e.target.closest('a,button')) location.hash = r.dataset.go; });
+    $('.sybar') && ($('.sybar').onclick = e => { e.stopPropagation(); pop.classList.remove('hide'); akUI(); setTimeout(() => $('#syi')?.focus(), 50); });
   });
 }
 
@@ -208,7 +247,7 @@ const strip = s => s.normalize('NFD').replace(new RegExp('[\\u0300-\\u036f]', 'g
 const WF = {zh: {tab: 'w', grp: 0, st: 'all', q: ''}, ja: {tab: 'w', grp: 0, st: 'all', q: ''}, de: {tab: 'w', grp: 0, st: 'all', q: ''}};
 const stZh = w => (akOn() && AK.langs.zh?.st?.[w.h]) || (learned(w.d) ? 'known' : 'new');
 const WLA = {
-  zh: {cls: '', grp: 'день', tabs: [['w', 'Слова'], ['c', 'Иероглифы']], rd: 'чтение', rdc: 'py', ph: 'pinyin · english', load: () => loadChars(), ok: () => !!CH,
+  zh: {cls: '', grp: 'день', tabs: [['w', 'Слова'], ['c', 'Иероглифы']], rd: 'чтение', rdc: 'py', ph: 'pinyin · english', load: () => (loadTones(), loadChars()), ok: () => !!CH,
     groups: () => PLAN.days.filter(x => !x.review).map(x => x.d), title: () => '',
     items: tab => { if (tab === 'w') return WORDS.map(w => ({g: w.d, word: cells(w.h), rd: esc(w.p) + (w.a ? ' ' + I.pen : ''), tr: esc(w.e), st: stZh(w), s: w.h + ' ' + strip(w.p) + ' ' + w.e.toLowerCase(), h: w.h}));
       const fd = new Map(), sc = {}; for (const w of WORDS) for (const c of w.h) if (CH[c]) { if (!fd.has(c)) fd.set(c, w.d); const x = stZh(w); sc[c] = sc[c] === 'known' || x === 'known' ? 'known' : sc[c] === 'learning' || x === 'learning' ? 'learning' : 'new'; }
@@ -249,10 +288,10 @@ function wlRender(){
   const list = all.filter(x => (q || !F.grp || x.g === F.grp) && (F.st === 'all' || (F.st === 'known' ? x.st === 'known' : x.st !== 'known')) && (!q || x.s.includes(qa) || x.s.includes(qb)));
   const cnt = {}; list.forEach(x => cnt[x.g] = (cnt[x.g] || 0) + 1);
   const unit = F.tab === 'w' ? pl(list.length, 'слово', 'слова', 'слов') : lang === 'ja' ? 'кандзи' : pl(list.length, 'знак', 'знака', 'знаков');
-  let h = `<div class="wct"><b>${list.length}</b> ${unit} · <span class="tok">выучено ${list.filter(x => x.st === 'known').length}</span></div><div class="lh"><span class="eye">${F.tab === 'w' ? 'слово' : 'знак'}</span><span class="eye pl">${A.rd}</span><span class="eye x">перевод</span><span></span></div>`, cur = null;
+  let h = `<div class="wct"><b>${list.length}</b> ${unit} · <span class="tok">выучено ${list.filter(x => x.st === 'known').length}</span></div><div class="lh"><span class="eye">${F.tab === 'w' ? 'слово' : 'знак'}</span><span class="eye pl">${A.rd}</span><span class="eye x">перевод</span></div>`, cur = null;
   for (const x of list) {
     if (x.g !== cur) { cur = x.g; const ti = A.title(cur); h += `<div class="dh"><b>${A.grp.toUpperCase()} ${cur}</b>${ti ? `<span lang="${lang}">${esc(ti)}</span>` : ''}<span class="num">· ${cnt[cur]}</span></div>`; }
-    h += `<div class="row ${x.st === 'known' ? 'learned' : ''} ${x.rd ? '' : 'nr'}" data-n="${x.n}">${x.word}${x.rd ? `<span class="${A.rdc}">${x.rd}</span>` : ''}<span class="en">${x.tr}</span><span class="stdot ${x.st}" title="${ST[x.st] || ''}"></span></div>`;
+    h += `<div class="row ${x.st === 'known' ? 'learned' : ''} ${x.rd ? '' : 'nr'}" data-n="${x.n}">${x.word}${x.rd ? `<span class="${A.rdc}">${x.rd}</span>` : ''}<span class="en">${x.tr}</span></div>`;
   }
   L.innerHTML = list.length ? h : h + '<p class="mute" style="padding:18px">Ничего не найдено.</p>'; L.scrollTop = 0;
   $$('.row', L).forEach(r => { const x = all[+r.dataset.n]; r.onmouseenter = () => { if (matchMedia('(hover:hover)').matches) wlFly(r, x); }; r.onclick = () => wlFly(r, x, true); });
@@ -262,6 +301,45 @@ function wlFly(r, x, tap){
   if (S.lang === 'zh') { if (x.h) r.dataset.h = x.h; else r.dataset.c = x.c; return openFly(r, tap); }
   const was = flyKey; S.lang === 'ja' ? jaFly(r, x.i) : deFly(r, x.i);
   if (tap && x.say) say(x.say, S.lang);   // sound only on a click, never on hover
+}
+/* ---------- tone wave (Chinese words of days 1-5): the pitch of the very recording you hear, on Chao's five levels ----------
+   solid = the voice (Praat, every 10 ms), dashed = the textbook shape of each syllable's tone (after sandhi);
+   while the word plays, a marker runs along the curve in time with the sound */
+let TONES = null, tonesP = null;
+const loadTones = () => tonesP ??= fetch('/l/data/tones.json', {cache: 'no-cache'}).then(r => r.json()).then(x => TONES = x).catch(() => { tonesP = null; });
+const TREF = {1: [[0, 5], [1, 5]], 2: [[0, 3], [1, 5]], 3: [[0, 2], [.55, 1], [1, 4]], 4: [[0, 5], [1, 1]]};
+function toneSvg(h){
+  const T = TONES?.words?.[h]; if (!T) return '';
+  const W = 312, H = 128, L = 22, R = 8, top = 10, bot = 30, [a, b] = T.t, X = t => L + (t - a) / (b - a) * (W - L - R), Y = v => top + (5 - Math.max(.4, Math.min(5.6, v))) / 4 * (H - top - bot);
+  let g = '';
+  for (let lv = 1; lv <= 5; lv++) g += `<line x1="${L}" x2="${W - R}" y1="${Y(lv)}" y2="${Y(lv)}" class="tg"/><text x="${L - 8}" y="${Y(lv) + 3.5}" class="tl">${lv}</text>`;
+  const bs = [a, ...T.s, b];
+  T.y.forEach(([py, tn], i) => {
+    const x0 = X(bs[i]), x1 = X(bs[i + 1]), last = i === T.y.length - 1;
+    if (i) g += `<line x1="${x0}" x2="${x0}" y1="${top}" y2="${H - bot}" class="tb"/>`;
+    const prev = T.y[i - 1]?.[1], ref = tn === 5 ? [[0, {1: 2, 2: 3, 3: 4, 4: 1.5}[prev] || 3], [1, ({1: 2, 2: 3, 3: 4, 4: 1.5}[prev] || 3) - .3]] : tn === 3 && !last ? [[0, 2], [1, 1]] : TREF[tn];
+    if (ref) g += `<polyline class="tr" points="${ref.map(([f, v]) => `${(x0 + 6 + f * (x1 - x0 - 12)).toFixed(1)},${Y(v).toFixed(1)}`).join(' ')}"/>`;
+    g += `<text x="${(x0 + x1) / 2}" y="${H - 9}" class="tp">${esc(py)}</text>`;
+  });
+  let d = '', pen = false;
+  T.f.forEach((v, i) => { if (v == null) { pen = false; return; } d += `${pen ? 'L' : 'M'}${X(a + i * TONES.step).toFixed(1)} ${Y(v).toFixed(1)}`; pen = true; });
+  return `<div class="tw"><svg id="tws" viewBox="0 0 ${W} ${H}" role="img" aria-label="Тоны слова">${g}<path class="tv" d="${d}"/><line id="twp" class="tph" x1="0" x2="0" y1="${top}" y2="${H - bot}"/><circle id="twd" class="tdot" r="4.5" cx="-10" cy="-10"/></svg>
+    <p>высота голоса в этой записи · пунктир — тон по учебнику${T.y.some(x => x[2]) ? ' · ' + T.y.filter(x => x[2]).map(x => x[2] + ' → ' + x[0]).join(', ') + ': тон меняется рядом с соседним' : ''}</p></div>`;
+}
+function toneRun(h){
+  const T = TONES?.words?.[h], sv = $('#tws'); if (!T || !sv) return;
+  const a0 = T.t[0], b0 = T.t[1], W = 312, H = 128, L = 22, R = 8, top = 10, bot = 30, X = t => L + (t - a0) / (b0 - a0) * (W - L - R), Y = v => top + (5 - Math.max(.4, Math.min(5.6, v))) / 4 * (H - top - bot);
+  const me = audio, ph = $('#twp', sv), dot = $('#twd', sv), t0 = performance.now();
+  const f = () => {
+    if (!sv.isConnected || audio !== me || performance.now() - t0 > 6000) { sv.classList.remove('run'); return; }
+    if (me.src === SIL || me.src.length < 800) return requestAnimationFrame(f);   // the recording is still loading
+    const t = me.currentTime, on = t >= a0 - .03 && t <= b0 + .05 && !me.paused;
+    sv.classList.toggle('run', on);
+    if (on) { const tc = Math.max(a0, Math.min(b0, t)), x = X(tc), i = Math.round((tc - a0) / TONES.step), v = T.f[i] ?? T.f.slice(0, i).reverse().find(z => z != null);
+      ph.setAttribute('x1', x); ph.setAttribute('x2', x); if (v != null) { dot.setAttribute('cx', x); dot.setAttribute('cy', Y(v)); } }
+    if (me.ended) { sv.classList.remove('run'); return; }
+    requestAnimationFrame(f); };
+  requestAnimationFrame(f);
 }
 let wrs = [], flyT, flyKey;
 const fly = $('#fly');
@@ -273,12 +351,12 @@ function hideFly(now){ clearTimeout(flyT); const go = () => { fly.classList.remo
 function openFly(r, tap){
   clearTimeout(flyT);
   const key = r.dataset.h || r.dataset.c;
-  if (key === flyKey) { if (tap && AMAP?.w[key]) sayW(key, $('#fp')); return; }   // a click on the open row plays it again
+  if (key === flyKey) { if (tap && AMAP?.w[key]) { sayW(key, $('#fp')); toneRun(key); } return; }   // a click on the open row plays it again
   flyKey = key;
   $$('.row.sel').forEach(x => x.classList.remove('sel')); r.classList.add('sel');
   const w = WORDS.find(x => x.h === key) || {h: key, p: (CH[key].py || []).join(', '), e: CH[key].def};
   const chs = [...w.h].filter(c => CH[c]), n = chs.length, wasOn = fly.classList.contains('on');
-  fly.innerHTML = `<div class="fh"><button class="play" id="fp" aria-label="Послушать">${I.play}</button><div><b>${esc(w.p)}</b><span>${esc(w.e)}</span></div></div>
+  fly.innerHTML = `<div class="fh"><button class="play" id="fp" aria-label="Послушать">${I.play}</button><div><b>${esc(w.p)}</b><span>${esc(w.e)}</span></div></div>${r.dataset.h ? toneSvg(w.h) : ''}
     <div class="fchars" style="grid-template-columns:repeat(${Math.min(n, 4) || 1},1fr)">${chs.map((c, i) => `<div class="fchar"><div class="wr" style="max-width:${n > 2 ? 90 : n === 2 ? 140 : 220}px"><svg class="gg" viewBox="0 0 100 100" preserveAspectRatio="none"><line x1="50" y1="0" x2="50" y2="100" stroke="var(--dim)" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/><line x1="0" y1="50" x2="100" y2="50" stroke="var(--dim)" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/></svg><div class="hw" id="hw${i}"></div></div>
       <dl><dt>черт</dt><dd class="num">${CH[c].s.length}</dd><dt>ключ</dt><dd><span class="zh">${esc(CH[c].rad)}</span> ${esc(CH[c].radm)}</dd></dl></div>`).join('')}</div>`;
   if (innerWidth > 860) {
@@ -289,19 +367,21 @@ function openFly(r, tap){
     if (!wasOn) { void fly.offsetWidth; fly.style.transition = ''; }
   }
   fly.classList.add('on');
-  $('#fp').onclick = () => sayW(w.h, $('#fp'));
+  const play = () => { sayW(w.h, $('#fp')); toneRun(w.h); };
+  $('#fp').onclick = play;
+  if (r.dataset.h && !TONES) loadTones().then(() => { if (flyKey === key && !$('#tws') && TONES?.words?.[w.h]) { $('.fh', fly).insertAdjacentHTML('afterend', toneSvg(w.h)); } });
   wrs.forEach(x => { try { x.pauseAnimation(); } catch (e) {} }); wrs = [];
   if (window.HanziWriter) { const cs = getComputedStyle(document.documentElement);
     chs.forEach((c, i) => { const el = $('#hw' + i), z = el.clientWidth || 140;
       const hw = HanziWriter.create(el, c, {width: z, height: z, padding: z * .07, showCharacter: false, showOutline: true, outlineColor: cs.getPropertyValue('--line').trim(), strokeColor: cs.getPropertyValue('--ink').trim(),
         strokeAnimationSpeed: 1.2, delayBetweenStrokes: 160, delayBetweenLoops: 1400, charDataLoader: (ch, ok) => ok({strokes: CH[ch].s, medians: CH[ch].m, radStrokes: CH[ch].r})});
       setTimeout(() => hw.loopCharacterAnimation(), 250 + i * 450); wrs.push(hw); }); }
-  if (tap && AMAP?.w[w.h]) sayW(w.h, $('#fp'));   // sound only on a click in the row, never on hover
+  if (tap && AMAP?.w[w.h]) play();   // sound only on a click in the row, never on hover
 }
 
 /* ---------- Japanese word list (from the user's Anki deck; known = card in review) ---------- */
 let JA = null, jaP = null;
-const loadJa = () => jaP ??= fetch('/l/data/ja_words.json', {cache: 'no-cache'}).then(r => r.json()).then(x => { x.words.sort((a, b) => a.l - b.l); x.chars.sort((a, b) => a.l - b.l); JA = x; akApply(); }).catch(() => {});
+const loadJa = () => (loadAmx('ja'), jaP ??= fetch('/l/data/ja_words.json', {cache: 'no-cache'}).then(r => r.json()).then(x => { x.words.sort((a, b) => a.l - b.l); x.chars.sort((a, b) => a.l - b.l); JA = x; akApply(); }).catch(() => {}));
 const jaLessonsDone = () => { let n = 0; for (let l = 1; l <= 23; l++) { const ws = JA.words.filter(w => w.l === l); if (ws.length && ws.every(w => w.s === 'known')) n++; } return n; };
 const JF = {tab: 'w', lesson: 0, st: 'all', q: ''};
 const ST = {known: 'выучено', learning: 'учу', new: 'новое'};
@@ -333,7 +413,7 @@ function jaFly(r, i){
 /* ---------- German word list (Motive A1–B1, 30 lessons; known comes from the «Знаю» column of the xlsx) ---------- */
 let DE = null, deP = null;
 const deKey = s => strip(s).replace(/ß/g, 'ss');
-const loadDe = () => deP ??= fetch('/l/data/de_words.json', {cache: 'no-cache'}).then(r => r.json()).then(x => { x.words.forEach(w => w.k = deKey((w.a || '') + w.h + '|' + (w.p || '') + '|' + w.e)); DE = x; akApply(); }).catch(() => {});
+const loadDe = () => (loadAmx('de'), deP ??= fetch('/l/data/de_words.json', {cache: 'no-cache'}).then(r => r.json()).then(x => { x.words.forEach(w => w.k = deKey((w.a || '') + w.h + '|' + (w.p || '') + '|' + w.e)); DE = x; akApply(); }).catch(() => {}));
 const deLessonsDone = () => { let n = 0; for (let l = 1; l <= 30; l++) { const ws = DE.words.filter(w => w.l === l); if (ws.length && ws.every(w => w.s === 'known')) n++; } return n; };
 const DF = {lesson: 1, st: 'all', q: ''};
 const deW = w => `<span class="dw" lang="de">${w.a ? `<i>${esc(w.a)}</i>` : ''}${esc(w.h)}</span>`;
@@ -431,24 +511,16 @@ function duePool(lang = S.lang, now = Date.now()){
 }
 function newPool(lang = S.lang, now = Date.now()){
   const m = gMem(lang), td = dayNo(now), left = gTopics(lang).filter(t => !m.cards[t.id]);
-  return left.slice(0, Math.max(0, tgtD(lang, planCur(lang, now)) - (gTopics(lang).length - left.length)));   // one plan day at a time; owed days come one after another   // one plan day at a time; owed days come one after another
-  return left.slice(0, Math.max(0, jaTgtD(jaCur(now)) - (gTopics(lang).length - left.length)));   // one plan day at a time; owed days come one after another
+  return left.slice(0, Math.max(0, tgtD(lang, planCur(lang, now)) - (gTopics(lang).length - left.length)));   // one plan day at a time; owed days come one after another
 }
 /* Japanese plan: day 1 = 23 November; Genki I (lessons 1–12) by 1 December, Genki II by 1 January */
-const JA_START = '2026-11-23', JA_G1 = '2026-12-01', JA_END = '2027-01-01';
-const JA_DAYS = 40, JA_MAX = 4, jaTgtD = k => Math.min(JA_MAX * k, jaTarget(Date.parse(addDays(JA_START, k - 1) + 'T12:00:00')));   // never more than 7 new topics a day
-const jaSched = (now = Date.now()) => Math.max(1, Math.min(JA_DAYS, dIdx(JA_START, isoD(dayDate(dayNo(now)))) + 1));
-function jaCur(now = Date.now()){ const L = learnedN('ja'), s = jaSched(now); for (let k = 1; k <= s; k++) if (jaTgtD(k) > L) return k; return s; }
-function jaTarget(now = Date.now()){
-  const d = dayDate(dayNo(now)), t = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-  const all = gTopics('ja').length, g1 = gTopics('ja').filter(x => x.lesson <= 12).length;
-  if (t < JA_START) return 0;
-  if (t <= JA_G1) return Math.ceil(g1 * (dIdx(JA_START, t) + 1) / (dIdx(JA_START, JA_G1) + 1));
-  return Math.min(all, g1 + Math.ceil((all - g1) * dIdx(JA_G1, t) / dIdx(JA_G1, JA_END)));
-}
+/* Japanese plan: day 1 = 23 November, all 137 Genki topics by 1 January, spread evenly (as German): ~3.4 a day.
+   (The old rule «Genki I by 1 December» could not be met under the 4-a-day cap and asked for 4 topics every day.) */
+const JA_START = '2026-11-23', JA_END = '2027-01-01', JA_DAYS = 40;
+const jaTgtD = k => JG ? Math.ceil(gTopics('ja').length * Math.min(k, JA_DAYS) / JA_DAYS) : 0;
 const learnedN = (lang = S.lang) => gTopics(lang).filter(t => gMem(lang).cards[t.id]).length;
 function overallMem(lang = S.lang, now = Date.now()){ const cs = Object.values(gMem(lang).cards); return cs.length ? cs.reduce((a, c) => a + memOf(c, now), 0) / cs.length : null; }
-const rowMem = (ids, now = Date.now()) => { const m = gMem(), cs = ids.map(id => m.cards[id]).filter(Boolean); return cs.length ? cs.reduce((a, c) => a + memOf(c, now), 0) / ids.length : null; };
+const rowMem = (ids, now = Date.now()) => { const m = gMem(), cs = ids.map(id => m.cards[id]).filter(Boolean); return cs.length ? cs.reduce((a, c) => a + memOf(c, now), 0) / cs.length : null; };   // over the learned topics, like the ring
 const passed = id => !!gMem('zh').cards[id];
 const gramDueN = (lang = S.lang) => duePool(lang).length;
 
@@ -474,8 +546,16 @@ const rich = s => String(s ?? '').split(/(\[[^\]]*\])/).map(p => p.startsWith('[
 const plainJ = s => String(s ?? '').replace(/\[|\]/g, '').replace(/\{[^}]*\}/g, '');
 const sayJa = text => { try { const u = new SpeechSynthesisUtterance(text); u.lang = 'ja-JP'; const v = speechSynthesis.getVoices().find(x => /^ja/i.test(x.lang)); if (v) u.voice = v; u.rate = .9; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) {} };
 const speak = (text, tag) => { try { const u = new SpeechSynthesisUtterance(text); u.lang = tag; const v = speechSynthesis.getVoices().find(x => x.lang.replace('_', '-').toLowerCase().startsWith(tag.slice(0, 2))); if (v) u.voice = v; u.rate = .9; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) {} };
-/* sound, the same everywhere: Chinese has recorded audio where it exists, everything else is read by the system voice */
-const say = (text, lang = S.lang) => { text = String(text || '').trim(); if (!text) return; if (lang === 'zh' && AMAP?.l[text]) return sayT(text); if (lang === 'zh' && AMAP?.w[text]) return sayW(text); speak(text, {zh: 'zh-CN', ja: 'ja-JP', de: 'de-DE'}[lang]); };
+/* sound, the same everywhere: recorded neural voices (zh Xiaoxiao, ja Nanami, de Katja) for every word and every phrase of the
+   grammar; the system voice only for something that has no recording */
+const AMX = {}, amxP = {};
+const loadAmx = lang => amxP[lang] ??= fetch(`/l/audio/map_${lang}.json`, {cache: 'no-cache'}).then(r => r.json()).then(m => AMX[lang] = m).catch(() => { delete amxP[lang]; });
+const say = (text, lang = S.lang, btn) => { text = String(text || '').trim(); if (!text) return;
+  if (lang === 'zh') { if (AMAP?.l[text]) return sayT(text, btn); if (AMAP?.w[text]) return sayW(text, btn); return speak(text, 'zh-CN'); }
+  const go = () => AMX[lang]?.[text] ? playRef(AMX[lang][text], btn) : speak(text, lang === 'ja' ? 'ja-JP' : 'de-DE');
+  if (AMX[lang]) return go();
+  try { audio?.pause(); audio = new Audio(SIL); audio.play().catch(() => {}); } catch (e) {}   // keeps the click's permission to play while the map loads
+  loadAmx(lang).then(go); };
 const bindSay = V => V.addEventListener('click', e => { const s = e.target.closest('.ja,.say'); if (!s || e.target.closest('a,button')) return; const c = s.cloneNode(true); $$('rt', c).forEach(r => r.remove()); say(c.textContent); });
 const tTitle = t => rich(t.t);
 
@@ -525,13 +605,11 @@ function gRing(m, big){ const r = 62, C = 2 * Math.PI * r, v = m === null ? 0 : 
   return `<div class="ring gring ${big ? '' : 'sm'} ${m === null ? '' : memClass(m)}"><svg viewBox="0 0 140 140"><circle class="tr" cx="70" cy="70" r="${r}"/><circle class="pr" cx="70" cy="70" r="${r}" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - v)}"/></svg><div class="c"><b class="num">${m === null ? '—' : pct(m)}<i>%</i></b><small>память</small></div></div>`; }
 function gPlanHead(){
   const due = duePool(), nw = newPool(), td = dayNo(), d = dayDate(td), log = gMem().log[td] || {n: 0, r: 0}, did = log.n + log.r;
-  const head = due.length + nw.length ? [due.length ? `${due.length} ${pl(due.length, 'повторение', 'повторения', 'повторений')}` : '', nw.length ? `${nw.length} ${pl(nw.length, 'новая тема', 'новые темы', 'новых тем')}` : ''].filter(Boolean).join(' и ') : 'На сегодня всё';
+  const head = due.length + nw.length ? [due.length ? `${due.length} ${pl(due.length, 'повторение', 'повторения', 'повторений')}` : '', nw.length ? `${nw.length} ${pl(nw.length, 'новая тема', 'новые темы', 'новых тем')}` : ''].filter(Boolean).join(' и ') : 'Грамматика на сегодня готова';
   const mins = Math.max(1, Math.round(nw.length * 3 + due.length * 1.5));
-  const sub = due.length + nw.length ? `≈ ${mins} мин${did ? ` · сделано сегодня ${did}` : ''}` : tomorrowLine();
+  const sub = due.length + nw.length ? `≈ ${mins} мин${did ? ` · сделано сегодня ${did}` : ''}` : `${learnedN()} из ${gTopics().length} тем пройдено`;
   return {due, nw, did, head, sub, date: `${WDAY[d.getDay()]}, ${d.getDate()} ${MONF[d.getMonth()]}`};
 }
-function tomorrowLine(){ const t = Date.now() + DAYMS, r = duePool(S.lang, t).length, n = newPool(S.lang, t).length;
-  return !r && !n ? 'Завтра заданий нет.' : `Завтра: ${r} ${pl(r, 'повторение', 'повторения', 'повторений')}, ${n} ${pl(n, 'новая тема', 'новые темы', 'новых тем')}.`; }
 function gToday(){
   if (!gNeed()) return;
   if (S.lang === 'zh') migrateZh();
@@ -595,7 +673,7 @@ const jChip = id => JT[id] ? `<a class="jt" href="#t-${id}"><span>${rich(JT[id].
 function topicBody(id){
   const t = gTopic(id), k = gKinds()[t.k], sec = (lab, html) => `<section class="jsec"><span class="eye">${lab}</span>${html}</section>`;
   const chip = x => { const o = gTopic(x); return o ? `<a class="jt" href="#t-${x}"><span>${rich(o.t)}</span><em>${o.no ?? x}</em></a>` : ''; };
-  return `<div class="ph"><span class="eye">${esc(t.eye || '')}${k ? ' · ' + esc(k.name) : ''}</span><h1>${rich(t.t)}</h1><div class="g">${rich(t.g || '')}</div></div>
+  return `<div class="ph"><span class="eye">${esc(t.eye || '')}${k ? ' · ' + esc(k.name) : ''}</span><h1>${rich(t.t)}</h1>${t.g && plainJ(t.g).replace(/\s/g, '') !== plainJ(t.t).replace(/\s/g, '') ? `<div class="g">${rich(t.g)}</div>` : ''}</div>
   <div class="body jgr ${S.lang === 'de' ? 'dgr' : ''}">
     ${t.r ? `<div class="jrule"><span class="eye">Правило</span>${rich(t.r)}</div>` : ''}
     ${t.o ? sec('Откуда', `<p>${rich(t.o)}</p>`) : ''}
@@ -614,21 +692,23 @@ function gTopicPage(id){
   const prev = all[i - 1], next = all[i + 1], c = gMem().cards[id];
   const met = c ? `<div class="gmet">${[[pct(memOf(c)) + '%', 'память'], [(c.S < 10 ? c.S.toFixed(1) : Math.round(c.S)) + ' дн.', 'прочность'], [dueLabel(c), 'повтор'], [c.reps + ' / ' + c.lapses, 'оценок / забыл']].map(([v, l]) => `<div><b class="num">${v}</b><span>${l}</span></div>`).join('')}</div>` : '';
   panelPage(`<div class="pbar"><a href="#lessons">← Сегодня</a><span class="pa"><a href="${prev ? '#t-' + prev.id : '#'}" ${prev ? '' : 'aria-disabled="true"'} aria-label="Предыдущая тема">←</a><span>${S.lang === 'ja' ? id : i + 1}</span><a href="${next ? '#t-' + next.id : '#'}" ${next ? '' : 'aria-disabled="true"'} aria-label="Следующая тема">→</a></span></div>
-    ${topicBody(id)}<div class="body" style="padding-top:0">${met}<div class="gacts">${c ? (gTopic(id).q.length ? `<button class="btn main" id="gtest">Проверить себя · ${Math.min(REV_N, gTopic(id).q.length)}</button>` : `<button class="btn main" id="gtest">Повторил</button>`) : `<button class="btn main" id="gtest">Учить сейчас</button>`}</div></div>`, V => {
-    $('#gtest', V).onclick = () => { SS = newSession([{id, mode: c ? 'review' : 'new'}], true); location.hash = 's'; if (location.hash === '#s') route(); };
-    keys(e => { if (e.target.closest?.('input,textarea')) return; const go = x => x && (location.hash = 't-' + x.id);
-      if (e.key === 'ArrowRight') go(next); else if (e.key === 'ArrowLeft') go(prev); else if (e.key === 'Escape') location.hash = 'lessons'; });
+    ${topicBody(id)}<div class="body" style="padding-top:0">${met}<div class="gacts">${(() => { const n = gTopic(id).q.length; return n ? `<button class="btn main" id="gtest">К вопросам · ${Math.min(c ? REV_N : NEW_N, n)}</button>` : `<button class="btn main" id="gtest">${c ? 'Повторил' : 'Прочитал'}</button>`; })()}</div></div>`, V => {
+    // straight to the questions: the topic is already on the screen, no second reading page
+    const go = () => { SS = newSession([{id, mode: c ? (c.relearn ? 'relearn' : 'review') : 'new'}], true); SS.phase = 'quiz'; location.hash = 's'; if (location.hash === '#s') route(); };
+    $('#gtest', V).onclick = go;
+    keys(e => { if (e.target.closest?.('input,textarea')) return; const to = x => x && (location.hash = 't-' + x.id);
+      if (e.key === 'Enter') { e.preventDefault(); go(); } else if (e.key === 'ArrowRight') to(next); else if (e.key === 'ArrowLeft') to(prev); else if (e.key === 'Escape') location.hash = 'lessons'; });
   });
 }
 /* ---------- session ---------- */
 const NEW_N = 8, REV_N = 4;
 let SS = null;
 const newSession = (queue, single) => ({lang: S.lang, queue, i: 0, done: 0, missed: 0, began: Date.now(), phase: null, single: !!single});
-function buildQueue(){ return [...duePool().map(t => ({id: t.id, mode: gMem().cards[t.id].relearn ? 'relearn' : 'review'})), ...newPool().map(t => ({id: t.id, mode: 'new'}))]; }
+function buildQueue(){ const m = gMem().cards, d = duePool(); return [...d.filter(t => !m[t.id].relearn).map(t => ({id: t.id, mode: 'review'})), ...newPool().map(t => ({id: t.id, mode: 'new'})), ...d.filter(t => m[t.id].relearn).map(t => ({id: t.id, mode: 'relearn'}))]; }   // a failed topic comes back at the end
 function gSession(){
   if (!gNeed()) return;
   if (!SS || SS.lang !== S.lang) { const q = buildQueue(); if (!q.length) { location.hash = 'lessons'; return; } SS = newSession(q); }
-  if (SS.i >= SS.queue.length) return gSummary();
+  if (SS.i >= SS.queue.length) return gNext();
   const it = SS.queue[SS.i], t = gTopic(it.id), card = gMem().cards[it.id];
   if (it.mode === 'new' && !card && SS.phase !== 'quiz') {
     SS.phase = 'read';
@@ -639,25 +719,29 @@ function gSession(){
     });
   }
   // the questions: all of a new topic (up to NEW_N), part of them in a review
-  const W = [], n = it.mode === 'new' ? NEW_N : REV_N, qs = W.length ? (it.mode === 'new' ? W : shuffle(W).slice(0, REV_N)) : shuffle(t.q).slice(0, n);
-  if (!qs.length) { rateTopic(it, 3, 1); return gSession(); }
+  const n = it.mode === 'new' ? NEW_N : REV_N, qs = shuffle(t.q).slice(0, n);
+  if (!qs.length) { rateTopic(it, 3, 1); toast(`${plainJ(t.t)} · пройдена`); return gNext(); }
   panelPage('', () => quiz(qs.map((q, k) => ({q, key: it.id + ':' + k})), {title: `${plainJ(t.t)} · тема ${SS.i + 1} из ${SS.queue.length}`, back: '#s', end: ok => {
     const sc = ok / qs.length, fresh = !gMem().cards[it.id], g = sc < 0.6 ? 1 : sc < 0.8 ? 2 : sc < 1 ? 3 : fresh ? 3 : 4;
     const c = rateTopic(it, g, sc);
-    return `${['', 'Не закрепилось', 'Слабо', 'Хорошо', 'Отлично'][g]} · ${g === 1 ? 'вернётся в конце занятия' : 'повтор ' + dueLabel(c)}`; }}));
+    // no result page: the score shows for a moment and the next topic opens (or the home page when the day's grammar is done)
+    toast(`<b class="${g >= 3 ? 'tok' : 'tbad'}">${ok}/${qs.length} · ${['', 'не закрепилось', 'слабо', 'хорошо', 'отлично'][g]}</b> ${esc(plainJ(t.t))} · ${g === 1 ? 'вернётся в конце' : 'повтор ' + dueLabel(c)}`, true);
+    return gNext; }}));
 }
+/* after a topic: the next one of today's queue, or home */
+function gNext(){
+  if (SS && !SS.single && SS.i < SS.queue.length) return route();
+  const left = buildQueue(); SS = null;
+  if (left.length) { SS = newSession(left); if (location.hash === '#s') route(); else location.hash = 's'; return; }
+  toast('Грамматика на сегодня готова', true); location.hash = 'home';
+}
+let toastT = null;
+function toast(html, ok){ const el = $('#toast'); el.innerHTML = html; el.classList.toggle('good', !!ok); el.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('on'), 3200); }
 function rateTopic(it, g, sc){
-  const m = gMem(), now = Date.now(), c = fsrs(m.cards[it.id] || null, g, now); m.cards[it.id] = c;
+  const m = gMem(), now = Date.now(), was = m.cards[it.id], c = fsrs(was || null, g, now); c.first = was?.first ?? (was ? was.last : now); m.cards[it.id] = c;
   const td = dayNo(now), lg = m.log[td] ??= {n: 0, r: 0}; it.mode === 'new' ? lg.n++ : lg.r++;
   SS.done++; if (g <= 2) SS.missed++; if (g === 1) SS.queue.push({id: it.id, mode: 'relearn'});
   SS.i++; SS.phase = null; add('gram', 0); track(); persist(); return c;
-}
-function gSummary(){
-  const mins = Math.max(1, Math.round((Date.now() - SS.began) / 6e4)), m = overallMem(), left = buildQueue().length, done = SS.done, missed = SS.missed, single = SS.single;
-  SS = null;
-  panelPage(`<div class="quiz"><span class="eye">занятие окончено</span><span class="big num">${done}</span><p style="font-weight:800">${pl(done, 'тема', 'темы', 'тем')} за ${mins} мин${missed ? ` · ${missed} вернутся раньше` : ''}</p>
-    <p class="mute">Память сейчас ${m === null ? '—' : pct(m) + '%'} · пройдено ${learnedN()}/${gTopics().length}${left && !single ? ` · осталось на сегодня ${left}` : ''}</p>
-    <p style="display:flex;gap:10px;justify-content:center">${left && !single ? '<a class="btn main" href="#s">Продолжить</a>' : ''}<a class="btn ${left && !single ? '' : 'main'}" href="#lessons">К грамматике</a></p></div>`);
 }
 /* ---------- Japanese cheat sheet and form map ---------- */
 let jsHide = false, jsOpen = new Set(), JMV = 0;
@@ -728,10 +812,12 @@ async function akSync(){
       if (!names.some(n => n === deck || n.startsWith(deck + '::'))) continue;
       const q = `"deck:${deck}"`;
       // one request at a time: AnkiConnect serves a single connection and refuses the rest
-      const due = await akCall('findCards', {query: q + ' is:due'}), rated = await akCall('findCards', {query: q + ' rated:1'}),
-        revs = rated.length ? Object.values(await akCall('getReviewsOfCards', {cards: rated})).flat().filter(r => r.id >= td.getTime()) : [], nids = await akCall('findNotes', {query: q}),
+      // Anki time by language and day since the plan began (Anki's own log, the day ends at 04:00 like here)
+      const span = Math.min(365, dIdx(PLAN_START, today()) + 1), t0 = Date.parse(PLAN_START + 'T04:00:00');
+      const due = await akCall('findCards', {query: q + ' is:due'}), rated = await akCall('findCards', {query: q + ' rated:1'}), ratedAll = await akCall('findCards', {query: q + ' rated:' + span}),
+        all = ratedAll.length ? Object.values(await akCall('getReviewsOfCards', {cards: ratedAll})).flat().filter(r => r.id >= t0) : [], revs = all.filter(r => r.id >= td.getTime()), nids = await akCall('findNotes', {query: q}),
         revN = await akCall('findNotes', {query: q + ' is:review'}), lrnN = await akCall('findNotes', {query: q + ' is:learn'});
-      revs.forEach(r => { const k = isoD(new Date(r.id)); bd[k] = (bd[k] || 0) + (r.time || 0) / 1000; });
+      const bl = bd[lang] = {}; all.forEach(r => { const k = isoD(dayDate(dayNo(r.id))); bl[k] = (bl[k] || 0) + (r.time || 0) / 1000; });
       const L = out.langs[lang] = {due: due.length, rated: rated.length, secs: Math.round(revs.reduce((a, r) => a + (r.time || 0), 0) / 1000)};
       if (lang === 'zh') {   // every day deck up to today's plan day: are its new cards done?
         const want = {}; for (let d = 1; d <= schedDay(); d++) { const dn = names.find(n => new RegExp(`^${deck}::Day ${String(d).padStart(2, '0')}( |$)`).test(n)); if (dn) want[dn] = d; }
@@ -752,12 +838,12 @@ async function akSync(){
       L.st = st; if (lang === 'ja') L.kst = kst;
     }
     try { out.plan = await akPlan(out); } catch (e) { out.plan = {err: e.message}; }
-    out.bd = Object.fromEntries(Object.entries(bd).map(([k, v]) => [k, Math.round(v)]));
+    out.bd = Object.fromEntries(Object.entries(bd).map(([l, o]) => [l, Object.fromEntries(Object.entries(o).map(([k, v]) => [k, Math.round(v)]))]));
     AK = out; akErr = '';
     try { localStorage.setItem('lcm-anki', JSON.stringify(AK)); } catch (e) {}
     akCloudPut();
     // Anki time goes into today's hours (the larger of the timer and Anki's own count)
-    Object.entries(bd).forEach(([k, v]) => { (S.time[k] ??= {}); if (v > (S.time[k].anki || 0)) S.time[k].anki = Math.round(v); });   // by calendar date, like the site's hours
+    akTime(out.bd);
     akApply(); track(); persist();
     if (!busy && /^#?(home|words.*|stats)?$/.test(location.hash.replace('#', ''))) refresh();
   } catch (e) { AK_URL = null; akErr = e.name === 'AbortError' || /fetch|network|Failed/i.test(e.message) ? 'нет связи' : e.message; akCloudGet(); }
@@ -770,11 +856,13 @@ const DE_START = '2026-11-23', DE_END = '2027-01-01', DE_DAYS = dIdx(DE_START, D
 const deDaysLeft = () => Math.max(1, dIdx(today(), DE_END) + 1);   // today included, as in Japanese
 const akTargets = A => {
   const t = {}, zh = A.langs.zh, de = A.langs.de, ja = A.langs.ja;
-  if (zh?.days) { zhSyncDays(A); const cd = planCur('zh'); t.zh = Object.entries(zh.days).filter(([d]) => +d <= cd).reduce((a, [, x]) => a + (x.nn || 0), 0) + (zh.intro || 0); }   // new words of every day up to the one you are on + today's
+  if (zh?.days) { zhSyncDays(A); const cd = pDayOf('zh'); t.zh = Object.entries(zh.days).filter(([d]) => +d <= cd).reduce((a, [, x]) => a + (x.nn || 0), 0) + (zh.intro || 0); }   // new words of every day deck up to today's date + today's (words go by the calendar, not by the grammar)
   if (de?.wNew != null) t.de = Math.ceil((de.wNew + de.wIntro) / deDaysLeft());
   if (ja?.wNew != null) { const dl = Math.max(1, dIdx(today(), JA_END) + 1); t.jaW = Math.ceil((ja.wNew + ja.wIntro) / dl); t.jaK = Math.ceil((ja.kNew + ja.kIntro) / dl); }
   return t;
 };
+// AnkiConnect's newer API (/api/v1, JSON-RPC) can list presets by name; the old one cannot
+async function akPresetId(name){ try { const r = await fetch(AK_URL + '/api/v1', {method: 'POST', body: JSON.stringify({jsonrpc: '2.0', id: 1, method: 'deckPresets.list', params: {}})}); const j = await r.json(); return +((j.result || []).find(p => p.name === name)?.id || 0); } catch (e) { return 0; } }
 async function akPreset(decks, name, perDay, own){
   let conf = null, changed = false;
   for (const d of decks) {
@@ -782,7 +870,9 @@ async function akPreset(decks, name, perDay, own){
     if (!conf) {
       if (c.name === name) conf = c;
       else if (own) { conf = c; conf.name = name; changed = true; }   // the site's own preset: rename in place
-      else { const id = await akCall('cloneDeckConfigId', {name, cloneFrom: c.id}); await akCall('setDeckConfigId', {decks: [d], configId: id}); conf = await akCall('getDeckConfig', {deck: d}); }
+      else {   // a new preset for this deck; the new AnkiConnect refuses to clone onto a name that exists, so an existing one is found by name
+        const id = (await akCall('cloneDeckConfigId', {name, cloneFrom: c.id}).catch(() => 0)) || await akPresetId(name); if (!id) continue;
+        await akCall('setDeckConfigId', {decks: [d], configId: id}); conf = await akCall('getDeckConfig', {deck: d}); }
     } else if (c.id !== conf.id) await akCall('setDeckConfigId', {decks: [d], configId: conf.id});
   }
   if (!conf || conf.id === 1 || conf.name === 'Default') return null;   // never touch the shared Default preset
@@ -806,16 +896,87 @@ let akCode = localStorage.getItem('lcm-sync') || '';
 { const m = /^#sync=([A-Za-z0-9]{12,64})$/.exec(location.hash); if (m) { akCode = m[1]; try { localStorage.setItem('lcm-sync', akCode); } catch (e) {} history.replaceState(null, '', location.pathname + location.search + (document.documentElement.dataset.site ? '' : '#home')); } }   // SITE is declared further down
 const akNewCode = () => { const a = new Uint8Array(15); crypto.getRandomValues(a); return [...a].map(x => 'abcdefghjkmnpqrstuvwxyz23456789'[x % 31]).join(''); };
 const akRpc = (fn, body) => fetch(AK_CLOUD + fn, {method: 'POST', headers: {apikey: AK_KEY, 'Content-Type': 'application/json'}, body: JSON.stringify(body)}).then(r => { if (!r.ok) throw new Error('cloud ' + r.status); return r.text(); }).then(t => t ? JSON.parse(t) : null);
-function akCloudPut(){ if (!akOn()) return; if (!akCode) { akCode = akNewCode(); try { localStorage.setItem('lcm-sync', akCode); } catch (e) {} } akRpc('lcm_put', {p_code: akCode, p_data: AK}).catch(() => {}); }
+function akCloudPut(){ if (!akOn()) return; if (!akCode) { akCode = akNewCode(); try { localStorage.setItem('lcm-sync', akCode); } catch (e) {} stDirty = true; stSync(); } akRpc('lcm_put', {p_code: akCode, p_data: AK}).catch(() => {}); }
 async function akCloudGet(){
   if (!akCode) return;
   let d = null; try { d = await akRpc('lcm_get', {p_code: akCode}); } catch (e) { return; }
   if (!d || d.day !== today() || (AK && AK.day === today() && AK.at >= d.at)) return;
   AK = d; try { localStorage.setItem('lcm-anki', JSON.stringify(AK)); } catch (e) {}
-  Object.entries(d.bd || {}).forEach(([k, v]) => { (S.time[k] ??= {}); if (v > (S.time[k].anki || 0)) S.time[k].anki = Math.round(v); });
+  akTime(d.bd);
   akApply(); track(); persist(); akUI();
   if (!busy && /^#?(home|words.*|stats)?$/.test(location.hash.replace('#', ''))) refresh();
 }
+/* ---------- the whole progress in the cloud: phone and computer show the same ----------
+   Every change goes up at once, on top of the revision this device saw last; if another device wrote in between, the
+   two are merged and written again. A device pulls when it opens, when you come back to it and every 15 s.
+   The secret code (localStorage «lcm-sync») is the same one Anki's snapshot uses. Merge rules: a grammar card — the later
+   review; counts and hours — the larger; a tick — the later change (S.ts); the date a plan day was done — the earlier. */
+let stRev = +(localStorage.getItem('lcm-st-rev') || 0), stBusy = false, stDirty = false, stT = null, stOk = null, stApplying = false;
+const stamp = key => { (S.ts ??= {})[key] = Date.now(); };
+function mergeS(a, b){
+  const o = JSON.parse(JSON.stringify(a)), ta = a.ts || {}, tb = b.ts || {}, obj = x => x && typeof x === 'object';
+  for (const [l, m] of Object.entries(b.mem || {})) { if (!obj(m)) continue; const x = (o.mem ??= {})[l] ??= {cards: {}, log: {}, start: m.start, perDay: m.perDay}; x.cards ??= {}; x.log ??= {};
+    for (const [id, c] of Object.entries(m.cards || {})) { const y = x.cards[id]; if (!y || (c.last || 0) > (y.last || 0)) x.cards[id] = c; }
+    for (const [d, g] of Object.entries(m.log || {})) { const y = x.log[d] || {n: 0, r: 0}; x.log[d] = {n: Math.max(y.n || 0, g.n || 0), r: Math.max(y.r || 0, g.r || 0)}; }
+    if (m.migrated) x.migrated = true; if (m.start && (!x.start || m.start < x.start)) x.start = m.start; }
+  if ((b.tv || 0) >= 3) for (const [d, ls] of Object.entries(b.time || {})) for (const [l, ks] of Object.entries(ls || {})) { if (!obj(ks)) continue;
+    const t = ((o.time ??= {})[d] ??= {})[l] ??= {}; if (!obj(t)) continue; for (const [k, v] of Object.entries(ks)) if (!(t[k] >= v)) t[k] = v; }
+  for (const [d, ks] of Object.entries(b.done || {})) for (const [k, v] of Object.entries(ks || {})) { const key = 'done:' + d + ':' + k;
+    if ((tb[key] || 0) > (ta[key] || 0) || o.done?.[d]?.[k] === undefined) ((o.done ??= {})[d] ??= {})[k] = v; }
+  for (const [l, ds] of Object.entries(b.tick || {})) for (const [d, ks] of Object.entries(ds || {})) for (const [k, v] of Object.entries(ks || {})) { const key = 'tick:' + l + ':' + d + ':' + k;
+    if ((tb[key] || 0) > (ta[key] || 0) || o.tick?.[l]?.[d]?.[k] === undefined) (((o.tick ??= {})[l] ??= {})[d] ??= {})[k] = v; }
+  o.ts = {...ta}; for (const k in tb) if ((tb[k] || 0) > (ta[k] || 0)) o.ts[k] = tb[k];
+  for (const [l, ds] of Object.entries(b.dd || {})) for (const [k, v] of Object.entries(ds || {})) { const x = (o.dd ??= {})[l] ??= {}; if (!x[k] || v < x[k]) x[k] = v; }
+  if ((b.setAt || 0) > (a.setAt || 0)) { o.settings = {...o.settings, ...b.settings}; o.setAt = b.setAt; }
+  o.tv = Math.max(a.tv || 0, b.tv || 0); o.lang = a.lang;   // each device keeps the language it is on
+  return o;
+}
+const stSave = () => { try { localStorage.setItem(LS, JSON.stringify(S)); localStorage.setItem('lcm-st-rev', String(stRev)); } catch (e) {} };
+async function stPull(){
+  if (!akCode) return false;
+  let r; try { r = await akRpc('lcm_state_get', {p_code: akCode}); stOk = true; } catch (e) { stOk = false; return false; }
+  if (!r || !r.data) { stRev = 0; stDirty = true; return false; }
+  if (r.rev === stRev) return false;
+  const before = JSON.stringify(S), remote = r.data;
+  migrateTime(remote);   // an older device's state is cleaned the same way before it is merged
+  const merged = Object.assign(DEF(), mergeS(S, remote));
+  S = merged; stRev = r.rev; stSave(); theme();
+  if (JSON.stringify(mergeS(remote, S)) !== JSON.stringify(remote)) stDirty = true;   // this device had something the cloud did not
+  return JSON.stringify(S) !== before;
+}
+async function stPush(){
+  if (!akCode) return; if (stBusy) { stDirty = true; return; }
+  stBusy = true; stDirty = false;
+  try {
+    for (let k = 0; k < 4; k++) {
+      const r = await akRpc('lcm_state_put', {p_code: akCode, p_data: S, p_base: stRev}); stOk = true;
+      if (r?.ok) { stRev = r.rev; stSave(); break; }
+      stRev = -1; await stPull(); stApply();   // another device wrote in between: take it in and write again
+    }
+  } catch (e) { stOk = false; stDirty = true; }
+  finally { stBusy = false; if (stDirty) window.stSchedule(3000); stUI(); }
+}
+window.stSchedule = (ms = 800) => { if (!akCode || stApplying) return; stDirty = true; clearTimeout(stT); stT = setTimeout(() => { stT = null; stPush(); }, ms); };
+function stApply(){ if (!busy && !SS && PLAN && /^#?(home|words.*|stats|lessons)?$/.test(location.hash.replace('#', ''))) { stApplying = true; try { refresh(); } finally { stApplying = false; } } }
+async function stSync(){ const ch = await stPull(); if (ch) stApply(); if (stDirty) stPush(); stUI(); }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') stSync(); else if (stT) { clearTimeout(stT); stT = null; stPush(); } });
+setInterval(() => { if (document.visibilityState === 'visible' && !stBusy) stSync(); }, 15e3);
+function stJoin(code){
+  code = String(code || '').trim().replace(/^.*#sync=/, ''); if (!/^[A-Za-z0-9]{12,64}$/.test(code)) return false;
+  akCode = code; try { localStorage.setItem('lcm-sync', code); } catch (e) {} stRev = 0; stDirty = true; stSync(); return true;
+}
+function stUI(){
+  $$('.sybar').forEach(b => b.hidden = !!akCode);
+  const el = $('#sy'); if (!el) return;
+  const join = ph => `<div class="syj"><input id="syi" placeholder="${ph}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"><button class="mini" id="syb">подключить</button></div>`;
+  el.innerHTML = akCode ? `<span class="akdot ${stOk ? 'on' : ''}"></span><span>${stOk === false ? 'Нет связи с облаком' : stOk ? 'Включена · всё сохранено' : 'Подключаюсь…'}</span>
+      <p class="akh">Код: <b class="sycode">${esc(akCode)}</b> <button class="mini" id="syc">скопировать</button><br>На другом устройстве вставь этот код сюда же — прогресс станет общим.</p>${join('код с другого устройства')}`
+    : `<span class="akdot"></span><span>Не настроена</span><p class="akh">Вставь код с компьютера: там ⚙ Settings → синхронизация.</p>${join('код с компьютера')}`;
+  $('#syc', el) && ($('#syc', el).onclick = e => { e.stopPropagation(); navigator.clipboard?.writeText(akCode).then(() => e.target.textContent = 'скопировано', () => prompt('Код', akCode)); });
+  $('#syb', el).onclick = e => { e.stopPropagation(); const i = $('#syi', el); if (!stJoin(i.value)) { i.value = ''; i.placeholder = 'неверный код'; } else stUI(); };
+}
+/* Anki's minutes go into the hours of their language and day (Anki's log is the truth: it replaces what was there) */
+function akTime(bd){ if (!bd) return; for (const [l, o] of Object.entries(bd)) { if (!o || typeof o !== 'object' || !['zh', 'ja', 'de'].includes(l)) continue; for (const [k, v] of Object.entries(o)) TL(k, l).anki = v; } }
 /* word states from Anki override the ones baked into the site */
 function akApply(){
   const ja = akOn() && AK.langs.ja;
@@ -828,49 +989,33 @@ function akUI(){
   const el = $('#ak'); if (!el) return;
   el.innerHTML = akOn() ? `<span class="akdot on"></span><span>Подключено · ${new Date(AK.at).toTimeString().slice(0, 5)}</span><button class="mini" id="akr">обновить</button>`
     : `<span class="akdot"></span><span>${akBusy ? 'Ищу Anki…' : akErr && akErr !== 'нет связи' ? 'Ошибка: ' + esc(akErr) : 'Anki не найден'}</span><button class="mini" id="akr">ещё раз</button><p class="akh">Нужен AnkiConnect: в Anki «Инструменты → Дополнения → Получить дополнения», код <b>2055492159</b>, в его Config поставь <b>"webBindPort": 8766</b> (8765 занят) и добавь адрес сайта в <b>webCorsOriginList</b>. Перезапусти Anki и держи его открытым.</p>`;
-  if (akCode) { const link = (SITE ? location.origin + '/l/' + LANGS[S.lang] + '/' : location.origin + location.pathname) + '#sync=' + akCode, fromCloud = akOn() && !AK_URL;
-    el.insertAdjacentHTML('beforeend', `<p class="akh">${fromCloud ? 'Данные с компьютера.' : 'На телефоне:'} открой эту ссылку один раз на телефоне, и он будет брать Anki отсюда. <button class="mini" id="akl">скопировать ссылку</button></p>`);
-    $('#akl', el).onclick = e => { e.stopPropagation(); navigator.clipboard?.writeText(link).then(() => { e.target.textContent = 'скопировано'; }, () => prompt('Ссылка для телефона', link)); }; }
   $('#akr', el).onclick = e => { e.stopPropagation(); akSync(); akUI(); };
+  stUI();
 }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') akSync(); });
 setInterval(() => { if (document.visibilityState === 'visible') akSync(); }, 5 * 60e3);
 
-/* ---------- calendar: every day until the exam (1 June), Easter holidays marked ---------- */
-const EXAM = '2027-06-01', EASTER = '2027-03-22';
+/* ---------- calendar: the days of the plan ---------- */
 const isoD = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-function calStart(){
-  const ds = [...Object.keys(S.time), ...Object.values(S.doneOn || {}), ...Object.values(S.mem || {}).flatMap(m => Object.keys(m.log || {}).map(n => isoD(dayDate(+n))))].filter(Boolean).sort();
-  return ds[0] && ds[0] < today() ? ds[0] : today();
-}
-function calHtml(){
-  // the calendar starts on the plan's first day; a plan day's cell shows how much of THAT day is done, even if it is done later
-  const P0 = LP()[S.lang]?.start || null, ND = LP()[S.lang]?.days || 0;
-  const pDay = ds => P0 && ds >= P0 ? dIdx(P0, ds) + 1 : 0, cur = gTopics().length ? addDays(P0, planCur() - 1) : null;
-  const pFrac = k => { if (!gTopics().length || k > ND) return 0; const L = learnedN(S.lang), a = k > 1 ? tgtD(S.lang, k - 1) : 0, b = tgtD(S.lang, k); const f = b > a ? Math.max(0, Math.min(1, (L - a) / (b - a))) : L >= b ? 1 : 0; return S.lang === 'zh' && f >= 1 && !dayDone('zh', k, L) ? .5 : f; };
-  const t = today(), start = P0 && P0 < t ? P0 : t, d0 = new Date(start + 'T12:00:00'); d0.setDate(d0.getDate() - (d0.getDay() + 6) % 7);   // from Monday
-  const end = new Date(EXAM + 'T12:00:00'); end.setDate(end.getDate() + (7 - end.getDay()) % 7);
-  const m = gMem(), planDone = new Set(Object.values(S.doneOn || {})), MS = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
-  let cells = '', months = '', wk = 0, lastM = -1, left = 0;
-  for (const d = new Date(d0); d <= end; d.setDate(d.getDate() + 1)) {
-    const ds = isoD(d), dow = (d.getDay() + 6) % 7;
-    if (dow === 0) { months += `<span>${d.getMonth() !== lastM ? MS[d.getMonth()] : ''}</span>`; lastM = d.getMonth(); wk++; }
-    let cls = '', tip = `${d.getDate()} ${MS[d.getMonth()]}`;
-    if (ds < start || ds > EXAM) cls = 'out';
-    else {
-      const g = m.log[dayNo(d.getTime())], gn = g ? g.n + g.r : 0, mins = dayT(ds) / 60, sc = mins + gn * 3;
-      const k = pDay(ds), pf = k && ds <= t ? pFrac(k) : null;
-      if (pf !== null) { cls = pf >= 1 ? 'l4' : pf >= .6 ? 'l3' : pf >= .3 ? 'l2' : pf > 0 ? 'l1' : ds < t ? 'miss' : ''; tip += ` · день ${k} · сделано ${Math.round(pf * 100)}%`; }
-      else cls = ds > t ? 'fut' : sc >= 80 ? 'l4' : sc >= 40 ? 'l3' : sc >= 15 ? 'l2' : sc > 0 ? 'l1' : '';
-      if (sc > 0) tip += ` · ${Math.round(mins)} мин${gn ? ` · тем ${gn}` : ''}`;
-      if (ds >= t) left++;
-    }
-    if (ds === (cur || t)) cls += ' cur';
-    if (ds === EASTER) { cls += ' eas'; tip += ' · пасхальные каникулы'; }
-    if (ds === EXAM) { cls += ' exam'; tip += ' · экзамен'; }
-    cells += `<i class="${cls}" title="${tip}"></i>`;
+function calHtml(legend){
+  // the plan's days by week (Monday first). Green = done on its day, amber = done later (the debt stays on ITS day), red = still owed
+  const lang = S.lang; noteDays(lang);
+  const P = LP()[lang], N = P.days, dd = S.dd?.[lang] || {}, t = today(), WD = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'];
+  const lead = (new Date(P.start + 'T12:00:00').getDay() + 6) % 7, L = learnedN(lang);
+  let cells = WD.map(w => `<b>${w}</b>`).join('') + '<i class="pad"></i>'.repeat(lead);
+  for (let k = 1; k <= N; k++) {
+    const ds = addDays(P.start, k - 1), dt = new Date(ds + 'T12:00:00'), dn = dt.getDate(), done = dd[k];
+    let cls, st;
+    if (done) { cls = done <= ds ? 'ok' : 'late'; st = done <= ds ? 'сделан вовремя' : `сделан ${+done.slice(8)} ${MON[+done.slice(5, 7) - 1]}, с опозданием`; }
+    else if (ds < t) { cls = 'debt'; st = 'долг'; }
+    else if (ds === t) { const a = k > 1 ? tgtD(lang, k - 1) : 0, b = tgtD(lang, k), f = b > a ? Math.max(0, Math.min(1, (L - a) / (b - a))) : 0; cls = 'now'; st = `сегодня · темы ${Math.round(f * 100)}%`; }
+    else { cls = 'fut'; st = ''; }
+    if (ds === t) cls += ' cur';
+    const lab = k === 1 || dn === 1 ? `${dn}<s>${MON[dt.getMonth()]}</s>` : dn;
+    cells += `<i class="${cls}" title="день ${k} · ${dn} ${MON[dt.getMonth()]}${st ? ' · ' + st : ''}">${lab}</i>`;
   }
-  return `<div class="cal2" aria-label="Календарь до 1 июня" style="--wk:${wk}"><div class="cm">${months}</div><div class="cg">${cells}</div></div>`;
+  const lg = legend ? `<div class="calg"><span><i class="ok"></i>вовремя</span><span><i class="late"></i>с опозданием</span><span><i class="debt"></i>долг</span><span><i class="fut"></i>впереди</span></div>` : '';
+  return `<div class="cal3 ${legend ? 'big' : ''}" aria-label="Календарь плана">${cells}</div>${lg}`;
 }
 
 /* ---------- quiz ---------- */
@@ -880,6 +1025,7 @@ function quiz(items, o){
   busy = true; const P = $('#P .pv') || $('#P'); let i = 0, ok = 0; const res = [];
   const step = () => {
     if (i >= items.length) { keys(null); busy = false; const msg = o.end(ok);
+      if (typeof msg === 'function') return msg();   // the caller moves on by itself
       P.innerHTML = `<div class="quiz"><span class="eye">${esc(o.title)}</span><span class="big num ${ok / items.length >= .8 ? 'tok' : ok / items.length < .6 ? 'tbad' : ''}">${ok}/${items.length}</span><p style="font-weight:800">${esc(msg)}</p><p><a class="btn main" href="${o.back}">Дальше</a></p></div>`;
       refit();
       if (o.back === location.hash) P.querySelector('a').onclick = e => { e.preventDefault(); route(); }; return; }
@@ -936,20 +1082,27 @@ const refit = () => { const P = $('#P'); if (P && P.firstElementChild) fitPanel(
 
 /* ---------- statistics ---------- */
 function stats(){
-  const lang = S.lang, W = wordStats(lang), nL = gTopics(lang).length, nl = learnedN(lang);
+  const lang = S.lang, W = wordStats(lang), nL = gTopics(lang).length, nl = learnedN(lang), P = LP()[lang], t = today();
   const tot = Object.keys(S.time).reduce((a, k) => a + dayT(k), 0), gm = overallMem(lang);
   const gRows = gBooks().flatMap(b => b.rows.map(r => ({name: r.n + ' · ' + r.name, n: r.ids.length, p: r.ids.filter(id => gMem(lang).cards[id]).length})));
-  const ds = Object.keys(S.time).sort().slice(-21), mx = Math.max(.5, ...ds.map(d => dayT(d) / 3600)), Wd = 900, H = 170, bw = Math.min(30, (Wd - 40) / Math.max(ds.length, 1) - 6);
+  // hours of THIS language, every day from the plan's start to today
+  const ds = []; for (let d = P.start; d <= t; d = addDays(d, 1)) ds.push(d);
+  const show21 = ds.slice(-21), mx = Math.max(.5, ...show21.map(d => dayT(d) / 3600)), Wd = 900, H = 170, bw = Math.min(30, (Wd - 40) / Math.max(show21.length, 1) - 6);
+  const KC = [['anki', 'var(--ink)', 'Anki'], ['phon', 'var(--mute)', 'фонетика'], ['gram', 'var(--ok)', 'грамматика']].filter(([k]) => k !== 'phon' || lang === 'zh');
   let bars = '';
-  ds.forEach((d, i) => { let y = H - 20; const x = 30 + i * (bw + 6);
-    [['anki', 'var(--ink)'], ['phon', 'var(--mute)'], ['gram', 'var(--dim)']].forEach(([k, c]) => { const hh = sec(d, k) / 3600 / mx * (H - 40); if (hh) { y -= hh; bars += `<rect x="${x}" y="${y}" width="${bw}" height="${hh}" rx="3" fill="${c}"/>`; } });
+  show21.forEach((d, i) => { let y = H - 20; const x = 30 + i * (bw + 6);
+    KC.forEach(([k, c]) => { const hh = sec(d, k) / 3600 / mx * (H - 40); if (hh > .5) { y -= hh; bars += `<rect x="${x}" y="${y}" width="${bw}" height="${hh}" rx="3" fill="${c}"><title>${d.slice(8)}.${d.slice(5, 7)} · ${k} ${Math.round(sec(d, k) / 60)} мин</title></rect>`; } });
     bars += `<text x="${x + bw / 2}" y="${H - 5}" text-anchor="middle">${d.slice(8)}.${d.slice(5, 7)}</text>`; });
+  // the plan by day: a debt belongs to the day it was owed on
+  noteDays(lang); const dd = S.dd?.[lang] || {}, past = Math.min(P.days, dIdx(P.start, t) + 1); let onT = 0, late = 0, owed = 0;
+  for (let k = 1; k <= past; k++) { const ds1 = addDays(P.start, k - 1); if (dd[k]) dd[k] <= ds1 ? onT++ : late++; else if (ds1 < t) owed++; }
   show(`<div class="st">
     <div class="card k"><b class="num">${W.known}<span>/${W.total}</span></b><span class="eye">слова</span></div>
     <div class="card k"><b class="num">${nl}<span>/${nL}</span></b><span class="eye">темы</span></div>
     <div class="card k"><b class="num">${h2(tot, 1)}<span> ч</span></b><span class="eye">время</span></div>
     <div class="card k mem"><b class="num">${gm === null ? '—' : pct(gm)}<span>${gm === null ? '' : '%'}</span></b><span class="eye">память грамматики</span></div>
-    <div class="card wide"><span class="eye">часы · Anki / фонетика / грамматика</span><div class="chart" style="margin-top:12px">${ds.length ? `<svg viewBox="0 0 ${Wd} ${H}" role="img" aria-label="Часы по дням">${bars}</svg>` : '<p class="mute" style="margin-top:8px">Появится после первого дня.</p>'}</div></div>
+    <div class="card wide"><div class="sth"><span class="eye">план по дням · день ${planCur(lang)} из ${P.days}</span><span class="mute">вовремя ${onT} · с опозданием ${late} · долг ${owed} ${pl(owed, 'день', 'дня', 'дней')}</span></div><div style="margin-top:14px">${calHtml(true)}</div></div>
+    <div class="card wide"><div class="sth"><span class="eye">часы по дням</span><span class="calg" style="margin:0">${KC.map(([, c, l]) => `<span><i style="background:${c}"></i>${l}</span>`).join('')}</span></div><div class="chart" style="margin-top:12px"><svg viewBox="0 0 ${Wd} ${H}" role="img" aria-label="Часы по дням">${bars}</svg></div></div>
     <div class="card wide"><span class="eye">грамматика</span><div style="margin-top:10px">${gRows.map((g, i) =>
       `<div class="gb"><span>${esc(g.name)}</span><span class="t"><i style="width:${g.p / g.n * 100}%;animation-delay:${200 + i * 40}ms"></i></span><span class="num mute">${g.p}/${g.n}</span></div>`).join('')}</div></div>
   </div>`);
@@ -973,6 +1126,10 @@ function stats(){
    On bedarev.com/l/ every language has its own address (data-site is set there); on claude.ai it is only a state. */
 const LANGS = {zh: 'mandarin', de: 'german', ja: 'japanese'}, LK = Object.keys(LANGS);
 const SITE = document.documentElement.dataset.site;
+/* opened from the iPhone home screen: the app lives at the address it was added from. Moving to /l/german/ would leave it
+   (iOS then shows a bar with ✕ and the site's address), so there the language changes without changing the address,
+   and the app opens on the language used last. */
+const STANDALONE = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 const calm = () => matchMedia('(prefers-reduced-motion: reduce)').matches || document.hidden;
 function setLang(k){
   S.lang = LANGS[k] ? k : 'zh';
@@ -1001,7 +1158,8 @@ function switchLang(k, push){
   if (k === S.lang && !switching) { if (push) { if (location.hash && location.hash !== '#home') location.hash = 'home'; else route(); } return; }
   const dir = LK.indexOf(k) > LK.indexOf(S.lang) ? 1 : -1, me = ++swN, quiet = calm();
   switching = true; setLang(k); persist(); brandTo(LANGS[k], dir); hideFly(true); keys(null);
-  if (push) try { history.pushState(null, '', (SITE ? '/l/' + LANGS[k] + '/' : location.pathname + location.search) + (SITE ? '' : '#home')); } catch (e) {}
+  if (push && !STANDALONE) try { history.pushState(null, '', (SITE ? '/l/' + LANGS[k] + '/' : location.pathname + location.search) + (SITE ? '' : '#home')); } catch (e) {}
+  else if (push && location.hash && location.hash !== '#home') try { history.replaceState(null, '', location.pathname + location.search + '#home'); } catch (e) {}
   const out = quiet ? null : app.animate([{opacity: 1, transform: 'none'}, {opacity: 0, transform: `translateX(${-70 * dir}px) scale(.98)`}], {duration: 220, easing: 'cubic-bezier(.5,0,.85,.3)', fill: 'forwards'});
   const need = k === 'ja' ? Promise.all([loadJa(), loadJg()]) : k === 'de' ? Promise.all([loadDe(), loadDg()]) : Promise.resolve();
   Promise.all([need.catch(() => {}), new Promise(r => setTimeout(r, quiet ? 0 : 235))]).then(() => { if (me !== swN) return;
@@ -1014,17 +1172,17 @@ function switchLang(k, push){
     requestAnimationFrame(() => requestAnimationFrame(() => A.forEach(a => { try { if (a.playState === 'running') a.currentTime = 0; } catch (e) {} })));   // restart once the page has painted; never paused, so nothing can get stuck invisible
   });
 }
-$$('.lang[data-lang]').forEach(a => { const k = a.dataset.lang; a.href = SITE ? '/l/' + LANGS[k] + '/' : '#home';
+$$('.lang[data-lang]').forEach(a => { const k = a.dataset.lang; a.href = SITE && !STANDALONE ? '/l/' + LANGS[k] + '/' : '#home';
   a.addEventListener('click', e => { if (e.ctrlKey || e.metaKey || e.shiftKey || e.button) return; e.preventDefault(); $('.bw').blur?.(); document.activeElement?.blur(); switchLang(k, true); }); });
 if (SITE) addEventListener('popstate', () => { const k = LK.find(x => location.pathname.startsWith('/l/' + LANGS[x])); if (k && k !== S.lang) switchLang(k, false); });
-setLang(SITE || S.lang || 'zh'); brandTo(LANGS[S.lang]);
+setLang((STANDALONE ? S.lang : SITE) || S.lang || 'zh'); brandTo(LANGS[S.lang]);
 
 addEventListener('keydown', e => { if (busy || e.target.closest?.('input,textarea,select')) return; const k = {Numpad7: 'zh', Numpad8: 'de', Numpad9: 'ja'}[e.code]; if (k) { e.preventDefault(); switchLang(k, true); } });   // numpad 7 8 9 = languages
 
 /* ---------- settings ---------- */
 const pop = $('#pop');
 $('#gear').onclick = e => { e.stopPropagation(); pop.classList.toggle('hide'); akUI(); };
-$$('#th button').forEach(b => b.onclick = () => { S.settings.theme = b.dataset.v; theme(); persist(); hideFly(true); });
+$$('#th button').forEach(b => b.onclick = () => { S.settings.theme = b.dataset.v; S.setAt = Date.now(); theme(); persist(); hideFly(true); });
 $$('#gi button').forEach(b => { b.setAttribute('aria-pressed', (b.dataset.v === '1') === (S.settings.girl !== false)); b.onclick = () => setGirl(b.dataset.v === '1'); });
 document.addEventListener('click', e => { if (!pop.contains(e.target) && e.target.id !== 'gear') pop.classList.add('hide');
   if (innerWidth <= 860 && fly.classList.contains('on') && !fly.contains(e.target) && !e.target.closest('.row')) hideFly(true); });
@@ -1057,6 +1215,7 @@ addEventListener('hashchange', () => route());
 Promise.all(['/l/data/plan.json', '/l/data/words.json', '/l/data/lessons.json', '/l/data/pinyin.json', '/l/audio/map.json', '/l/data/zh_topics.json'].map(u => fetch(u, {cache: 'no-cache'}).then(r => r.json())))
   .then(([p, w, l, pin, am, zt]) => { PLAN = p; WORDS = w.words; LES = l.lessons; PIN = pin; AMAP = am; buildZT(zt);
     const need = S.lang === 'ja' ? [loadJa(), loadJg()] : S.lang === 'de' ? [loadDe(), loadDg()] : [];   // the language on screen loads before the first paint
-    Promise.all(need).catch(() => {}).then(() => { route(); akSync(); loadChars(); loadJa(); loadDe(); }); })
+    migrateTime(); try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) {}
+    Promise.all(need).catch(() => {}).then(() => { route(); akSync(); stSync(); loadChars(); loadJa(); loadDe(); }); })
   .catch(() => { app.innerHTML = '<p class="mute" style="text-align:center;margin-top:30vh">Не удалось загрузить данные. Обнови страницу.</p>'; });
 })();
