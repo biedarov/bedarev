@@ -400,15 +400,16 @@ select,input[type=text]{font:inherit;font-weight:600;height:34px;padding:0 10px;
 .gbar i{background:var(--ok)} .gb .t i{background:var(--ok)} .st .k.mem b{color:var(--ok)}
 .rev svg{color:var(--warn)} .rev em{background:var(--warn);color:#1a1205} .rev.none svg{color:var(--ok)} .rev.none em{background:none;color:var(--mute)}
 /* calendar until the exam */
-.cal3{width:100%;letter-spacing:0;display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
-.cal3 b{font-size:8.5px;font-weight:700;color:var(--dim);text-align:center;text-transform:uppercase;letter-spacing:.06em;line-height:12px}
-.cal3 i{height:16px;border-radius:5px;display:flex;align-items:center;justify-content:center;white-space:nowrap;font:700 9.5px/1 var(--ui);font-style:normal;color:var(--mute);background:color-mix(in srgb,var(--ink) 6%,transparent);position:relative;animation:pop .4s var(--ease) both}
-.cal3 i s{text-decoration:none;font-size:7.5px;margin-left:2px;opacity:.75}
-.cal3 i.pad{visibility:hidden} .cal3 i.fut{color:color-mix(in srgb,var(--mute) 75%,transparent)}
-.cal3 i.ok,.calg i.ok{background:var(--ok);color:#04190b} .cal3 i.late,.calg i.late{background:color-mix(in srgb,var(--warn) 80%,transparent);color:#1d1400}
-.cal3 i.debt,.calg i.debt{background:color-mix(in srgb,var(--bad) 30%,transparent);color:var(--ink)} .calg i.fut{background:color-mix(in srgb,var(--ink) 6%,transparent)}
-.cal3 i.now{background:color-mix(in srgb,var(--ink) 12%,transparent);color:var(--ink)} .cal3 i.cur{outline:1.5px solid var(--ink);outline-offset:1px}
-.cal3.big{gap:6px} .cal3.big b{font-size:10px} .cal3.big i{height:34px;border-radius:9px;font-size:13px} .cal3.big i s{font-size:9.5px}
+.cal2{width:100%;display:flex;flex-direction:column;gap:3px}
+.cal2 .cm,.cal2 .cg{display:grid;grid-template-columns:repeat(var(--wk),1fr);gap:2px}
+.cal2 .cm span{font-size:9px;text-align:left;font-weight:700;color:var(--dim);letter-spacing:.04em;white-space:nowrap;height:11px;line-height:11px;overflow:visible}
+.cal2 .cg{grid-template-rows:repeat(7,auto);grid-auto-flow:column}
+.cal2 .cg i{aspect-ratio:1;border-radius:3px;background:color-mix(in srgb,var(--ink) 9%,transparent);animation:pop .4s var(--ease) both}
+.cg i.out{visibility:hidden} .cg i.fut{background:color-mix(in srgb,var(--ink) 7%,transparent)} .cg i.miss{background:color-mix(in srgb,var(--bad) 24%,transparent);box-shadow:none}
+.cg i.l1{background:color-mix(in srgb,var(--ok) 32%,transparent);box-shadow:none} .cg i.l2{background:color-mix(in srgb,var(--ok) 56%,transparent);box-shadow:none}
+.cg i.l3{background:color-mix(in srgb,var(--ok) 80%,transparent);box-shadow:none} .cg i.l4{background:var(--ok);box-shadow:none}
+.cg i.cur{outline:1.5px solid var(--ink);outline-offset:1px}
+.cg i.eas,.ck i.eas{background:var(--warn);box-shadow:none} .cg i.exam,.ck i.exam{background:var(--bad);box-shadow:none}
 .calg{display:flex;flex-wrap:wrap;gap:16px;margin-top:14px;font-size:11.5px;font-weight:700;color:var(--mute)} .calg span{display:flex;align-items:center;gap:6px} .calg i{width:12px;height:12px;border-radius:4px;display:inline-block}
 .ck{display:flex;gap:12px;font-size:10.5px;font-weight:700;color:var(--mute);margin-top:3px} .ck i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px} .ck .num{margin-left:auto;color:var(--ink)}
 /* Anki status in settings */
@@ -427,7 +428,7 @@ select,input[type=text]{font:inherit;font-weight:600;height:34px;padding:0 10px;
   nav a[data-tab="stats"],nav #gear{display:none}
   nav a,nav button{font-size:12.5px;padding:4px 2px}
   main{padding-block:8px 14px}
-  .top .cal3{display:none}
+  .top .cal2{display:none}
   .top{grid-template-columns:1fr 1fr;gap:10px;padding:0;border-radius:0;background:none!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important} .top::before,.top::after{display:none!important}
   .top>.nums{flex-direction:column;justify-content:center}
   .top>.rings,.top>.nums{background:var(--c1);border:1px solid var(--line);border-radius:20px;padding:18px 6px;min-height:118px}

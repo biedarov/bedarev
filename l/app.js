@@ -997,25 +997,36 @@ setInterval(() => { if (document.visibilityState === 'visible') akSync(); }, 5 *
 
 /* ---------- calendar: the days of the plan ---------- */
 const isoD = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-function calHtml(legend){
-  // the plan's days by week (Monday first). Green = done on its day, amber = done later (the debt stays on ITS day), red = still owed
-  const lang = S.lang; noteDays(lang);
-  const P = LP()[lang], N = P.days, dd = S.dd?.[lang] || {}, t = today(), WD = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'];
-  const lead = (new Date(P.start + 'T12:00:00').getDay() + 6) % 7, L = learnedN(lang);
-  let cells = WD.map(w => `<b>${w}</b>`).join('') + '<i class="pad"></i>'.repeat(lead);
-  for (let k = 1; k <= N; k++) {
-    const ds = addDays(P.start, k - 1), dt = new Date(ds + 'T12:00:00'), dn = dt.getDate(), done = dd[k];
-    let cls, st;
-    if (done) { cls = done <= ds ? 'ok' : 'late'; st = done <= ds ? 'сделан вовремя' : `сделан ${+done.slice(8)} ${MON[+done.slice(5, 7) - 1]}, с опозданием`; }
-    else if (ds < t) { cls = 'debt'; st = 'долг'; }
-    else if (ds === t) { const a = k > 1 ? tgtD(lang, k - 1) : 0, b = tgtD(lang, k), f = b > a ? Math.max(0, Math.min(1, (L - a) / (b - a))) : 0; cls = 'now'; st = `сегодня · темы ${Math.round(f * 100)}%`; }
-    else { cls = 'fut'; st = ''; }
-    if (ds === t) cls += ' cur';
-    const lab = k === 1 || dn === 1 ? `${dn}<s>${MON[dt.getMonth()]}</s>` : dn;
-    cells += `<i class="${cls}" title="день ${k} · ${dn} ${MON[dt.getMonth()]}${st ? ' · ' + st : ''}">${lab}</i>`;
+const EXAM = '2027-06-01', EASTER = '2027-03-22';
+function calHtml(){
+  // the calendar starts on the plan's first day; a plan day's cell shows how much of THAT day is done, even if it is done later
+  const P0 = LP()[S.lang]?.start || null, ND = LP()[S.lang]?.days || 0;
+  const pDay = ds => P0 && ds >= P0 ? dIdx(P0, ds) + 1 : 0, cur = gTopics().length ? addDays(P0, planCur() - 1) : null;
+  const pFrac = k => { if (!gTopics().length || k > ND) return 0; const L = learnedN(S.lang), a = k > 1 ? tgtD(S.lang, k - 1) : 0, b = tgtD(S.lang, k); const f = b > a ? Math.max(0, Math.min(1, (L - a) / (b - a))) : L >= b ? 1 : 0; return S.lang === 'zh' && f >= 1 && !dayDone('zh', k, L) ? .5 : f; };
+  const t = today(), start = P0 && P0 < t ? P0 : t, d0 = new Date(start + 'T12:00:00'); d0.setDate(d0.getDate() - (d0.getDay() + 6) % 7);   // from Monday
+  const end = new Date(EXAM + 'T12:00:00'); end.setDate(end.getDate() + (7 - end.getDay()) % 7);
+  const m = gMem(), planDone = new Set(Object.values(S.doneOn || {})), MS = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+  let cells = '', months = '', wk = 0, lastM = -1, lastW = -9, left = 0;
+  for (const d = new Date(d0); d <= end; d.setDate(d.getDate() + 1)) {
+    const ds = isoD(d), dow = (d.getDay() + 6) % 7;
+    if (dow === 0) { const e = new Date(d); e.setDate(e.getDate() + 6); const m1 = e.getDate() <= 7 ? e.getMonth() : -1;   // this week holds the 1st of a month
+      const lab = m1 >= 0 && m1 !== lastM && wk - lastW >= 3 ? MS[m1] : ''; if (lab) { lastM = m1; lastW = wk; } months += `<span>${lab}</span>`; wk++; }
+    let cls = '', tip = `${d.getDate()} ${MS[d.getMonth()]}`;
+    if (ds < start || ds > EXAM) cls = 'out';
+    else {
+      const g = m.log[dayNo(d.getTime())], gn = g ? g.n + g.r : 0, mins = dayT(ds) / 60, sc = mins + gn * 3;
+      const k = pDay(ds), pf = k && ds <= t ? pFrac(k) : null;
+      if (pf !== null) { cls = pf >= 1 ? 'l4' : pf >= .6 ? 'l3' : pf >= .3 ? 'l2' : pf > 0 ? 'l1' : ds < t ? 'miss' : ''; tip += ` · день ${k} · сделано ${Math.round(pf * 100)}%`; }
+      else cls = ds > t ? 'fut' : sc >= 80 ? 'l4' : sc >= 40 ? 'l3' : sc >= 15 ? 'l2' : sc > 0 ? 'l1' : '';
+      if (sc > 0) tip += ` · ${Math.round(mins)} мин${gn ? ` · тем ${gn}` : ''}`;
+      if (ds >= t) left++;
+    }
+    if (ds === (cur || t)) cls += ' cur';
+    if (ds === EASTER) { cls += ' eas'; tip += ' · пасхальные каникулы'; }
+    if (ds === EXAM) { cls += ' exam'; tip += ' · экзамен'; }
+    cells += `<i class="${cls}" title="${tip}"></i>`;
   }
-  const lg = legend ? `<div class="calg"><span><i class="ok"></i>вовремя</span><span><i class="late"></i>с опозданием</span><span><i class="debt"></i>долг</span><span><i class="fut"></i>впереди</span></div>` : '';
-  return `<div class="cal3 ${legend ? 'big' : ''}" aria-label="Календарь плана">${cells}</div>${lg}`;
+  return `<div class="cal2" aria-label="Календарь до 1 июня" style="--wk:${wk}"><div class="cm">${months}</div><div class="cg">${cells}</div></div>`;
 }
 
 /* ---------- quiz ---------- */
@@ -1101,7 +1112,7 @@ function stats(){
     <div class="card k"><b class="num">${nl}<span>/${nL}</span></b><span class="eye">темы</span></div>
     <div class="card k"><b class="num">${h2(tot, 1)}<span> ч</span></b><span class="eye">время</span></div>
     <div class="card k mem"><b class="num">${gm === null ? '—' : pct(gm)}<span>${gm === null ? '' : '%'}</span></b><span class="eye">память грамматики</span></div>
-    <div class="card wide"><div class="sth"><span class="eye">план по дням · день ${planCur(lang)} из ${P.days}</span><span class="mute">вовремя ${onT} · с опозданием ${late} · долг ${owed} ${pl(owed, 'день', 'дня', 'дней')}</span></div><div style="margin-top:14px">${calHtml(true)}</div></div>
+    <div class="card wide"><div class="sth"><span class="eye">план по дням · день ${planCur(lang)} из ${P.days}</span><span class="mute">${owed ? `<span class="tbad">долг ${owed} ${pl(owed, 'день', 'дня', 'дней')}</span>` : 'без долгов'}</span></div><div style="margin-top:14px">${calHtml()}</div></div>
     <div class="card wide"><div class="sth"><span class="eye">часы по дням</span><span class="calg" style="margin:0">${KC.map(([, c, l]) => `<span><i style="background:${c}"></i>${l}</span>`).join('')}</span></div><div class="chart" style="margin-top:12px"><svg viewBox="0 0 ${Wd} ${H}" role="img" aria-label="Часы по дням">${bars}</svg></div></div>
     <div class="card wide"><span class="eye">грамматика</span><div style="margin-top:10px">${gRows.map((g, i) =>
       `<div class="gb"><span>${esc(g.name)}</span><span class="t"><i style="width:${g.p / g.n * 100}%;animation-delay:${200 + i * 40}ms"></i></span><span class="num mute">${g.p}/${g.n}</span></div>`).join('')}</div></div>
