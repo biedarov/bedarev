@@ -59,19 +59,27 @@ const words = d => WORDS.filter(w => w.d === d);
 const LP = () => ({zh: {start: PLAN_START, days: 40}, ja: {start: JA_START, days: JA_DAYS}, de: {start: DE_START, days: DE_DAYS}});
 const pDayOf = (lang = S.lang, now = Date.now()) => { const p = LP()[lang]; return Math.max(1, Math.min(p.days, dIdx(p.start, isoD(dayDate(dayNo(now)))) + 1)); };
 const tgtD = (lang, k) => lang === 'zh' ? zhOrder().filter(x => x.day <= k).length : lang === 'ja' ? jaTgtD(k) : deTgtD(k);
-/* a plan day is done when its grammar topics are done (Chinese: and its part of the phonetics video).
-   Anki is NOT part of it: words go at their own pace in Anki, their row only shows what is left. */
+/* a plan day is done when its grammar topics AND its new Anki words are done (Chinese: and its part of the phonetics video).
+   Anki REVIEWS never count: you may move on with reviews left. New words: zh = the day's deck has no new cards left;
+   ja/de = words introduced in Anki since the plan began >= the plan's share for that day (all words spread evenly to 1 January).
+   The word numbers live in S.wk (from Anki on the computer, synced to the phone with the rest). */
 function zhSyncDays(Z = akOn() ? AK : null){ const A = Z?.langs?.zh; if (A?.days) for (const [d, dk] of Object.entries(A.days)) if (dk.nw === 0 && dk.tot > 0) (S.done[d] ??= {}).a2 = true; }
 const PH_DAYS = () => Math.ceil(PLAN.phonetics.syllables.sec / 60 / PLAN.phonetics.syllables.perDay);   // the one long video, 10 minutes a day
+const wordNeed = (lang, k) => { const w = S.wk?.[lang]; return w ? Math.ceil(w.total * Math.min(k, LP()[lang].days) / LP()[lang].days) : 0; };   // new words that should be started by the end of plan day k
+function wordsDone(lang, k){
+  if (lang === 'zh') return !words(k).length || !!S.done[k]?.a2;
+  const w = S.wk?.[lang]; return !w || w.since >= wordNeed(lang, k);   // no Anki numbers yet: the words cannot be judged
+}
 function dayDone(lang, k, L = learnedN(lang)){
-  if (tgtD(lang, k) > L) return false;
+  if (tgtD(lang, k) > L || !wordsDone(lang, k)) return false;
   return lang !== 'zh' || k > PH_DAYS() || !!S.done[k]?.ph2;
 }
-function planCur(lang = S.lang, now = Date.now()){ const L = learnedN(lang), s = pDayOf(lang, now); for (let k = 1; k <= s; k++) if (!dayDone(lang, k, L)) return k; return s; }
+function planCur(lang = S.lang, now = Date.now()){ if (lang === 'zh') zhSyncDays(); const L = learnedN(lang), s = pDayOf(lang, now); for (let k = 1; k <= s; k++) if (!dayDone(lang, k, L)) return k; return s; }
 /* the date each plan day was finished (for the calendar and the statistics: a late day stays a debt of ITS day) */
 function noteDays(lang = S.lang){
   if (!gTopics(lang).length) return; const dd = ((S.dd ??= {})[lang] ??= {}), L = learnedN(lang), s = pDayOf(lang); let ch = false;
   const cs = gMem(lang).cards, T = gTopics(lang);
+  for (const k in dd) if (!dayDone(lang, +k, L)) { delete dd[k]; ch = true; }   // a day that is not finished after all (its words were not counted before) loses its date
   for (let k = 1; k <= s; k++) { if (!dayDone(lang, k, L)) break; if (dd[k]) continue;
     // the day of its last topic (first time learned); a day without topics counts on its own date or with the day before it
     const ns = T.slice(k > 1 ? tgtD(lang, k - 1) : 0, tgtD(lang, k)).map(t => cs[t.id]).filter(Boolean).map(c => c.born ?? dayNo(c.first ?? c.last));   // born = the day the topic was first learned
@@ -96,13 +104,13 @@ function lexRows(lang){
   const A = akOn() ? AK.langs[lang] : null, t = A ? akTargets(AK) : {}, R = [];
   R.push({id: 'a1', t: 'Anki · повторения', man: !A, done: A ? A.due === 0 && A.rated > 0 : tickOn(lang, 'a1'), note: A ? (A.due ? 'осталось ' + A.due : 'готово') : ''});
   if (lang === 'zh') {
-    zhSyncDays(); const pd = pDayOf('zh');   // words go by the calendar: every day deck up to today's date
+    const pd = planCur('zh');   // the day you are on: its words, and any older ones still new
     const owed = []; for (let d = 1; d <= pd; d++) if (words(d).length && !S.done[d]?.a2) owed.push(d);
     const left = A?.days ? Object.entries(A.days).filter(([d]) => +d <= pd).reduce((a, [, x]) => a + (x.nn || 0), 0) : owed.reduce((a, d) => a + words(d).length, 0);
     R.push({id: 'a2', t: 'Anki · новые слова', man: !A, go: '#words', done: A?.days ? left === 0 : !owed.length, note: left ? 'осталось ' + left : 'готово'});
   } else {
-    const n = A && A.wNew != null ? (lang === 'ja' ? t.jaW : t.de) : null;
-    R.push({id: 'a2', t: n != null ? `Anki · ${n} новых слов` : 'Anki · новые слова', man: n == null, go: '#words', done: n != null ? A.wIntro >= n : tickOn(lang, 'a2'), note: n != null ? (A.wIntro >= n ? 'готово' : 'осталось ' + (n - A.wIntro)) : ''});
+    const w = S.wk?.[lang], cd = planCur(lang), left = w ? Math.max(0, wordNeed(lang, cd) - w.since) : null;
+    R.push({id: 'a2', t: w ? `Anki · новые слова · день ${cd}` : 'Anki · новые слова', man: !w, go: '#words', done: w ? left === 0 : tickOn(lang, 'a2'), note: w ? (left ? 'осталось ' + left : 'готово') : ''});
     if (lang === 'ja' && A && t.jaK) R.push({id: 'a3', t: `Anki · ${t.jaK} ${pl(t.jaK, 'новый кандзи', 'новых кандзи', 'новых кандзи')}`, done: A.kIntro >= t.jaK, note: A.kIntro >= t.jaK ? 'готово' : 'осталось ' + (t.jaK - A.kIntro)});
   }
   return R;
@@ -223,7 +231,7 @@ function home(){
       tp.onmouseleave = () => { pim.style.setProperty('--px', '0px'); pim.style.setProperty('--py', '0px'); }; }
     $$('.chk[data-k]').forEach(b => b.onclick = e => { e.stopPropagation(); if (b.disabled) return; const k = b.dataset.k, d = +b.dataset.d; let on;
       if (d) { const x = phonRows().find(r => r.id === k && r.d === d); on = !S.done[d]?.[k]; (S.done[d] ??= {})[k] = on; stamp('done:' + d + ':' + k); if (x?.sec) { const o = TL(t, 'zh'); o.phon = Math.max(0, (o.phon || 0) + (on ? x.sec : -x.sec)); } }   // a watched part counts its length   // a watched video counts its length
-      else { on = !tickOn(lang, k); tickSet(lang, k, on); stamp('tick:' + lang + ':' + today() + ':' + k); if (lang === 'zh' && k === 'a2') { const pd = pDayOf('zh'); for (let j = 1; j <= pd; j++) if (on || j === pd) { (S.done[j] ??= {}).a2 = on; stamp('done:' + j + ':a2'); } } }
+      else { on = !tickOn(lang, k); tickSet(lang, k, on); stamp('tick:' + lang + ':' + today() + ':' + k); if (lang === 'zh' && k === 'a2') { const pd = planCur('zh'); for (let j = 1; j <= pd; j++) if (on || j === pd) { (S.done[j] ??= {}).a2 = on; stamp('done:' + j + ':a2'); } } }
       persist(); b.closest('.task').classList.toggle('done', on); setTimeout(() => refresh(), 400); });
     $$('.task[data-go]').forEach(r => r.onclick = e => { if (!e.target.closest('a,button')) location.hash = r.dataset.go; });
     $('.sybar') && ($('.sybar').onclick = e => { e.stopPropagation(); pop.classList.remove('hide'); akUI(); setTimeout(() => $('#syi')?.focus(), 50); });
@@ -828,8 +836,9 @@ async function akSync(){
       if (lang === 'ja') {   // words (not kanji): still new, and introduced today
         L.wNew = (await akCall('findCards', {query: q + ' -note:Kanji is:new'})).length; L.wIntro = (await akCall('findCards', {query: q + ' -note:Kanji introduced:1'})).length;
         L.kNew = (await akCall('findCards', {query: q + ' note:Kanji is:new'})).length; L.kIntro = (await akCall('findCards', {query: q + ' note:Kanji introduced:1'})).length;
+        L.since = (await akCall('findCards', {query: q + ' introduced:' + span})).length; L.newAll = L.wNew + L.kNew;
       }
-      if (lang === 'de') { L.wNew = (await akCall('findCards', {query: q + ' is:new'})).length; L.wIntro = (await akCall('findCards', {query: q + ' introduced:1'})).length; }
+      if (lang === 'de') { L.wNew = (await akCall('findCards', {query: q + ' is:new'})).length; L.wIntro = (await akCall('findCards', {query: q + ' introduced:1'})).length; L.since = (await akCall('findCards', {query: q + ' introduced:' + span})).length; L.newAll = L.wNew; }
       // word states by note: zh = Hanzi field; ja words = Kanji or reading, ja kanji = third field of «Kanji» notes
       const rv = new Set(revN), lr = new Set(lrnN), info = await akCall('notesInfo', {notes: nids}), st = {}, kst = {};
       for (const n of info) { if (!n || !n.fields) continue; const f = akFields(n), s = rv.has(n.noteId) ? 'known' : lr.has(n.noteId) ? 'learning' : 'new', get = k => (f.find(x => x[0] === k) || [])[1];
@@ -844,7 +853,7 @@ async function akSync(){
     try { localStorage.setItem('lcm-anki', JSON.stringify(AK)); } catch (e) {}
     akCloudPut();
     // Anki time goes into today's hours (the larger of the timer and Anki's own count)
-    akTime(out.bd);
+    akTime(out.bd); akWords(out);
     akApply(); track(); persist();
     if (!busy && /^#?(home|words.*|stats)?$/.test(location.hash.replace('#', ''))) refresh();
   } catch (e) { AK_URL = null; akErr = e.name === 'AbortError' || /fetch|network|Failed/i.test(e.message) ? 'нет связи' : e.message; akCloudGet(); }
@@ -857,7 +866,7 @@ const DE_START = '2026-11-23', DE_END = '2027-01-01', DE_DAYS = dIdx(DE_START, D
 const deDaysLeft = () => Math.max(1, dIdx(today(), DE_END) + 1);   // today included, as in Japanese
 const akTargets = A => {
   const t = {}, zh = A.langs.zh, de = A.langs.de, ja = A.langs.ja;
-  if (zh?.days) { zhSyncDays(A); const cd = pDayOf('zh'); t.zh = Object.entries(zh.days).filter(([d]) => +d <= cd).reduce((a, [, x]) => a + (x.nn || 0), 0) + (zh.intro || 0); }   // new words of every day deck up to today's date + today's (words go by the calendar, not by the grammar)
+  if (zh?.days) { zhSyncDays(A); const cd = planCur('zh'); t.zh = Object.entries(zh.days).filter(([d]) => +d <= cd).reduce((a, [, x]) => a + (x.nn || 0), 0) + (zh.intro || 0); }   // new words of every day deck up to today's date + today's (words go by the calendar, not by the grammar)
   if (de?.wNew != null) t.de = Math.ceil((de.wNew + de.wIntro) / deDaysLeft());
   if (ja?.wNew != null) { const dl = Math.max(1, dIdx(today(), JA_END) + 1); t.jaW = Math.ceil((ja.wNew + ja.wIntro) / dl); t.jaK = Math.ceil((ja.kNew + ja.kIntro) / dl); }
   return t;
@@ -903,7 +912,7 @@ async function akCloudGet(){
   let d = null; try { d = await akRpc('lcm_get', {p_code: akCode}); } catch (e) { return; }
   if (!d || d.day !== today() || (AK && AK.day === today() && AK.at >= d.at)) return;
   AK = d; try { localStorage.setItem('lcm-anki', JSON.stringify(AK)); } catch (e) {}
-  akTime(d.bd);
+  akTime(d.bd); akWords(d);
   akApply(); track(); persist(); akUI();
   if (!busy && /^#?(home|words.*|stats)?$/.test(location.hash.replace('#', ''))) refresh();
 }
@@ -929,6 +938,7 @@ function mergeS(a, b){
   o.ts = {...ta}; for (const k in tb) if ((tb[k] || 0) > (ta[k] || 0)) o.ts[k] = tb[k];
   for (const [l, ds] of Object.entries(b.dd || {})) for (const [k, v] of Object.entries(ds || {})) { const x = (o.dd ??= {})[l] ??= {}; if (!x[k] || v < x[k]) x[k] = v; }
   if ((b.setAt || 0) > (a.setAt || 0)) { o.settings = {...o.settings, ...b.settings}; o.setAt = b.setAt; }
+  for (const [l, w] of Object.entries(b.wk || {})) if (!o.wk?.[l] || (w.at || 0) > (o.wk[l].at || 0)) (o.wk ??= {})[l] = w;   // Anki word numbers: the newer snapshot
   o.tv = Math.max(a.tv || 0, b.tv || 0); o.lang = a.lang;   // each device keeps the language it is on
   return o;
 }
@@ -978,6 +988,8 @@ function stUI(){
 }
 /* Anki's minutes go into the hours of their language and day (Anki's log is the truth: it replaces what was there) */
 function akTime(bd){ if (!bd) return; for (const [l, o] of Object.entries(bd)) { if (!o || typeof o !== 'object' || !['zh', 'ja', 'de'].includes(l)) continue; for (const [k, v] of Object.entries(o)) TL(k, l).anki = v; } }
+/* the words of the plan: total = words new when the plan began (still new + started since), since = started since day 1 */
+function akWords(A){ for (const l of ['ja', 'de']) { const x = A?.langs?.[l]; if (x?.since != null && x.newAll != null) (S.wk ??= {})[l] = {since: x.since, total: x.since + x.newAll, at: A.at}; } }
 /* word states from Anki override the ones baked into the site */
 function akApply(){
   const ja = akOn() && AK.langs.ja;
