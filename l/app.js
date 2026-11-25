@@ -783,7 +783,8 @@ function pinyin(){
 let panelRO = null;
 function fitPanel(P){
   const pv = P.firstElementChild; if (!pv) return; panelRO?.disconnect();
-  const set = () => { if (!pv.isConnected) return; const max = P.parentElement.clientHeight; P.style.height = Math.min(pv.offsetHeight + 2, max) + 'px'; };
+  // while the height animates to new content (an answer's feedback line), no scrollbar flashes: it shows only when the content is taller than the screen
+  const set = () => { if (!pv.isConnected) return; const max = P.parentElement.clientHeight, need = pv.offsetHeight + 2; P.style.height = Math.min(need, max) + 'px'; P.style.overflowY = innerWidth > 860 && need <= max ? 'hidden' : ''; };
   set(); panelRO = new ResizeObserver(set); panelRO.observe(pv);
 }
 
