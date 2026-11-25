@@ -1014,8 +1014,10 @@ const EXAM = '2027-06-01', EASTER = '2027-03-22';
 function calHtml(){
   // the calendar starts on the plan's first day; a plan day's cell shows how much of THAT day is done, even if it is done later
   const P0 = LP()[S.lang]?.start || null, ND = LP()[S.lang]?.days || 0;
-  const pDay = ds => P0 && ds >= P0 ? dIdx(P0, ds) + 1 : 0, cur = gTopics().length ? addDays(P0, planCur() - 1) : null;
-  const pFrac = k => { if (!gTopics().length || k > ND) return 0; const L = learnedN(S.lang), a = k > 1 ? tgtD(S.lang, k - 1) : 0, b = tgtD(S.lang, k); const f = b > a ? Math.max(0, Math.min(1, (L - a) / (b - a))) : L >= b ? 1 : 0; return S.lang === 'zh' && f >= 1 && !dayDone('zh', k, L) ? .5 : f; };
+  const pDay = ds => P0 && ds >= P0 ? dIdx(P0, ds) + 1 : 0, cur = null;   // the frame marks today
+  const pFrac = k => { if (!gTopics().length || k > ND) return 0; const L = learnedN(S.lang); if (dayDone(S.lang, k, L)) return 1;   // the whole day: topics, new words (and zh phonetics)
+    const a = k > 1 ? tgtD(S.lang, k - 1) : 0, b = tgtD(S.lang, k), ft = b > a ? Math.max(0, Math.min(1, (L - a) / (b - a))) : 1, w = S.wk?.[S.lang], wa = k > 1 ? wordNeed(S.lang, k - 1) : 0, wb = wordNeed(S.lang, k);
+    const fw = S.lang === 'zh' ? (wordsDone('zh', k) ? 1 : 0) : w && wb > wa ? Math.max(0, Math.min(1, (w.since - wa) / (wb - wa))) : 1; return Math.min(.95, (ft + fw) / 2); };
   const t = today(), start = P0 && P0 < t ? P0 : t, d0 = new Date(start + 'T12:00:00'); d0.setDate(d0.getDate() - (d0.getDay() + 6) % 7);   // from Monday
   const end = new Date(EXAM + 'T12:00:00'); end.setDate(end.getDate() + (7 - end.getDay()) % 7);
   const m = gMem(), planDone = new Set(Object.values(S.doneOn || {})), MS = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
@@ -1029,7 +1031,7 @@ function calHtml(){
     else {
       const g = m.log[dayNo(d.getTime())], gn = g ? g.n + g.r : 0, mins = dayT(ds) / 60, sc = mins + gn * 3;
       const k = pDay(ds), pf = k && ds <= t ? pFrac(k) : null;
-      if (pf !== null) { cls = pf >= 1 ? 'l4' : pf >= .6 ? 'l3' : pf >= .3 ? 'l2' : pf > 0 ? 'l1' : ds < t ? 'miss' : ''; tip += ` · день ${k} · сделано ${Math.round(pf * 100)}%`; }
+      if (pf !== null) { cls = pf >= 1 ? 'l4' : ds < t ? 'miss' : pf >= .6 ? 'l3' : pf >= .3 ? 'l2' : pf > 0 ? 'l1' : ''; tip += ` · день ${k} · ${pf >= 1 ? 'сделан' : (ds < t ? 'долг · ' : '') + 'сделано ' + Math.round(pf * 100) + '%'}`; }   // a past day that is not finished is a debt, however much of it is done
       else cls = ds > t ? 'fut' : sc >= 80 ? 'l4' : sc >= 40 ? 'l3' : sc >= 15 ? 'l2' : sc > 0 ? 'l1' : '';
       if (sc > 0) tip += ` · ${Math.round(mins)} мин${gn ? ` · тем ${gn}` : ''}`;
       if (ds >= t) left++;
