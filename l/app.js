@@ -321,12 +321,14 @@ function toneSvg(h){
   const W = 312, H = 128, L = 22, R = 8, top = 10, bot = 30, [a, b] = T.t, X = t => L + (t - a) / (b - a) * (W - L - R), Y = v => top + (5 - Math.max(.4, Math.min(5.6, v))) / 4 * (H - top - bot);
   let g = '';
   for (let lv = 1; lv <= 5; lv++) g += `<line x1="${L}" x2="${W - R}" y1="${Y(lv)}" y2="${Y(lv)}" class="tg"/><text x="${L - 8}" y="${Y(lv) + 3.5}" class="tl">${lv}</text>`;
-  const bs = [a, ...T.s, b];
+  // each syllable: where its voice really is (the reference tone is drawn only there, the border sits in the gap between voices)
+  const bs = [a, ...T.s, b], V = T.y.map((_, i) => { const i0 = Math.round((bs[i] - a) / TONES.step), i1 = Math.round((bs[i + 1] - a) / TONES.step); let f = -1, l = -1;
+    for (let k = i0; k <= i1 && k < T.f.length; k++) if (T.f[k] != null) { if (f < 0) f = k; l = k; } return f < 0 ? [bs[i], bs[i + 1]] : [a + f * TONES.step, a + l * TONES.step]; });
   T.y.forEach(([py, tn], i) => {
-    const x0 = X(bs[i]), x1 = X(bs[i + 1]), last = i === T.y.length - 1;
-    if (i) g += `<line x1="${x0}" x2="${x0}" y1="${top}" y2="${H - bot}" class="tb"/>`;
+    const x0 = X(V[i][0]), x1 = X(V[i][1]), last = i === T.y.length - 1, xb = i ? (X(V[i - 1][1]) + x0) / 2 : 0;
+    if (i) g += `<line x1="${xb}" x2="${xb}" y1="${top}" y2="${H - bot}" class="tb"/>`;
     const prev = T.y[i - 1]?.[1], ref = tn === 5 ? [[0, {1: 2, 2: 3, 3: 4, 4: 1.5}[prev] || 3], [1, ({1: 2, 2: 3, 3: 4, 4: 1.5}[prev] || 3) - .3]] : tn === 3 && !last ? [[0, 2], [1, 1]] : TREF[tn];
-    if (ref) g += `<polyline class="tr" points="${ref.map(([f, v]) => `${(x0 + 6 + f * (x1 - x0 - 12)).toFixed(1)},${Y(v).toFixed(1)}`).join(' ')}"/>`;
+    if (ref) g += `<polyline class="tr" points="${ref.map(([f, v]) => `${(x0 + f * (x1 - x0)).toFixed(1)},${Y(v).toFixed(1)}`).join(' ')}"/>`;
     g += `<text x="${(x0 + x1) / 2}" y="${H - 9}" class="tp">${esc(py)}</text>`;
   });
   let d = '', pen = false;
