@@ -64,7 +64,8 @@ const tgtD = (lang, k) => lang === 'zh' ? zhOrder().filter(x => x.day <= k).leng
    ja/de = words introduced in Anki since the plan began >= the plan's share for that day (all words spread evenly to 1 January).
    The word numbers live in S.wk (from Anki on the computer, synced to the phone with the rest). */
 function zhSyncDays(Z = akOn() ? AK : null){ const A = Z?.langs?.zh; if (A?.days) for (const [d, dk] of Object.entries(A.days)) if (dk.nw === 0 && dk.tot > 0) (S.done[d] ??= {}).a2 = true; }
-const PH_DAYS = () => Math.ceil(PLAN.phonetics.syllables.sec / 60 / PLAN.phonetics.syllables.perDay);   // the one long video, 10 minutes a day
+const PH_PARTS = () => Math.ceil(PLAN.phonetics.syllables.sec / 60 / PLAN.phonetics.syllables.perDay);   // the one long video in 10-minute parts
+const PH_DAYS = () => PLAN.phonetics.syllables.until || PH_PARTS();   // 10 minutes of it every plan day up to day 20, the parts going round
 const wordNeed = (lang, k) => { const w = S.wk?.[lang]; return w ? Math.ceil(w.total * Math.min(k, LP()[lang].days) / LP()[lang].days) : 0; };   // new words that should be started by the end of plan day k
 function wordsDone(lang, k){
   if (lang === 'zh') return !words(k).length || !!S.done[k]?.a2;
@@ -96,8 +97,9 @@ const tickSet = (lang, id, on) => { (((S.tick ??= {})[lang] ??= {})[today()] ??=
 function phonRows(){
   const ph = PLAN.phonetics, v = ph.syllables, n = PH_DAYS(); let d = 1; while (d <= n && S.done[d]?.ph2) d++;
   d = Math.min(d, planCur('zh')); if (d > n) return [];   // an owed part first; once today's part is watched it stays ticked until the next plan day
-  const st = (d - 1) * v.perDay, end = Math.min(d * v.perDay * 60, v.sec), mm = s => Math.floor(s / 60) + ':' + String(Math.round(s % 60)).padStart(2, '0'), len = end - st * 60;
-  return [{id: 'ph2', d, man: true, done: !!S.done[d]?.ph2, t: `Слоги · часть ${d} из ${n}`, links: [[v.video + '&t=' + st * 60 + 's', 'смотреть']], sec: len, note: `${st}:00–${mm(end)}`}];
+  const P = PH_PARTS(), p = (d - 1) % P + 1;   // the parts go round: day 5 = part 1 again
+  const st = (p - 1) * v.perDay, end = Math.min(p * v.perDay * 60, v.sec), mm = s => Math.floor(s / 60) + ':' + String(Math.round(s % 60)).padStart(2, '0'), len = end - st * 60;
+  return [{id: 'ph2', d, man: true, done: !!S.done[d]?.ph2, t: `Слоги · часть ${p} из ${P} · день ${d} из ${n}`, links: [[v.video + '&t=' + st * 60 + 's', 'смотреть']], sec: len, note: `${st}:00–${mm(end)}`}];
 }
 /* Anki rows: the same for every language; with Anki connected they tick themselves, without it by hand. Words never hold the plan day. */
 function lexRows(lang){
