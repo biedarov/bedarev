@@ -189,7 +189,9 @@ function setGirl(on){
 
 /* ---------- home: the same page in every language ---------- */
 function homePlan(lang){
-  const P = gPlanHead(), m = gMem(lang), cur = planCur(lang), debt = pDayOf(lang) - cur, next = [...P.due.map(t => [t, 'повтор']), ...P.nw.map(t => [t, 'новая'])];
+  const P = gPlanHead(), m = gMem(lang), cur = planCur(lang), debt = pDayOf(lang) - cur, next = P.nw.map(t => [t, 'новая']);
+  // all reviews are ONE row: the topics listed through a middle dot; it opens the session (reviews come first there)
+  const rv = P.due.length ? `<a class="task" href="#s"><span class="gc ${memClass(Math.min(...P.due.map(t => m.cards[t.id] ? memOf(m.cards[t.id]) : 1)))}" style="flex:none"></span><b style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Повторение · ${P.due.map(t => esc(plainJ(t.t))).join(' · ')}</b><span class="r"><span>${P.due.length} ${pl(P.due.length, 'тема', 'темы', 'тем')}</span></span></a>` : '';
   const row = x => `<div class="task ${x.done ? 'done' : ''}" ${x.go ? `data-go="${x.go}"` : ''}><button class="chk" data-k="${x.id}" data-d="${x.d || ''}" ${x.man ? '' : 'disabled'} aria-label="${esc(x.t)}">${I.chk}</button><b>${esc(x.t)}</b><span class="r">${x.note ? `<span>${x.note}</span>` : ''}${(x.links || []).map(([u, l]) => `<a class="mini" href="${esc(u)}" target="_blank" rel="noopener">${l}</a>`).join('')}</span></div>`;
   const ph = lang === 'zh' ? phonRows() : [];
   return `<section class="card plan" aria-label="Сегодня">
@@ -197,8 +199,8 @@ function homePlan(lang){
 </div>
     <div class="tasks">${ph.length ? `<div class="grp"><div class="gh"><span class="eye">фонетика</span></div>${ph.map(row).join('')}</div>` : ''}
       <div class="grp"><div class="gh"><span class="eye">лексика</span></div>${lexRows(lang).map(row).join('')}</div>
-      <div class="grp q"><div class="gh"><span class="eye">${next.length ? 'грамматика на очереди' : 'грамматика'}</span></div>
-      ${next.length ? next.map(([t, k]) => { const c = m.cards[t.id]; return `<a class="task" href="#t-${t.id}"><span class="gc ${c ? memClass(memOf(c)) : ''}" style="flex:none"></span><b>${rich(t.t)}</b><span class="r">${k === 'новая' ? '' : `<span>${k}${c ? ' · ' + pct(memOf(c)) + '%' : ''}</span>`}</span></a>`; }).join('')
+      <div class="grp q"><div class="gh"><span class="eye">${next.length || rv ? 'грамматика на очереди' : 'грамматика'}</span></div>
+      ${next.length || rv ? rv + next.map(([t, k]) => { const c = m.cards[t.id]; return `<a class="task" href="#t-${t.id}"><span class="gc ${c ? memClass(memOf(c)) : ''}" style="flex:none"></span><b>${rich(t.t)}</b><span class="r">${k === 'новая' ? '' : `<span>${k}${c ? ' · ' + pct(memOf(c)) + '%' : ''}</span>`}</span></a>`; }).join('')
         : `<div class="task done"><span class="chk">${I.chk}</span><b>Грамматика готова</b><span class="r"><span>${learnedN(lang)} из ${gTopics(lang).length}</span></span></div>`}</div></div></section>`;
 }
 /* phone: the queue shows as many whole rows as the screen holds (desktop: 7) */
