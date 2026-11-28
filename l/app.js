@@ -160,7 +160,15 @@ function migrate1(){
 /* ---------- view swap: one crossfade between sections ---------- */
 let first = true, curSec = '';
 let QUIET = false;   // true while a refresh repaints the page the user is already looking at
-const refresh = () => { QUIET = true; try { route(true); } finally { QUIET = false; } };
+/* a background redraw (cloud sync every 15 s, Anki) keeps every scroll position: the word list must not jump to the top */
+const SCR = '.list,.panel,.gk,.st,.fly';
+const refresh = () => {
+  const els = () => [document.documentElement, document.body, ...app.querySelectorAll(SCR)];   // the page itself may scroll as html or as body
+  const sc = els().map(e => e.scrollTop), hash = location.hash;
+  QUIET = true; try { route(true); } finally { QUIET = false; }
+  const back = () => { if (location.hash !== hash) return; els().forEach((e, i) => { if (sc[i] && !e.scrollTop) e.scrollTop = sc[i]; }); };   // only where the redraw reset it, never against your own scrolling
+  back(); requestAnimationFrame(back); setTimeout(back, 60); setTimeout(back, 450);   // the page may be painted later (view transition, 400 ms safety net)
+};
 function show(html, cls = '', after, sec = ''){
   curSec = sec;
   let painted = false;
